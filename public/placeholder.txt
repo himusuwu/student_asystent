@@ -1,0 +1,1 @@
+Static assets (icons) should be placed here for PWA manifest.

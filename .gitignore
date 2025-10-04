@@ -1,0 +1,36 @@
+node_modules
+dist
+.DS_Store
+.env
+*.log
+.vite
+.cache
+coverage
+
+# Modele Whisper (duże pliki binarne)
+models/
+public/models/
+
+# Server temp files
+server/.temp/
+
+# Pliki testowe audio
+*.wav
+*.aiff
+*.mp3
+*.m4a
+test-*.js
+test-*.html
+opis.txt
+
+# Build artifacts
+tsconfig.app.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Backup files
+*.backup
