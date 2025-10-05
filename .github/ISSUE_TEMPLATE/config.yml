@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📖 Documentation
+    url: https://github.com/himusuwu/student_asystent/blob/main/README.md
+    about: Przeczytaj dokumentację przed zgłoszeniem issue
+  - name: 🐛 Troubleshooting
+    url: https://github.com/himusuwu/student_asystent/blob/main/TROUBLESHOOTING.md
+    about: Sprawdź popularne problemy i ich rozwiązania
+  - name: 💬 Discussions
+    url: https://github.com/himusuwu/student_asystent/discussions
+    about: Zadaj pytanie lub rozpocznij dyskusję

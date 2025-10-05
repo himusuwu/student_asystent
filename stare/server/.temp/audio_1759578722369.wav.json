@@ -1,0 +1,1825 @@
+{
+	"systeminfo": "WHISPER : COREML = 0 | OPENVINO = 0 | Metal : EMBED_LIBRARY = 1 | CPU : NEON = 1 | ARM_FMA = 1 | FP16_VA = 1 | DOTPROD = 1 | ACCELERATE = 1 | REPACK = 1 | ",
+	"model": {
+		"type": "base",
+		"multilingual": true,
+		"vocab": 51865,
+		"audio": {
+			"ctx": 1500,
+			"state": 512,
+			"head": 8,
+			"layer": 6
+		},
+		"text": {
+			"ctx": 448,
+			"state": 512,
+			"head": 8,
+			"layer": 6
+		},
+		"mels": 80,
+		"ftype": 1
+	},
+	"params": {
+		"model": "/Users/dawid/dev/student_asystent/models/whisper-cpp/ggml-base.bin",
+		"language": "pl",
+		"translate": false
+	},
+	"result": {
+		"language": "pl"
+	},
+	"transcription": [
+		{
+			"timestamps": {
+				"from": "00:00:00,000",
+				"to": "00:00:30,000"
+			},
+			"offsets": {
+				"from": 0,
+				"to": 30000
+			},
+			"text": " A jeszcze chwilkę poczekamy sobie aż na pewno wszyscy nam dołączą i za momentik zaczniemy nasze pierwszy wykład."
+		},
+		{
+			"timestamps": {
+				"from": "00:00:30,000",
+				"to": "00:01:00,000"
+			},
+			"offsets": {
+				"from": 30000,
+				"to": 60000
+			},
+			"text": " Zajeżdż mamy większość osób dołączonych. Z serdecznie Państwa w ramach pierwszego wykładu z przedmiotu tak, czyli techniki i architektura komputerów. W przedmiotu, który dla innych będzie prosty, dla innych będzie może troszeczkę trudniejszy, ponieważ sporo rzeczy może być dla Państwa nowych. Jeżeli chodzi o tym przedmiotu, to co tak naprawdę będziemy sobie w ramach niego omawiać? W tym przypadku, tak jak wspomniałem,"
+		},
+		{
+			"timestamps": {
+				"from": "00:01:00,000",
+				"to": "00:01:30,000"
+			},
+			"offsets": {
+				"from": 60000,
+				"to": 90000
+			},
+			"text": " W W W W W W W W W W W"
+		},
+		{
+			"timestamps": {
+				"from": "00:01:30,000",
+				"to": "00:02:00,000"
+			},
+			"offsets": {
+				"from": 90000,
+				"to": 120000
+			},
+			"text": " w komputere się zmieniały, w jaki sposób się rozwijały, co z czego wynikało, tak żeby zrozumieć wszystko od podstaw."
+		},
+		{
+			"timestamps": {
+				"from": "00:02:00,000",
+				"to": "00:02:30,000"
+			},
+			"offsets": {
+				"from": 120000,
+				"to": 150000
+			},
+			"text": " W W Cięzdż mamy, co nie ma, co nie ma."
+		},
+		{
+			"timestamps": {
+				"from": "00:02:30,000",
+				"to": "00:03:00,000"
+			},
+			"offsets": {
+				"from": 150000,
+				"to": 180000
+			},
+			"text": " W W W W W W W Zajeż."
+		},
+		{
+			"timestamps": {
+				"from": "00:03:00,000",
+				"to": "00:03:30,000"
+			},
+			"offsets": {
+				"from": 180000,
+				"to": 210000
+			},
+			"text": " W różnych, różnego rodzaju podzespołów komputera oraz ich charakterystyk oraz powiemy na samym końcu o układach wejścia wyjścia nasze komputerów, jakie mamy interfejsy, w jaki sposób możemy je wykorzystać oraz skąd tak naprawdę one się wywodzą, no bo oczywiście możemy zdawać sobie sprawę, że aktualnie króluje nam standard z USB, a dokładnie w tych USB."
+		},
+		{
+			"timestamps": {
+				"from": "00:03:30,000",
+				"to": "00:04:00,000"
+			},
+			"offsets": {
+				"from": 210000,
+				"to": 240000
+			},
+			"text": " C i tutaj również będziemy sobie mówić o rozróżnieniu pomiędzy standardem, a pomiędzy strictem FTK. Dobrze. Dostałem informacje po krótce, że u niektórych, zaczymy się etapie ładowania. Proszę mi wybaczyć, jak tylko napiszę tam na platformie Teams, żeby te osoby spróbowały przeładować."
+		},
+		{
+			"timestamps": {
+				"from": "00:04:00,000",
+				"to": "00:04:30,000"
+			},
+			"offsets": {
+				"from": 240000,
+				"to": 270000
+			},
+			"text": " Słabełączy internetowe."
+		},
+		{
+			"timestamps": {
+				"from": "00:04:30,000",
+				"to": "00:05:00,000"
+			},
+			"offsets": {
+				"from": 270000,
+				"to": 300000
+			},
+			"text": " Dostałem się również w ramach tego semestru, poza taką słuchą teorią wprowadzić Państwu, które szkę praktyki, oczywiście będzie to odrubing ograniczone. Z racji tego, że mamy jednak te wykłady online, a nie lokalnie,"
+		},
+		{
+			"timestamps": {
+				"from": "00:05:00,000",
+				"to": "00:05:30,000"
+			},
+			"offsets": {
+				"from": 300000,
+				"to": 330000
+			},
+			"text": " w ramach auli, no ale postaram się w jakiś sposób, tutaj również przemycić, przemycić Państwu trochę tej praktyki, pokazać niektóre rzeczy, jeżeli się uda, to również sobie powiemy o światłowodach oraz o spawaniu światłowodów, czyli takim elementie, który współcześnie też jest nagminnie wykorzystywany również z poziomu domowego. Tak więc jak mogło Państwo zauważyć przedmiot sam w sobie jest"
+		},
+		{
+			"timestamps": {
+				"from": "00:05:30,000",
+				"to": "00:06:00,000"
+			},
+			"offsets": {
+				"from": 330000,
+				"to": 360000
+			},
+			"text": " jest bardzo obszerny, jeżeli chodzi o tematyki, my nie będziemy jakoś bardzo również wchodzić w szczegóły różnych technologii, różnych interfejsów, różnych rozwiązań, ale chciałbym aby z tego przedmiotu wynieści Państwu taką ogólny zaryz, jak co działa dlaczego po co skąd się coś wzięło. Ten ogólny zaryz będzie dla nas najważniejszy i na podstawie niego"
+		},
+		{
+			"timestamps": {
+				"from": "00:06:00,000",
+				"to": "00:06:30,000"
+			},
+			"offsets": {
+				"from": 360000,
+				"to": 390000
+			},
+			"text": " będą również Państwo zaliczali ten przedmiot. Jeżeli chodzi o, jeżeli chodzi o ten przedmiot również muszę Państwu sobie zdawać sprawę, że to jest takie wprowadzenie do informatyki. Jeżeli mamy osoby w ramach Państwa grupy studenckiej, a jest Państwa ponad 300 osób, jeżeli są osoby, które po prostu wszystko już wiedzą na ten temat, na o tych pocałych prosz,"
+		},
+		{
+			"timestamps": {
+				"from": "00:06:30,000",
+				"to": "00:07:00,000"
+			},
+			"offsets": {
+				"from": 390000,
+				"to": 420000
+			},
+			"text": " ale też takie osoby, żeby również się nie zrażały do materiału, który będę Państwu przedstawiał oczywiście. Po części pewnie będzie dla Państwa rozmiały, po części będziemy pewnie omawiać sobie go w bardziej ogólnym w zakresie niż Państwo nawet posiadają wiedzę, ale w niektórych sytuacjach może uda się Państwa zaskoczyć jakimś dodatkowymi informacjami, tak więc tym bardziej zachęcam do udziału w ramach naszych wykładach."
+		},
+		{
+			"timestamps": {
+				"from": "00:07:00,000",
+				"to": "00:07:30,000"
+			},
+			"offsets": {
+				"from": 420000,
+				"to": 450000
+			},
+			"text": " Oczywiście realizowane w formie online, w związku z czym również musimy się dostosować w kontekście, w kontekście komunikacji dotych standardów online. Jak mogło Państwo zauważyć w ramach okna wykładowego w ramach tego spotkania, mamy taką zakładkę jak Q&A, question and answer, w z ramach, której będą mogli Państwo zadawać dowolne pytania do wykładu. Jak zadać o Państwo pytanie, to"
+		},
+		{
+			"timestamps": {
+				"from": "00:07:30,000",
+				"to": "00:08:00,000"
+			},
+			"offsets": {
+				"from": 450000,
+				"to": 480000
+			},
+			"text": " moja prośba personalna, żeby nie powtarzali Państwo i nie wysyłali tego z całego pytania, a przykład dwa, trzy, pięćdziesięć razy. Zawacy tego, że jest to spotkanie na żywo i to spotkanie dla większej ilości uczestników, ma ono pewnego rodzaju opóźnienie, tak więc jak ja do Państwa mówię to Państwo to co to co pokazuje i to co mówię słyszą z opóźnieniem około piętnastu dwudziestu sekundowym. W związku z czym"
+		},
+		{
+			"timestamps": {
+				"from": "00:08:00,000",
+				"to": "00:08:30,000"
+			},
+			"offsets": {
+				"from": 480000,
+				"to": 510000
+			},
+			"text": " proszę, po prostu na spokojnie czekać na odpowiedź na swoje pytanie na pewno się pojawi. Prośba tylko, żeby oczywiście pytania były sprecyzowane, żeby nie było tam żadnych, żadnych nie domówie. A więc na razie w ramach z sekcji Q&A, mam pusto w związku z czym jeszcze nikt nie zadał żadnego pytania. No podejrzewam, że pytania się za chwilkę pojawił jak przyjdziemy do"
+		},
+		{
+			"timestamps": {
+				"from": "00:08:30,000",
+				"to": "00:09:00,000"
+			},
+			"offsets": {
+				"from": 510000,
+				"to": 540000
+			},
+			"text": " kwestii dotyczących zasad zaliczenia oraz tego jak w ogóle będzie ten nasz przedmiot wygląda. Jeżeli chodzi o zasady zaliczenie, to zasady zaliczenia mogą Państwo znaleźć w ramach platformy Microsoft Teams w ramach naszego zespołu, w zakładce pliki i ja teraz postaram się Państwu również wyświetlić te"
+		},
+		{
+			"timestamps": {
+				"from": "00:09:00,000",
+				"to": "00:09:30,000"
+			},
+			"offsets": {
+				"from": 540000,
+				"to": 570000
+			},
+			"text": " zasady zaliczenia, one są bardzo krótkie, bo w tym semestrze mamy dosyć proste zasady zaliczenia, które będą obowiązywać wszystkie osoby bez wyjątku. Więc proszę dać mi chwilkę. Dobrze. A więc, jeżeli chodzi o zasady zaliczenia dla tego przedmiotu."
+		},
+		{
+			"timestamps": {
+				"from": "00:09:30,000",
+				"to": "00:10:00,000"
+			},
+			"offsets": {
+				"from": 570000,
+				"to": 600000
+			},
+			"text": " Tak sam w sobie jest przedmiotem tylko i wyłącznie zaliczeniowym z egzaminem na sam koniec w trakcie sesji egzaminacyjnych. Z tego przedmiotu nie ma ćwiczeń w związku z czym uzyskują Państwo tylko i wyłącznie jedną ocenę z wykładu. Jeżeli chodzi o sam przedmiot, to oczywiście materiał, który przedstawia Państwu na wykładzie jest stosunkowo ważny. Będę tam dopowiadał różne rzeczy, omawiał i przedstawiał różne konteksty."
+		},
+		{
+			"timestamps": {
+				"from": "00:10:00,000",
+				"to": "00:10:30,000"
+			},
+			"offsets": {
+				"from": 600000,
+				"to": 630000
+			},
+			"text": " Różnych technologii, ale poza tym ważnym etapem, ważnym elementem każdego wykładu nie tylko tego jest również praca własna z literaturą. Literaturą, którą za chwilkę Państwu przedstawię i o mówię, które pozycje są bardziej ważne, które troszeczkę mniej, które są bardziej opcjonalnymi alternatywnym publicacjami, ale zgodnie z tradycją, no to oczywiście ta literatura"
+		},
+		{
+			"timestamps": {
+				"from": "00:10:30,000",
+				"to": "00:11:00,000"
+			},
+			"offsets": {
+				"from": 630000,
+				"to": 660000
+			},
+			"text": " jest równie ważna, no i ona co najważniejsze pozwoli Państwu usystematyzować pewną wiedzę, którą będą Państwo w trakcie tego semestru zdobywać. W ramach tego przedmiotu będziemy mieli egzamin, egzamin, który będzie realizowany w trakcie sesji egzaminacyjnych. Żeby zaliczyć egzamin, będą musieli Państwu uzyskać co najmniej 50% punktów z tego egzamin. Egzamin sam w sobie będzie"
+		},
+		{
+			"timestamps": {
+				"from": "00:11:00,000",
+				"to": "00:11:30,000"
+			},
+			"offsets": {
+				"from": 660000,
+				"to": 690000
+			},
+			"text": " jeżeli nie postanowił inaczej, a na to mam czas do końca semestru, ale raczej nie. Będzie w formie online. To znaczy, przychodzę Państwo na uczelnie. W trakcie sesji egzaminacyjnej, są będą Państwo przydzieleni do poszczególnych sal, dosali Państwo wchodzą, logują się, uruchamiają test, rozwiązują Państwo taki test pod okiem. Instruktora znajdującego się w ramach tej z tej sali i uzyskuć"
+		},
+		{
+			"timestamps": {
+				"from": "00:11:30,000",
+				"to": "00:12:00,000"
+			},
+			"offsets": {
+				"from": 690000,
+				"to": 720000
+			},
+			"text": " bo to było Państwo od razu tak naprawdę wynik. Jak to jest zalicze egzamin, no to oczywiście już jest z głowy ten przedmiot, mają Państwo zaliczone wszystko, można iść dalej na inne egzamin lub już na ferie zimowe w tym przypadku tego semestru. Jeżeli nie uda się Państwu zaliczyć egzaminu w pierwszym podejściu, jest jeszcze drugie podejście, które mamy miejsce tydzień później w przypadku sesji zimowej. No i wtedy porosłup ponownie podchodzą Państwo do tego,"
+		},
+		{
+			"timestamps": {
+				"from": "00:12:00,000",
+				"to": "00:12:30,000"
+			},
+			"offsets": {
+				"from": 720000,
+				"to": 750000
+			},
+			"text": " egzamin. Tak więc mają Państwo dwa podejścia do niego w trakcie tego semestru. Jest taka możliwość i zobaczymy jak to wyjdzie. Jeżeli będzie tylko na to czas i środki, to również przewiduje zrealizowanie egzaminu zeroowego dla Państwa wtedy. Takie egzamin zero, jest dodatkowym terminem przed sesją egzaminacyjną. Jeżeli ktoś po prostu zaliczy ten egzamin w czasie, no to"
+		},
+		{
+			"timestamps": {
+				"from": "00:12:30,000",
+				"to": "00:13:00,000"
+			},
+			"offsets": {
+				"from": 750000,
+				"to": 780000
+			},
+			"text": " nie wieszczyć małe wolne w sesji, w takim razie chcę go przedmiotu. Jeżeli nie, no to wtedy bez żadnych konsekwencji podchodzi w sesji do terminu. Właściwego, a jak i w terminu i właściwym drugi raz się nie uda, no to wtedy w terminie poprawko. Widzę już pierwsze dwa pytania, które się pojawiły, kiedy będą pierwsze kolokwia, a jakich książek potrzeba do przedmiotu. Tak jak powiedziałem, mamy tylko egzaminu, więc w związku z tym kolokwiów nie mamy w ramach tego przedmiotu. Jeżeli chodzi o literaturę za chwilkę,"
+		},
+		{
+			"timestamps": {
+				"from": "00:13:00,000",
+				"to": "00:13:30,000"
+			},
+			"offsets": {
+				"from": 780000,
+				"to": 810000
+			},
+			"text": " przedstawię, jak tylko skończymy omawiać zasad zeliczeni. Czy będą praktyczne zadania na wykładzie? Nie, w sadań praktycznych nie będzie, chociaż mogę Państwo po prostu dać jak i zadankę, żeby po prostu przeciczyć sobie dany materiał w trakcie trwania semestru, tak, aby lepiej przygotować się do egzaminu. Ponieważ jak najbardziej, niektóre rzeczy, o których będziemy sobie mówić i będziemy sobie realizować, będą praktyczne."
+		},
+		{
+			"timestamps": {
+				"from": "00:13:30,000",
+				"to": "00:14:00,000"
+			},
+			"offsets": {
+				"from": 810000,
+				"to": 840000
+			},
+			"text": " Ale tak jak mówię, nie mamy ćwiczeń z tego przedmiotu, mamy tylko wykłady i do tego wykładu zdalne. W związku z czym tutaj jest duży nacisk na państwa pracę. Właśnie. Wróćmy do zasad zeliczenia. Jeżeli chodzi o ten egzaminu, tak jak już powiedziałem, mają państwo z terminów. Właściwy termin poprawkowy, ewentualnie zobaczymy może będzie również termin. Zerowy, żeby zaliczyć egzamin trzeba zdobyć 50% możliwych do uzyskania punktu."
+		},
+		{
+			"timestamps": {
+				"from": "00:14:00,000",
+				"to": "00:14:30,000"
+			},
+			"offsets": {
+				"from": 840000,
+				"to": 870000
+			},
+			"text": " Wtedy zgodnie stabilą poniżej z punktu siedmego regulaminu, zasad zeliczenia tego przedmiotu zostanie wystawiona ocena, od 50% mamy oceny trzy i co 10% opół oceny nam ta ocena rośnie aż do oceny pięć. Tak więc jak mogło państwo zobaczyć, te zasad zeliczenia ogólnie są stosunkowo krótkie i proste. Czy będą pytania otwarte czy zamknięte,"
+		},
+		{
+			"timestamps": {
+				"from": "00:14:30,000",
+				"to": "00:15:00,000"
+			},
+			"offsets": {
+				"from": 870000,
+				"to": 900000
+			},
+			"text": " na egzaminu? Na ten moment zakładam, że będą i takie i takie pytania. Ale może się zdarzyć, to też będzie klaryfikowane na sam koniec semestru, że na przykład w trakcie egzaminu będą tylko pytania zamknięte. Będzie też dla państwa łatwiej i wynik od razu będzie na pewno widoczny. I podejrzałam, że raczej do tego kierunku będę się skłaniał. W związku z czym"
+		},
+		{
+			"timestamps": {
+				"from": "00:15:00,000",
+				"to": "00:15:30,000"
+			},
+			"offsets": {
+				"from": 900000,
+				"to": 930000
+			},
+			"text": " raczej pytania zamknięte, ale mogą się pojawić również pytania otwarte. Nie zamytam tej ścieżki, że tak powiem, ale raczej chciałbym, że ten przedmiot był spokojny dla państwa, żeby na spokojnie można było zaliczyć ten egzamin i nie było większych z nim komplikacji. Dobrze, co jest jeżeli chodzi o zasad zeliczenia? Czy jakieś pytania do zasad zeliczenia państwo mają?"
+		},
+		{
+			"timestamps": {
+				"from": "00:15:30,000",
+				"to": "00:16:00,000"
+			},
+			"offsets": {
+				"from": 930000,
+				"to": 960000
+			},
+			"text": " No dobrze, na razie nie widzę, jeżeli się pojawiał, to za chwilkę będę na nie odpowiadał. I tak, ktoś już pytał o literaturę w związku z czym przejdźmy również do tej literatury, która nas będzie obowiązywała w trakcie"
+		},
+		{
+			"timestamps": {
+				"from": "00:16:00,000",
+				"to": "00:16:30,000"
+			},
+			"offsets": {
+				"from": 960000,
+				"to": 990000
+			},
+			"text": " tego semestru. Ramak literatury wyszczególniełem państwu pięć punkt pięć pozycji gdzie pierwsze trzy tak naprawdę są pozycjami, które zawierają pełnie naszego materiału, który będziemy sobie omawiać oraz co ważniejsze w przypadku tych trzech pozycji ładnie pozwolą one państwu usystematyzować wiedzę, którą będę starał się państwu przekazać w trakcie tego semestru."
+		},
+		{
+			"timestamps": {
+				"from": "00:16:30,000",
+				"to": "00:17:00,000"
+			},
+			"offsets": {
+				"from": 990000,
+				"to": 1020000
+			},
+			"text": " Pierwsza pozycja, najważniejsza informatyka w ogólnym zaryszie Glena Brukšira jest to pozycja od razu mówię, dostosam kowoleciwa w związku z czym tutaj zależy jaką wersję tej książki państwo dostaną, bo mogło państwo dostać reprint powiedzmy z dziewięćdziesiątego, dziewiątego nawet, gdzie proszę oczywiście wtedy z przymrożeniem oka jak by do państwa coś takiego czytać. Mogło państwo się na przykład dowiedzieć, że Pentium IV to jest aktualnie najlepiej,"
+		},
+		{
+			"timestamps": {
+				"from": "00:17:00,000",
+				"to": "00:17:30,000"
+			},
+			"offsets": {
+				"from": 1020000,
+				"to": 1050000
+			},
+			"text": " ale są również już nowsze wersje z tej książki, które, które omawiają większy zakres materiału, nowsze technologie, a troszeczkę innym ujęciu, ale i te starsze i te nowsze pozycje są jak najbardziej w pełni, w pełni wartościowe, no tylko tak jak powiedziałem, w przypadku starszych trzeba mieć troszeczkę"
+		},
+		{
+			"timestamps": {
+				"from": "00:17:30,000",
+				"to": "00:18:00,000"
+			},
+			"offsets": {
+				"from": 1050000,
+				"to": 1080000
+			},
+			"text": " i przymrożenie oka, jeżeli jest coś napisane, że jest aktualnie najnowszym, najlepszym i tak dalej. Druga pozycja urządzenia techniki komputerowej, jak działa komputer Krzysztofa Wojtuszkiewicza, podejrzałem, że osoby, które są na przykład z techniką, doskonale znają to pozycje tak jak po całym budowy działanie komputerów skorówskiego, czyli pozycję trzeciu. Te dwie pozycje bardzo mocno skupiają się z trikty na budowie i działaniu komputerów,"
+		},
+		{
+			"timestamps": {
+				"from": "00:18:00,000",
+				"to": "00:18:30,000"
+			},
+			"offsets": {
+				"from": 1080000,
+				"to": 1110000
+			},
+			"text": " z jakich komponentów się składa, jak te komponenty się ze sobą komunikują w związku z czym tutaj te dwie pozycje są również bardzo wartościom. Jeżeli chodzi o pozycję czwartą oraz piątą, to są już alternatywne dodatkowe materiały dodatkowe książki, które warto przeczytać, ponieważ one pozwolą Państwo również rozszerzyć tą wiedzę o dodatkowe elementy, szczególnie ta książka \"Dada Mundiego\", czyli \"Fandomes of Computer Organization in Design\","
+		},
+		{
+			"timestamps": {
+				"from": "00:18:30,000",
+				"to": "00:19:00,000"
+			},
+			"offsets": {
+				"from": 1110000,
+				"to": 1140000
+			},
+			"text": " w związku z czym gorąco polecam, jeżeli ktoś będzie miał chwilkę czasu, żeby sobie to przeczytać, ale tak, że mówię, to już są dodatkowe alternatywne książki, które można sobie dodatkowo przeczytać, dodatkowo się z nimi zapostać, tak więc literaturę, jak mogę Państwu zobaczyć, nie jest jakaś bardzo rozległa, no ale oczywiście oczywiście"
+		},
+		{
+			"timestamps": {
+				"from": "00:19:00,000",
+				"to": "00:19:30,000"
+			},
+			"offsets": {
+				"from": 1140000,
+				"to": 1170000
+			},
+			"text": " tak jak już mówiłem, warto się z nią, zaznająć. Dostałem pytanie, czy prezentacja będzie udostępniona, powykładził jak najbardziej, każdorazowo prezentacja, którą będę Państwu przedstawiał, będzie udostępniona w ramach zakładki pliki, w ramach zespołu na platformie Teams. Tak więc te pliki PDF z prezentacjami będą dla Państwa jak najbardziej dostępne."
+		},
+		{
+			"timestamps": {
+				"from": "00:19:30,000",
+				"to": "00:20:00,000"
+			},
+			"offsets": {
+				"from": 1170000,
+				"to": 1200000
+			},
+			"text": " Dobra, czy jeszcze jakieś pytania, jeżeli się pojawią, to proszę swobodnie pytać, a ja powoli przejdę już do meritum naszego przedmiotu i zaczniemy sobie omawiać się podstawowe zagadnienia. Tak więc musimy rozpocząć od w ogóle informacji kiedyś, zaczęliśmy mówić o komputerach jak ta historia się udzieli, ponieważ"
+		},
+		{
+			"timestamps": {
+				"from": "00:20:00,000",
+				"to": "00:20:30,000"
+			},
+			"offsets": {
+				"from": 1200000,
+				"to": 1230000
+			},
+			"text": " posiadamy pewne generacje w przypadku, w przypadku rozwoju komputerów cyfrowych. No i możemy te generacje podzielić tak naprawdę na sześć, na sześć pod typów, od generacji zero do generacji piątej, która trwa aktualnie, gdzie tak naprawdę aktualnie trwają trwa generacja rónolegle, czwarta oraz piąta. No i teraz czym się te generacje między sobą różniły? Generacja zero przed pojawieniem się jakikolwiek uniwersalnych elektronicznych,"
+		},
+		{
+			"timestamps": {
+				"from": "00:20:30,000",
+				"to": "00:21:00,000"
+			},
+			"offsets": {
+				"from": 1230000,
+				"to": 1260000
+			},
+			"text": " maszyn cyfrowych. W związku z czym generacji zero mieliśmy urządzenia, które nie były oparte stricte na elektronicznych komponentach, mogły wykorzystywać elektronicze komponety jako wsparcie, czyli częściowo być zbudowany. Wsiadku generacji pierwszej, tutaj już rzeczywiście możemy zacząć mówić o komputerach, bo wcześniej raczej mówimy sobie o maszynach cyfrowych, w generacji pierwszej już mamy komputery, które zostały wzbudowane"
+		},
+		{
+			"timestamps": {
+				"from": "00:21:00,000",
+				"to": "00:21:30,000"
+			},
+			"offsets": {
+				"from": 1260000,
+				"to": 1290000
+			},
+			"text": " w oparciu o Lamby Elektronowe, które pozwalały nam na przetwarzanie pewnych danych na wzmacnianie lub osłabianie danego sygnału. I na podstawie takich lamp, myliśmy możliwość przetwarzania pewnych informacji. Generacja druga, tutaj już pojawiły się nam transistory, transistory, które wykorzystyjemy po dzień dzisiejszy w naszych komputerach. Tylko, że wtedy te transistory były bardzo dużych rozmiarów."
+		},
+		{
+			"timestamps": {
+				"from": "00:21:30,000",
+				"to": "00:22:00,000"
+			},
+			"offsets": {
+				"from": 1290000,
+				"to": 1320000
+			},
+			"text": " Generacje, tak naprawdę to jest miniaturyzacja tych transistorów. Ja jak mogę państwu zobaczyć, generacja trzecia, komputery budowany w oparciu okładys Salone TT, ale małej lub śledz, średniej skali integracji. W związku z czym tutaj te transistory były dużo mniejsze i więcej transistorów upakowanych w ramach tego samego z tej samej płaszczyzny."
+		},
+		{
+			"timestamps": {
+				"from": "00:22:00,000",
+				"to": "00:22:30,000"
+			},
+			"offsets": {
+				"from": 1320000,
+				"to": 1350000
+			},
+			"text": " Czyli to są już te transistory i taskała integracji, którą mamy współcześnie. Ale tak jak już wspomniałem, równolegle z generacją czwartą, którą mamy w naszych komputerach, biegnie również generacja piąta, czyli komputery zbudowane w oparciu o niekonwencjonalne rozwiązanie. Tutaj mamy na myśli komputery wszelki o rodzaju kwantowe komputery wodne komputery słoneczne. W związku z czym ta generacja również oczywiście mam trwa,"
+		},
+		{
+			"timestamps": {
+				"from": "00:22:30,000",
+				"to": "00:23:00,000"
+			},
+			"offsets": {
+				"from": 1350000,
+				"to": 1380000
+			},
+			"text": " a też mam musimy sobie zdawać sprawę, że ta generacja piąta nie jest generacją, która jest na razie dostępna dla zwykłego konsumenta. Tak więc w tym przypadku, w tym przypadku możemy dzielić tą historię właśnie na takich sześć, sześć generacji. No i teraz przejdźmy sobie pokrótce przez ta generację, jak rok po kroku, że państwo mniej więcej zobaczyli, jakie o typu to były maszyny, jakich rozmiar,"
+		},
+		{
+			"timestamps": {
+				"from": "00:23:00,000",
+				"to": "00:23:30,000"
+			},
+			"offsets": {
+				"from": 1380000,
+				"to": 1410000
+			},
+			"text": " jak to wyglądały, czym się charakteryzowały. No i tak na przykład w przypadku generacji zerowej, czyli tutaj lata 35 do 42 mniej więcej, chociaż tak naprawdę mniej więcej. W tym przypadku możemy dzielić tą historię właśnie na takich sześć, sześć generacji. No i teraz przejdźmy sobie pokrótce przez ta generacja, jak rok po kroku, że państwo mniej więcej zobaczyli,"
+		},
+		{
+			"timestamps": {
+				"from": "00:23:30,000",
+				"to": "00:24:00,000"
+			},
+			"offsets": {
+				"from": 1410000,
+				"to": 1440000
+			},
+			"text": " jakie o typu to były maszyny, jakich rozmiarów, jak one wyglądały, czym się charakteryzowały. No i tak na przykład w przypadku generacji, że jestem szóstym do 42, mieliśmy z 1, z 2, z 3. Tutaj specjalnie użyłem słowa komputery z 1, z 2, z 3, ponieważ w ten sposób określał je autor, czyli Karak Zus. Jednak musimy mieć z tyłu głowy, że te komputery"
+		},
+		{
+			"timestamps": {
+				"from": "00:24:00,000",
+				"to": "00:24:30,000"
+			},
+			"offsets": {
+				"from": 1440000,
+				"to": 1470000
+			},
+			"text": " nie były w rzeczywistości komputerani. To były znowu urządzenia mechaniczno elektryczno-przekaźnikowe. W związku z czym autor korzystał z tej nazwy, jednak w rzeczywistości jako komputer możemy zaklasyfikować dopiero późniejszy narzędzia z generacji pierwszy, które zostały zbudowane. Innym przykładem takiego urządzenia jest chociażby kalkulator,"
+		},
+		{
+			"timestamps": {
+				"from": "00:24:30,000",
+				"to": "00:25:00,000"
+			},
+			"offsets": {
+				"from": 1470000,
+				"to": 1500000
+			},
+			"text": " który elektromechaniczny. W kalkulatoru na Uniwersytetie Harvarda, czyli Harvard Markman. Jeżeli chodzi o ten kalkulator, to taka ciekawoska dla państwa, kalkulator ten cały czas istnieje, cały czas działa. Jest raz do roku uruchamiany, na swojej urodziny, właśnie na Uniwersyteja Harvarda. Jeżeli ktoś będzie miał okazję i chęć, to można kupić bilety na tą okazję, na ten jeden dzień, kiedy ten kalkulator jest uruchamianny,"
+		},
+		{
+			"timestamps": {
+				"from": "00:25:00,000",
+				"to": "00:25:30,000"
+			},
+			"offsets": {
+				"from": 1500000,
+				"to": 1530000
+			},
+			"text": " i przedstawiony, jak on działał, jest strasznie głośny od razu uprzedzam. I jeżeli chodzi o bilety, no to przeważnie są wykupione na rok do przodu. W związku z czym też warto mieć to z tyłu głowy na uwadze, jeżeli ktoś byłby zainteresowany, zobaczeniem czegoś takiego na żywo. Co dalej? Generacja pierwsza. Generacja pierwsza tutaj rzeczywiście już możemy powiedzieć sobie o komputerze."
+		},
+		{
+			"timestamps": {
+				"from": "00:25:30,000",
+				"to": "00:26:00,000"
+			},
+			"offsets": {
+				"from": 1530000,
+				"to": 1560000
+			},
+			"text": " Komputer, który został, o kryznięty jako pierwszy komputer i rzeczywiście, rzeczywiście był on w pełni zbudowany już z elektronicznych komponentów, to komputer eniac. Electrical Integrator and Computer. Sama nazwa w sobie zawiera słówko komputer. W związku z czym tutaj wprost możemy powiedzieć, że to jest pierwszy urządzenie, które możemy nazwać mianem komputera, chociaż bardzo często są, są, są, są"
+		},
+		{
+			"timestamps": {
+				"from": "00:26:00,000",
+				"to": "00:26:30,000"
+			},
+			"offsets": {
+				"from": 1560000,
+				"to": 1590000
+			},
+			"text": " okutnie czy na pewno tych wcześniejszych urządzeń też nie powinniśmy nazwać komputerem skoro chociażby Karol Zus również z swoje komputery Z1, Z2 i Z3 w ten sposób nazywał. No ale oficjalnie ja kłorać państwu przedstawiam ścieżkę strictem z Oxfordu, gdzie komputer eniac jest uważany jako za, za pierwszy komputer w ramach generacji pierwszy."
+		},
+		{
+			"timestamps": {
+				"from": "00:26:30,000",
+				"to": "00:27:00,000"
+			},
+			"offsets": {
+				"from": 1590000,
+				"to": 1620000
+			},
+			"text": " Jest to pierwszy komputer, no i on został zbudowany rady tego, że to jest generacja pierwsza, w oparciu o lampę elektronowych. Te lampę elektronowe mogą państwo zobaczyć na tym pierwszym zdjęciu. Ta, na samej górze taka lampka, którą państwo widzą to właśnie jest lampa elektronowa, która albo jest wypełniona próżnią i na podstawie przepuszczonego potencjału elektrycznego przez taką lampę możemy wzmacniać, osłabiać, sygnał i przetwarzać pewne informacje."
+		},
+		{
+			"timestamps": {
+				"from": "00:27:00,000",
+				"to": "00:27:30,000"
+			},
+			"offsets": {
+				"from": 1620000,
+				"to": 1650000
+			},
+			"text": " W przypadku tego typu komputera, no to jak mogło państwo zobaczyć na tym drugim zdjęciu nie był on wcale mały i nie był on wcale prosty do użytkowanie. Tak naprawdę w ramach tego typu komputerów mogło państwo zobaczyć, że programowało się go przewodami i różnego rodzaju przełącznikami. W związku z czym nie było to najłatwiejsze, najłatwiejsze przedsiębiorcie. Szacuje się, że w porównaniu do oczywiście współczesnych komputerów"
+		},
+		{
+			"timestamps": {
+				"from": "00:27:30,000",
+				"to": "00:28:00,000"
+			},
+			"offsets": {
+				"from": 1650000,
+				"to": 1680000
+			},
+			"text": " w taktowanie tego komputera było rzędu około i jednej dziesiątej megahertz. A sam komputer był zbudowany za około 70 tysięcy rezystorów, około 1500 przekażników. Jeżeli chodzi o przełączniki, którymi się programowało, ten komputer był ich ponad 6000, a kabli było tak naprawdę około 10 do 15 tysięcy w zależności od programu, którą chcieliśmy zaprogramować na tenion komputer."
+		},
+		{
+			"timestamps": {
+				"from": "00:28:00,000",
+				"to": "00:28:30,000"
+			},
+			"offsets": {
+				"from": 1680000,
+				"to": 1710000
+			},
+			"text": " Jeżeli chodzi o wagę tego typu rozwiązania też wcale nie była mała i ten komputer nie to, co państwo widzę na tym drugim zdjęciu, to jest tylko fragment tego komputera. Po samą komputerę, jak ważył około 27 milton i zajmował pobierzchnię około 167 metrów kwadratowych, tak więc jak było państwo zobaczyć, jak na tak duże narzędzie, no to te możliwości, które mieli"
+		},
+		{
+			"timestamps": {
+				"from": "00:28:30,000",
+				"to": "00:29:00,000"
+			},
+			"offsets": {
+				"from": 1710000,
+				"to": 1740000
+			},
+			"text": " mieliśmy, no były raczej małe znikome, szczególnie w porównaniu z tym, co mamy współcześnie. Co dalej? Generacja druga. Tutaj już pojawiły się nam transhistory. Transhistory, które pozwoliły na znaczne zmienia turyzowanie naszych komputerów. Tak jak mogło państwo zobaczyć, chociażby tutaj na tym pierwszym zdjęciu, ta niebieska szawa, to jak najbardziej jest komputer. W ramach to, której mogliśmy już programować"
+		},
+		{
+			"timestamps": {
+				"from": "00:29:00,000",
+				"to": "00:29:30,000"
+			},
+			"offsets": {
+				"from": 1740000,
+				"to": 1770000
+			},
+			"text": " pewne, pewne elementy mogliśmy uzyskliwać wyniki co więcej, jak mogło państwo zobaczyć na tym biurku na pierwszym zdjęciu, no to tam pojawia się nam maszyna do pisania oraz pewnego rodzaju monitor, tylko troszeczkę in niż to, co mamy współcześnie. No tam maszyna do pisania pełniła funkcję klawiatury oczywiście. Wtedy najprościej było za prząc coś, co już mamy, czyli urządzenie w postaci właśnie maszyna do pisania do"
+		},
+		{
+			"timestamps": {
+				"from": "00:29:30,000",
+				"to": "00:30:00,000"
+			},
+			"offsets": {
+				"from": 1770000,
+				"to": 1800000
+			},
+			"text": " postaci klawiatury. Jeżeli chodzi o monitor, no to ktoś mogłoby się zapytać dlaczego w takim razie w ramach tego monitora mamy okrągły wyświetlać, a nie prostokątny lub kwadratowy tak jak kiedyś to było. No prost rozwiązanie jest bardzo proste. Ten komputer, który tutaj państwo widzą, jest rozwiązaniem akademickim. Zresztą tak naprawdę każda nowa technologia, która powstaje, a raczej w znowu współcześnie może już nie, ale"
+		},
+		{
+			"timestamps": {
+				"from": "00:30:00,000",
+				"to": "00:30:30,000"
+			},
+			"offsets": {
+				"from": 1800000,
+				"to": 1830000
+			},
+			"text": " nie mężczyź nowych technologii, które powstają, mają swoje zalążki w różnego rodzaju uniwersytetach akademii. No i w tym przypadku również tak to jest, stąd się to wzięło. Dlaczego okrągły monitor? Dlatego, że najprościej było taki uzyskać. Skąd tak naprawdę jest ta soczewka, na której były wyświetlane pewne elementy, jest to najprościej w świecie radar. Radar w ramach to którego wiązku"
+		},
+		{
+			"timestamps": {
+				"from": "00:30:30,000",
+				"to": "00:31:00,000"
+			},
+			"offsets": {
+				"from": 1830000,
+				"to": 1860000
+			},
+			"text": " jest taka elektronowa, która wyświetlała pewne informacje na tej płaszczyźnie okrągłej, została zapromienita w taki sposób, żeby wyświetlała informację z tego komputera, a nie sensu strictę otoczenie, tak jak ma to radar, w zwyczaj. Jeżeli chodzi o prawo u stronę, to tutaj mogą państwo zobaczyć fragment pamięć. Fragment pamięci w ramach to której możemy zapisać pewne informacje. Tak jak mamy tam takie zbliżenie,"
+		},
+		{
+			"timestamps": {
+				"from": "00:31:00,000",
+				"to": "00:31:30,000"
+			},
+			"offsets": {
+				"from": 1860000,
+				"to": 1890000
+			},
+			"text": " z fragmentu, z małego fragmentu tej pamięci, możemy zauważyć, że zbudowany on jest sprzecinających się poziom opionowo oraz poskosach pewnych drucików miedzianów. W ramach przecień mamy również założone takie kółeczka ferżomagnetyczne. No i teraz w związku z przepływem prądu przez konkretne, konkretne ścieżki, my mogliśmy albo"
+		},
+		{
+			"timestamps": {
+				"from": "00:31:30,000",
+				"to": "00:32:00,000"
+			},
+			"offsets": {
+				"from": 1890000,
+				"to": 1920000
+			},
+			"text": " rozmagnysować albo namagnysować taki erdzeń ferytowy. I w ten sposób mogliśmy odwrównywać pewne informacje, które zapisujemy w komputerze. No bo jeżeli chodzi o nasz komputer, no to musimy sobie zdawać sprawę, że jeżeli np. tworzymy plik tekstowy i zapisujemy tam tekst \"Ala Makota\", to nie oznacza, że my te słowa \"Ala Makota\" zapisujemy gdzieś w takiej formie jak to widzimy na komputerze, tylko wszystko na komputerze jest reprezentowane w postaci"
+		},
+		{
+			"timestamps": {
+				"from": "00:32:00,000",
+				"to": "00:32:30,000"
+			},
+			"offsets": {
+				"from": 1920000,
+				"to": 1950000
+			},
+			"text": " i tutaj taki stan na magnetowania lub rozmagnesewania również odzorywał nam odpowiednio zera i jedynki. W związku z czym był ten najprostszy sposób na zapisanie takich informacji w sposób trwały. Co więcej, tego typu pamięci, jak widzło Państwo na prawym obrazku, były wykorzystywane chociażby w misji Apollo. W związku z czym, jak mogą Państwo zobaczyć,"
+		},
+		{
+			"timestamps": {
+				"from": "00:32:30,000",
+				"to": "00:33:00,000"
+			},
+			"offsets": {
+				"from": 1950000,
+				"to": 1980000
+			},
+			"text": " w technologia oczywiście jest już leciwa, teraz mamy zupełnie inne rozwiązania, ale kiedyś wystarczała nawet do misji Apollo, żeby dolecieć na księżc. W związku z czym, to też pokazuje pewnego rodzaju perspektywy, gdzie tamta pamięć miała niespełna kilkaset kilobajtów. Teraz mamy pamięci ogromnych rzędów, wigabaitów, terabaitów. W związku z czym,"
+		},
+		{
+			"timestamps": {
+				"from": "00:33:00,000",
+				"to": "00:33:30,000"
+			},
+			"offsets": {
+				"from": 1980000,
+				"to": 2010000
+			},
+			"text": " to też pokazuje właśnie tą różnicy, że kiedyś z bardzo małymi możliwościami byliśmy w stanie osiągnąć bardzo i dużo. Teraz mamy duże możliwości, ale czy na pewno takie osiągamy, tutaj pozostawiam odpowiedź już sensu striktę do Państwa. Co dalej? Generacja trzecia. Tutaj już mamy małej i średniej skali integracji te nasze transistory."
+		},
+		{
+			"timestamps": {
+				"from": "00:33:30,000",
+				"to": "00:34:00,000"
+			},
+			"offsets": {
+				"from": 2010000,
+				"to": 2040000
+			},
+			"text": " No i w tym momencie już oficjalnie zaczęliśmy wykorzystywać układy salone. Tak jak mogą Państwo zobaczyć, w tym przypadku już mamy te procesory zamknięte w małych stosunkowo układach, które no kiedyś jednak zajmowały kilka metrów kwadratowych. Teraz zajmowały już dużo, dużo mniej, to było dosłownie kilka, jak nie ułamek centymetra kwadratowego."
+		},
+		{
+			"timestamps": {
+				"from": "00:34:00,000",
+				"to": "00:34:30,000"
+			},
+			"offsets": {
+				"from": 2040000,
+				"to": 2070000
+			},
+			"text": " No i w tym przypadku mieliśmy bardzo mocny rozwój tych mikroprocesorów, szczególnie ujęciu firmy Intel, gdzie na początku mieliśmy chociażby 4 bitowy procesor 404, później mieliśmy 8 bitowe, procesory 888, albo 80, gdzie te procesory 880 były jedymi z najbardziej popularnych. No tutaj mówimy się o procesorach 8 bitowych, tak. Współcześnie mamy procesory."
+		},
+		{
+			"timestamps": {
+				"from": "00:34:30,000",
+				"to": "00:35:00,000"
+			},
+			"offsets": {
+				"from": 2070000,
+				"to": 2100000
+			},
+			"text": " W przypadku naszych komputerów 64 bitowe, a w przypadku rozwiązań serwerowych, tutaj mówimy również o rozwęzaniach 100, 128, 256 i 500, 12 bitowych. W związku z czym mamy też bardzo duży skok technologiczny. W przeciągu 50 lat. No teraz to 50 lat rzeczywiście brzmi jak sąkowo dużo, ale patrząc na to jak to wyglądało kiedyś, no współcześnie można powiedzieć,"
+		},
+		{
+			"timestamps": {
+				"from": "00:35:00,000",
+				"to": "00:35:30,000"
+			},
+			"offsets": {
+				"from": 2100000,
+				"to": 2130000
+			},
+			"text": " że jesteśmy uszczytu techniki. Co więcej, jak mogą Państwo zobaczyć w 1975 roku, istniała również taka firma jak deck, deck, który rewolucynizował troszeczkę rynek, ponieważ w 1975 roku zaproponowali swój 8 bitowy mikroprocesor, który posiadał nie dość, że pamięć półprzewodników, czyli tak, jak mamy współcześnie wykorzystywano, ale również procesor"
+		},
+		{
+			"timestamps": {
+				"from": "00:35:30,000",
+				"to": "00:36:00,000"
+			},
+			"offsets": {
+				"from": 2130000,
+				"to": 2160000
+			},
+			"text": " ślinkowy, ponieważ musimy sobie zdawać sprawę, że wcześniejsze procesory i przez bardzo długi okres również kolejne, kolejne rozwiązania, kolejne procesory działały tylko i wyłącznie na liczbach całkowitych. W tym przypadku w 75. pojawił się już procesor, który mógł pracować również z wartościami zmienno przycinkowymi. W związku z czym, no jak widać w tym 70."
+		},
+		{
+			"timestamps": {
+				"from": "00:36:00,000",
+				"to": "00:36:30,000"
+			},
+			"offsets": {
+				"from": 2160000,
+				"to": 2190000
+			},
+			"text": " jednak było to troszeczkę, troszeczkę przełomowe. Jednak, no cóż powiedzmy sobie szczerze rynek, zrewidował potrzeby, stwierdzone, że, no, skoro do tej pory sobie dowaliśmy radę, bez tego, no i teraz sobie damy, bez tego radę. W związku z czym, no ten mikropro procesor nie był jakiś, jakiś, popularny, na to, no kosztował dużo, dużo więcej niż, również nic. W kolejnych latach,"
+		},
+		{
+			"timestamps": {
+				"from": "00:36:30,000",
+				"to": "00:37:00,000"
+			},
+			"offsets": {
+				"from": 2190000,
+				"to": 2220000
+			},
+			"text": " Intel dalej rozwijał swoje, swoje mikroprocesory, razem z innymi firmami, chociażby z IBM, czy, czy innymi rozwiązaniami. Tutaj już mamy mikroprocesor 16-bitowe, tak jak mogę Państwo zobaczyć, 86, 82, 86 i w 85, tym dopiero roku w związku z czym, jak mogę Państwo zobaczyć 10 lat po firmie deck, firma Intel"
+		},
+		{
+			"timestamps": {
+				"from": "00:37:00,000",
+				"to": "00:37:30,000"
+			},
+			"offsets": {
+				"from": 2220000,
+				"to": 2250000
+			},
+			"text": " stwierdziła ok, zrobiliśmy mikroprocesory już 32-bitowe, czyli jesteśmy blisko o tej współczesności i dopiero tutaj mamy pamięć, półprzewodnikowo, wewnętrzną, aktualnie znano jako pamięć cash i właśnie ko procesor zmiennoprzydinkowy, które pozwalał nam na wykonywanie operacji zmiennoprzydinkowych. Dopiero 10 lat później Intel to wprowadził do swoich mikroprocesorów i dopiero wtedy tak naprawdę konsumenti stwierdzili ok, rzeczywiście dobrze, przyda nam się,"
+		},
+		{
+			"timestamps": {
+				"from": "00:37:30,000",
+				"to": "00:38:00,000"
+			},
+			"offsets": {
+				"from": 2250000,
+				"to": 2280000
+			},
+			"text": " to jest to, jest to przydatne pozwala na szybsze, przeliczenia różnych wartości pozwala nam na wygodniejsze operacje na liczbach."
+		},
+		{
+			"timestamps": {
+				"from": "00:38:00,000",
+				"to": "00:38:30,000"
+			},
+			"offsets": {
+				"from": 2280000,
+				"to": 2310000
+			},
+			"text": " No i niestety w tym przypadku firmadek znowu była do przodu, bardzo ładnie rozwijała ten swoim mikroprocesor tylko, no cóż, był on drogi i znowu konsumenti stwierdzili, ale mamy 32-bitowe, to nam wystarcza wzupełności. W związku z czym ten procesor znowu nie był popularny, no i niestety firmadek w tym przypadku już splatowała po wpuszczeniu tego mikroprocesory."
+		},
+		{
+			"timestamps": {
+				"from": "00:38:30,000",
+				"to": "00:39:00,000"
+			},
+			"offsets": {
+				"from": 2310000,
+				"to": 2340000
+			},
+			"text": " No i na rynku głównie oczywiście została firma Intel, która rozwijała swoje procesory, chociażby cała linia procesorów Intel Pentium. Intel Pentium 1, 2, 3, 4, Pro i tak dalej. Tutaj jak najbardziej była bardzo, też bardzo szeroko rozwijana ta ścieżka. Tak jak możemy zobaczyć również mamy oczywiście poza Intelem inne firmy, które, które"
+		},
+		{
+			"timestamps": {
+				"from": "00:39:00,000",
+				"to": "00:39:30,000"
+			},
+			"offsets": {
+				"from": 2340000,
+				"to": 2370000
+			},
+			"text": " realizowały swoje procesory, chociażby w Japonii mieliśmy jeden procesor, który osiągnął jako pierwszy zakres jednego gigaherca, jeżeli chodzi o częstotliwość wykonywania operacji w ramach tego procesora, a w 2000 IBM wprowadziła pierwszy procesor z dwoma radzeniami. Tak zwane IBM Power4, chociaż tak naprawdę zakulu arami można było powiedzieć, że to są dwa procesory"
+		},
+		{
+			"timestamps": {
+				"from": "00:39:30,000",
+				"to": "00:40:00,000"
+			},
+			"offsets": {
+				"from": 2370000,
+				"to": 2400000
+			},
+			"text": " Intel Pentium, po prostu połączone ze sobą. Ale był to rzeczywiście wtedy już uznawany za pierwszy procesor dwurdzeniowy. No i jak już mieliśmy procesor dwurdzeniowy, no to leciliśmy dalej, wraz z kolejnymi latami związku z czy tych herdzeni, to to tak toowanie bardzo szybko nam nam narastało, tak. Czyli już mieliśmy projekt mikroprocesory 64 obitowe od budynicznego 3 roku mieliśmy również"
+		},
+		{
+			"timestamps": {
+				"from": "00:40:00,000",
+				"to": "00:40:30,000"
+			},
+			"offsets": {
+				"from": 2400000,
+				"to": 2430000
+			},
+			"text": " dwurdzeniowe później pojawiały się 4 ośmiordzeniowe na aktualnie mamy, mamy to rozwiązanie dużo dużo, szersze współcześnie jak sobie zobaczymy no to oczywiście mamy już, już, już entą generację procesorów Intel Core w tym przypadku już mamy, już mamy również odnogę od tej generacji no i to wszystko rozwijało się bardzo, bardzo płynnie aż"
+		},
+		{
+			"timestamps": {
+				"from": "00:40:30,000",
+				"to": "00:41:00,000"
+			},
+			"offsets": {
+				"from": 2430000,
+				"to": 2460000
+			},
+			"text": " to ma mniej więcej ubiegłego roku. Mnie więcej ubiegłego roku, ponieważ powoli dochodzimy do pewnych ograniczeń, które stawia nam, stawia nam, stawia nam zarówno fizyka, jak i pewnego rodzaju ograniczenia chemiczne. No tak jak mogę Państwa zobaczyć, tutaj są tak wylistowane pokrótce, że 2020 II Intel wprowadził procesory w oparciu"
+		},
+		{
+			"timestamps": {
+				"from": "00:41:00,000",
+				"to": "00:41:30,000"
+			},
+			"offsets": {
+				"from": 2460000,
+				"to": 2490000
+			},
+			"text": " technologii 7 nanometrową. Za chwilka sobie powiemy, co to znaczy, że mamy 7 nanometrów i jakie są różnice kiedyś w rozumieniu litografii danych procesorów, czyli rozmiaru tak naprawdę tego najgorszego transistora 7 nanometrów. Później 223, 224 mieliśmy już zapowiedziane Intel 18 a Intel 20 a czyli 1 8 nanometra 2 nanometry w tym roku Intel pozucił 20 a czyli pozucił"
+		},
+		{
+			"timestamps": {
+				"from": "00:41:30,000",
+				"to": "00:42:00,000"
+			},
+			"offsets": {
+				"from": 2490000,
+				"to": 2520000
+			},
+			"text": " technologię 20 nanometrową, ale stwierdzi już, że ok będziemy cały czas pracować nad technologią 1 8 nanometra. No współcześnie, jeżeli sobie popatrzymy po rynku, to możemy nawet znaleźć informacje, że mamy procesory 3 nanometrowe aktualnie już zrealizowane. Tylko, że tak jak mówię, to są pewnego rodzaju zabiegi marketingowe i posiadamy pewne ograniczenia, z których musimy zdawać sobie sprawę. No i teraz o tych ograniczeniach pokrótce sobie"
+		},
+		{
+			"timestamps": {
+				"from": "00:42:00,000",
+				"to": "00:42:30,000"
+			},
+			"offsets": {
+				"from": 2520000,
+				"to": 2550000
+			},
+			"text": " powiecmy. Pierwsze takie najbardziej ogólne ograniczenie to jest prawo mura. Prawo mura sformułowane w 65 roku, które mówiło w tamtych czasach, że liczba transistorów będzie się podwajać co roku. No oczywiście to prawo bardzo ładnie działało, aż do pewnego momentu, między innymi z w 1999 roku sam autor tego prawa stwierdził, że nie to podwojeni będzie następować co roku, tylko to 4"
+		},
+		{
+			"timestamps": {
+				"from": "00:42:30,000",
+				"to": "00:43:00,000"
+			},
+			"offsets": {
+				"from": 2550000,
+				"to": 2580000
+			},
+			"text": " 5 lat. No i rzeczywiście to podwojenie następowało za 4-5 lat, aż do okresu kiedy nastał COVID. Małecie kiedy mieliśmy czasę COVID-owe, to tutaj niestety mieliśmy bardzo dużo ograniczenie, bardzo duże spowolnienie rozwijania tych tych technologii, tak jak mogło państwo pamiętać, na pewno trudno było o elektroniky, to elektronika była bardzo droga firmy, też nie działały lub działały w bardzo dużym ograniczeniu, w związku z czym to wszystko się"
+		},
+		{
+			"timestamps": {
+				"from": "00:43:00,000",
+				"to": "00:43:30,000"
+			},
+			"offsets": {
+				"from": 2580000,
+				"to": 2610000
+			},
+			"text": " nam w tym okresie rozjechało. Aktualnie z powrotem rzeczywiście wróciliśmy już do momentu, gdzie możemy powiedzieć, że rzeczywiście ta liczba transistorów będzie się nam podwijać co około 5 lat, ale jednocześnie mamy od razu informacje, że nie będzie to miało miejsca w nieskończonym związku z czym tutaj również sam autor zdaje sobie sprawę z pewnych ograniczy. Tutaj na kolejnym slajdzie"
+		},
+		{
+			"timestamps": {
+				"from": "00:43:30,000",
+				"to": "00:44:00,000"
+			},
+			"offsets": {
+				"from": 2610000,
+				"to": 2640000
+			},
+			"text": " opaństwo mniej więcej przedstawioneł to liczby transistorów w okresie czasowym do mniej więcej 2015-2020 roku tak pi razy drzwi oczywiście, ale ograniczenie, które jest dużo ważniejsze i dużo więcej elementów nam definiuje, to jest to ograniczenie zasady landajera, zasady landajera,"
+		},
+		{
+			"timestamps": {
+				"from": "00:44:00,000",
+				"to": "00:44:30,000"
+			},
+			"offsets": {
+				"from": 2640000,
+				"to": 2670000
+			},
+			"text": " została stworzona na oparciu o działający już transistor. No i teraz w jaki sposób możemy sobie tą zasady tłumaczyć. Każdy transistor, który nam działa, wydziela również jakieś ciepło. Tak jak zapewne państwo wiedzą, no jak mamy komputer, no to na komputer się grzeje w jakimś zakresie. No i grzeje się nam najczęściej właśnie procesy."
+		},
+		{
+			"timestamps": {
+				"from": "00:44:30,000",
+				"to": "00:45:00,000"
+			},
+			"offsets": {
+				"from": 2670000,
+				"to": 2700000
+			},
+			"text": " No i teraz, jeżeli mamy taki transistor i chcemy wymazać jakąś informację, jakiś bit informacji albo zapisać jakiś bit informacji, no to w efekcie tego tej operacji będzie wydzielone pewne ciepło. No my jednak mamy coraz większą skalę integracji, czyli coraz więcej tych transistorów pakujemy w ramach naszego procesora. Związku z czym no niestety"
+		},
+		{
+			"timestamps": {
+				"from": "00:45:00,000",
+				"to": "00:45:30,000"
+			},
+			"offsets": {
+				"from": 2700000,
+				"to": 2730000
+			},
+			"text": " musimy sobie zdawać sprawę z tego, że im więcej tych transistorów sobie upakujemy np. w ramach jednego cetymetra kwadratowego, to niestety tym więcej tej energii tego ciepła będzie musiał być odbierany od takiego urządzenia. Po coraz więcej będzie wydzielane. No jeżeli oczywiście nie będziemy odbierać tego ciepła, no to co się, co się stanie, no nasze urządzenie ulegnie przegrzaniu, a w efekcie awarni i uszkodzenia"
+		},
+		{
+			"timestamps": {
+				"from": "00:45:30,000",
+				"to": "00:46:00,000"
+			},
+			"offsets": {
+				"from": 2730000,
+				"to": 2760000
+			},
+			"text": " w związku z czym sama zasadę landajera wskazuje nam na pewnego rodzaju wzór, który pozwala nam na wskazanie ile energii zostanie wydzielonej, czyli jakie ciepło zostanie wydzielone w efekcie wymazanie jednego bitu informacji w danyj jakiś stałej temperaturze. To to jest określony jako K, gdzie K to jest stała Boltzmana, przemnożone"
+		},
+		{
+			"timestamps": {
+				"from": "00:46:00,000",
+				"to": "00:46:30,000"
+			},
+			"offsets": {
+				"from": 2760000,
+				"to": 2790000
+			},
+			"text": " przez te, gdzie to jest jakaś stała temperatura, przemnożona przez logarytm naturalny z dwóch. Oczywiście ja nie będę kazał Państwu tego, z tego zapamiętywać, a nie będę kazał Państwu tego liczyć, jest nas pokojenie, to jest tylko takie informacje, że Państwo nie więcej wiedzieli, no ale są to tak naprawdę dla nas oznacza co z tego wynika. No wynika to z tego, wynika z tego to, że jeżeli mamy tą samą powierzchnię i upakowujemy tam coraz więcej"
+		},
+		{
+			"timestamps": {
+				"from": "00:46:30,000",
+				"to": "00:47:00,000"
+			},
+			"offsets": {
+				"from": 2790000,
+				"to": 2820000
+			},
+			"text": " i więcej tych transistorów, w pewnym momencie produkcja wydzielanie tego ciepła, będzie na tyle duża, że nie będziemy w stanie go odpierać już w związku z czym no przewiduje się, że w przeciągu najbliższych około pięciu dziesięciu lat poza, poza zwiększaniem upakowania transistorów, będziemy również musieli zwiększać rozmiary samych procesorów."
+		},
+		{
+			"timestamps": {
+				"from": "00:47:00,000",
+				"to": "00:47:30,000"
+			},
+			"offsets": {
+				"from": 2820000,
+				"to": 2850000
+			},
+			"text": " No i powiedzmy sobie szczerze, powoli już ma to miejsce. W związku z czym, jeszcze go nie jeżeli chodzi o rozwiązanie serwerowe lub wysoko wydajne w związku z czym no, powoli to już się nam zaczyna, ale trzeba mieć z tyłu głowy również to ognieńczeń, ale samo, sama zasada na dyle, no to mówi nam tylko o tyle, że nie będziemy w stanie upakowywać tego w nieskończoność tak, no ale mamy rozwiązanie, no możemy te procesowe robić porosu na większej,"
+		},
+		{
+			"timestamps": {
+				"from": "00:47:30,000",
+				"to": "00:48:00,000"
+			},
+			"offsets": {
+				"from": 2850000,
+				"to": 2880000
+			},
+			"text": " no dobrze, ale mamy niestety jeszcze drugie ograniczenie, które jest to dużo ważniejsze i dużo bardziej problematyczne, a mianowicie sama fizyka, sama fizyka i chemia, gdzie mówimy sobie tutaj o odległości atomów krzemu. Jak mówimy, że coś jest w litografii, zamczka te 27 nanometrów, to oznacza, że w ramach tych 27 nanometrów,"
+		},
+		{
+			"timestamps": {
+				"from": "00:48:00,000",
+				"to": "00:48:30,000"
+			},
+			"offsets": {
+				"from": 2880000,
+				"to": 2910000
+			},
+			"text": " znajduje się około 100 atomów krzemu, kiedy to mówimy o atomach tak, w związku z czym to jest naprawdę mała ilość, a mówimy 100 atomów w 27 nanometrach, no dobrze, mieliśmy również litografii chociażby 7 nanometrów, no to wtedy już tych atomów krzemu było 26. Te atomy krzemu również mają pewnego rodzaju swoje wytrzymałość, to z racji tego, że"
+		},
+		{
+			"timestamps": {
+				"from": "00:48:30,000",
+				"to": "00:49:00,000"
+			},
+			"offsets": {
+				"from": 2910000,
+				"to": 2940000
+			},
+			"text": " z tych atomów krzemu budujemy do nasz transistory i na podstawie nich działamy w oparciu o elektryjkę, o elektryjkę, no to w tym przypadku interesują nas odporność takich atomów krzemu na wytrzymałość elektryczna. W tym przypadku musimy patrzeć na wytrzymałość do elektryczną wytęku krzemu, która wynosi mniej więcej około 5 mega volt na centymetr."
+		},
+		{
+			"timestamps": {
+				"from": "00:49:00,000",
+				"to": "00:49:30,000"
+			},
+			"offsets": {
+				"from": 2940000,
+				"to": 2970000
+			},
+			"text": " A my mówimy jednak o czymś dużo dużo mniejszym, bo to są nanometry. Jak przeliczymy sobie to w oparciu, że na przykład 27 nanometrach mamy 100 atomów krzemu. No to uzyskamy przy tej wytrzymałości i elektrycznej informacje, że ok, taka bramka taki transistor będzie nam działał, to maksymalnego napięcia około 13,5 volt. Nie ma to dla nas żadnego problemu."
+		},
+		{
+			"timestamps": {
+				"from": "00:49:30,000",
+				"to": "00:50:00,000"
+			},
+			"offsets": {
+				"from": 2970000,
+				"to": 3000000
+			},
+			"text": " Jak mieliśmy świetnie nanometrowy, no to mieliśmy ograniczeń do około 3,5 volt. Jak najbardziej procesory, najczęściej były właśnie zasilane w tam czym czasie poprzez 3,3 volt, później były zasilane przez 1,2,1,5 volt, w związku z czym ta litografia 5 nanometrów też bez problemu tutaj nam odgrywała, odgrywała rolę, ale wszystko działało. Tylko no właśnie. Jak my na rynku aktualnie mamy,"
+		},
+		{
+			"timestamps": {
+				"from": "00:50:00,000",
+				"to": "00:50:30,000"
+			},
+			"offsets": {
+				"from": 3000000,
+				"to": 3030000
+			},
+			"text": " 2 nanometry, albo 3 nanometry. Co to dla nas oznacza? Oznacza dla nas to, że nie dość, że tych atomów krzemu jest bardzo mało, co jeszcze napięcie maksymalne spada nam w przypadku 3 nanometrów do około 0,5,0,6 volt. A jest bardzo trudno otrzymać tak mały voltaż i jednocześnie wzbudzić wszystko,"
+		},
+		{
+			"timestamps": {
+				"from": "00:50:30,000",
+				"to": "00:51:00,000"
+			},
+			"offsets": {
+				"from": 3030000,
+				"to": 3060000
+			},
+			"text": " co się nam tam przetwarzało i co więcej utrzymać to, na przykład 0,5 volt, żeby nie było żadnego skogu napięcia, na przykład do 0,6,0,7, co już skutkowałoby uszkodzeniem takiego procesor. No już pomijając oczywiście iliżby atomów krzemu, no dobrze, no ale w jakiś sposób jednak to na przykład 3 nanometrowe procesory mamy."
+		},
+		{
+			"timestamps": {
+				"from": "00:51:00,000",
+				"to": "00:51:30,000"
+			},
+			"offsets": {
+				"from": 3060000,
+				"to": 3090000
+			},
+			"text": " W związku z czym no jak to się dzieje? Możemy powiedzieć w spełnym zreką na sercu, że od 7 nanometrów pojęcie litografia nie dotyczy już tej litografii, którą kiedyś mieliśmy na myśli. Nie jest to już długość, odległość, długość boku danej bramki, danego transistora. W tym przypadku"
+		},
+		{
+			"timestamps": {
+				"from": "00:51:30,000",
+				"to": "00:52:00,000"
+			},
+			"offsets": {
+				"from": 3090000,
+				"to": 3120000
+			},
+			"text": " po 7 nanometrach każde kolejne, każde kolejne litografie, które uzyskujemy już dotyczył zupełnie przy kośinnego. Jak mogą Państwo zobaczyć tutaj? Po tym, po tym jak mam czterasie na metr 10,7 nanometrów, rzeczywiście już nawet przy tych litografiach często się zdarzało, że no dobrze mamy tą litografię, ale gdzie ona tak naprawdę jest? Tutaj mamy gate beach, na poziomie 60"
+		},
+		{
+			"timestamps": {
+				"from": "00:52:00,000",
+				"to": "00:52:30,000"
+			},
+			"offsets": {
+				"from": 3120000,
+				"to": 3150000
+			},
+			"text": " i 70, 50 nanometrów. To mamy finpicz, na poziomie 42, 30 nanometrów. To ja mamy transistora finwif. Ok, mamy 8 nanometrów przy 1410, przy 147, przy 10. Więc ok, no tutaj coś już mamy bliższego tego, tak? Ale dalej nie mamy nigdzie tej konkretnej litografii. Możemy powiedzieć, że większość litografii, którymi spotykamy się współcześnie. Jak słyszymy, że ktoś ma,"
+		},
+		{
+			"timestamps": {
+				"from": "00:52:30,000",
+				"to": "00:53:00,000"
+			},
+			"offsets": {
+				"from": 3150000,
+				"to": 3180000
+			},
+			"text": " coś ma właśnie 3 nanometry albo tak jak intel opracowuje aktualnie 1/8 nanometra. Te wszystkie litografie nie mówią nam już, że to jest długość wzłuż bramki. Służonego transistora. Tylko definiuje nam, że ten procesor i to upakowanie transistorów ma wydajność, jakby była to litografia na przykład właśnie"
+		},
+		{
+			"timestamps": {
+				"from": "00:53:00,000",
+				"to": "00:53:30,000"
+			},
+			"offsets": {
+				"from": 3180000,
+				"to": 3210000
+			},
+			"text": " 1/8 nanometra. W związku z czym już od dłuższego czasu jest to zabieg czysto, czysto komercyjne, czysto ekonomiczne, ponieważ my się przyzwyczailiśmy do tego, że ok, im mniejsza litografia tym lepiej. No to oczywiście firmy poszły za tym, w takim razie ok, to będzie już nie litografia, czyli tylko procesor o wydajności litografii taki."
+		},
+		{
+			"timestamps": {
+				"from": "00:53:30,000",
+				"to": "00:54:00,000"
+			},
+			"offsets": {
+				"from": 3210000,
+				"to": 3240000
+			},
+			"text": " Wydajność jest liczona na podstawie tych rzeczywistych litografii, które mamy w ramach naszego procesor. Więc warto po prostu sobie zdawać z tego sprawę i nie dać się zwariować szczególnie w dzisiejszych czasach, gdzie no te klasy procesu technologicznego są już zdecydowanie czymś innym niż kiedyś. Dobrze, to jeżeli chodzi o ograniczenia. Co dalej?"
+		},
+		{
+			"timestamps": {
+				"from": "00:54:00,000",
+				"to": "00:54:30,000"
+			},
+			"offsets": {
+				"from": 3240000,
+				"to": 3270000
+			},
+			"text": " Powiedzmy sobie również pokrótce o samym sposobie opisu tych naszych systemów komputerowych, ponieważ mamy ich kilka. Nas będzie interesowało tylko część z nich, które tutaj mogą Państwo zobaczyć w ramach tego slajdu, bo możemy sobie wyodrębić od samego dołu. Fizyka, no to troszeczkę sobie już o tym powiedzieliśmy."
+		},
+		{
+			"timestamps": {
+				"from": "00:54:30,000",
+				"to": "00:55:00,000"
+			},
+			"offsets": {
+				"from": 3270000,
+				"to": 3300000
+			},
+			"text": " O tym również będziemy sobie mówić w ramach tego przedmiotu poziom obwodów analogowych i poziom obwodów cyflowych oraz poziom logiczny. Również tutaj sobie tworzymy pewne podzespoły, które wykonują pewne operacje, czy to logiczne, czy cyfrowe łączymy je w coś większego. Te trzy elementy również będziemy sobie omawiać. Microarchitektura, czyli to, jak w troszeczkę, w wyższym poziomie abstrakcji ten nasz komputer działa,"
+		},
+		{
+			"timestamps": {
+				"from": "00:55:00,000",
+				"to": "00:55:30,000"
+			},
+			"offsets": {
+				"from": 3300000,
+				"to": 3330000
+			},
+			"text": " też będziemy sobie o tym mówić, jakie magistrale mamy w ramach naszych komputerów, jak i spospone, działają, jak i sposób się, komunikują i jak zachodzi współpraca i przetwarzanie pewnych informacji pomiędzy nich. Sam architektura, to to już jest pełen układ elektroniczny z perspektywy programisty. No my na tym przedmiotcie nie będziemy się zajmować w sensu strictem programowaniem w związku z czym już ten etap i wyższe dotyczą innych przedmiotów. Samo architekturę i system operacyjny będą Państwo"
+		},
+		{
+			"timestamps": {
+				"from": "00:55:30,000",
+				"to": "00:56:00,000"
+			},
+			"offsets": {
+				"from": 3330000,
+				"to": 3360000
+			},
+			"text": " omawiać w ramach przedmiotu SOP, czyli systemy operacyjne. Oprogramowanie, troszeczkę już Państwo zaczęli omawiać ten temat w ramach przedmiotów, czyli podstawy programowania w języku Java. Tak więc tutaj mamy kilka podstawych poziomów, które będą nas interesowały, ale musimy sobie zdawać sprawę, że oczywiście nie mówimy w ramach tego przedmiotu ich wszystkich. Co dalej? No dobrze. Zacznijmy może"
+		},
+		{
+			"timestamps": {
+				"from": "00:56:00,000",
+				"to": "00:56:30,000"
+			},
+			"offsets": {
+				"from": 3360000,
+				"to": 3390000
+			},
+			"text": " od tej architektury bardzo szeroko pojęty. Czym w ogóle jest architektura. Architektura sam sama w sobie jest pewnego rodzaju bardzo szeroko pojęty. Czym w ogóle jest architektura. Sowie zdawać sprawę, że oczywiście nie mówimy w ramach tego przedmiotu ich wszystkich. Co dalej? No dobrze. Zacznijmy może od tej architektury bardzo szeroko pojęty. Czym w ogóle jest architektura. Architektura sam sama w sobie jest pewnego rodzaju"
+		},
+		{
+			"timestamps": {
+				"from": "00:56:30,000",
+				"to": "00:57:00,000"
+			},
+			"offsets": {
+				"from": 3390000,
+				"to": 3420000
+			},
+			"text": " dyscypliną, którą Pan Amda Hala, który zaprojektował jeden z pierwszych komputerów w serii IBM system 360, który był moment bardzo przewrotnym komputerem i bardzo wydajnym, to on wtedy zdefiniował czym jest tak naprawdę architektura, ale ujęciu naszego komputera. I czym to tak naprawdę jest? Jest to sposób organizacji elementów tworzących też ten nasz komputer. Dokładnie cytując jego definicji oczywiście przełożenie"
+		},
+		{
+			"timestamps": {
+				"from": "00:57:00,000",
+				"to": "00:57:30,000"
+			},
+			"offsets": {
+				"from": 3420000,
+				"to": 3450000
+			},
+			"text": " na polskim architektura komputera jest to charakterystyka komputerka, którą musi znać programisa, aby napisać program, poprawny program w języku wewnętrznym, dlatego komputera. No i jak najbardziej w statefinicja jest cały czas dla nas wiążąca i jak najbardziej jest dla nas istotna, tylko ono z Państwa punktu widzenia nie programują Państwo i nie będą Państwo jeszcze na pewno długo programować tak na niskim poziomie, żeby pisać programy bezpośrednio"
+		},
+		{
+			"timestamps": {
+				"from": "00:57:30,000",
+				"to": "00:58:00,000"
+			},
+			"offsets": {
+				"from": 3450000,
+				"to": 3480000
+			},
+			"text": " w języku wewnętrznym, dlatego komputera. Jak piszą państwa w drzawie, to to jest język bardzo wysoko poziomowy w związku z czym nie muszą Państwo znać tej architektury, żeby napisać jakiś program. W związku z czym, programowanie współczesie jest troszeczkę łatwiejsze, ale jeżeli ktoś chciałby tego typu język poznać, no to tutaj chociażby można zagłębić się w tajemnicę języka typu asembre. No dobrze, jeżeli mamy taką definicji architektury, no to możemy sobie"
+		},
+		{
+			"timestamps": {
+				"from": "00:58:00,000",
+				"to": "00:58:30,000"
+			},
+			"offsets": {
+				"from": 3480000,
+				"to": 3510000
+			},
+			"text": " określić i zwizualizować to w taki sposób, że mamy jakiś komputer z jakimś typem procesora, musimy znać jego architekturę, żeby napisać algorytm, przekazać jakieś dane wejściowe, żeby uzyskać oczywiście jakiś określony rezultat. W związku z czym, no tutaj rzeczywiście w takim ujęciu, no było potrzebne, żeby wiedzieć, jak ten komputer działa od wewnątrz współczesnie, współczesnie, tylko jeżeli chcemy coś"
+		},
+		{
+			"timestamps": {
+				"from": "00:58:30,000",
+				"to": "00:59:00,000"
+			},
+			"offsets": {
+				"from": 3510000,
+				"to": 3540000
+			},
+			"text": " robić rzeczywiście nisko poziomowego, czyli na przykład sterowanie, jakiś programowanie, jakiś urządzeń lub sterowanie jakiś konkretnych podzes pau. Samo architekturę musimy również rozpatrywać w kilku ujęciech, tak? To co Państwo aktualnie zobaczyli i sam ten podział na poziomy, no to to jest jeden z podziałów, a tak naprawdę tych podziałów architektur mamy dużo dużo więcej, bo możemy również podzielić sobie architekturę na tak zaną Exo i Endoarchitekturę."
+		},
+		{
+			"timestamps": {
+				"from": "00:59:00,000",
+				"to": "00:59:30,000"
+			},
+			"offsets": {
+				"from": 3540000,
+				"to": 3570000
+			},
+			"text": " To jest architektura widzona tak barczą na poziomy, no to to jest jeden z podziałów, a tak naprawdę komputerze mamy dysk twardy, mamy płytę główną, mamy procesor, mamy jakiś układ salony, czyli bardzo tak ogólnie w postaci pewnego rodzaju takich klocków, tak? Ale to jest bardzo ogólny okres. Jeżeli potrzebujemy dowiedzieć się czegoś więcej, to wtedy musimy zejść na poziom Endoarchitektury, gdzie Endoarchitektury"
+		},
+		{
+			"timestamps": {
+				"from": "00:59:30,000",
+				"to": "01:00:00,000"
+			},
+			"offsets": {
+				"from": 3570000,
+				"to": 3600000
+			},
+			"text": " Architektura mówi \"OK, mamy układ salony\". Na układ salony to jest układ na przykład 74 zarość 4. Od razu mówię \"Nie będę od Państwa w mało, że Państwo pamiętali nas w inumerów tych układów salonych, ale Endoarchitektura mówi nam nie tylko \"OK, mamy układ salony\", ale co jeszcze jest w tym układzie salony? No w tym przypadku mamy sześć bramek typu negacji, czym jest bramka, czym jest negacja też później się będzie mówić na kolejnych wykładach."
+		},
+		{
+			"timestamps": {
+				"from": "01:00:00,000",
+				"to": "01:00:30,000"
+			},
+			"offsets": {
+				"from": 3600000,
+				"to": 3630000
+			},
+			"text": " Więc na razie to jest oczywiście dla Państwa taka wielka niewiadoma, gdzie jest jakiś rysunek z jakimiś sześcioma trójkontami z kółeszkami, ale to stopniowo będziemy sobie również tłumaczyć, ale to co chciałbym, że Państwo zapamiętali. Exarchitektura to jest taki ogólny opis. Endoarchitektura już wejście w bardzo duże implementacyjne szczegół."
+		},
+		{
+			"timestamps": {
+				"from": "01:00:30,000",
+				"to": "01:01:00,000"
+			},
+			"offsets": {
+				"from": 3630000,
+				"to": 3660000
+			},
+			"text": " Mamy procesor Endoarchitektura będzie OK w tym procesorze. Mamy jak śrejestry, mamy jakieś magisterale danych, mamy jakąś jednostkę, przetrwalającą, czyli jednostkę elektrologiczną itd, itd. Więc tutaj mamy również taki podział. Innym podziałem architektury jest podział ze względu na rodzaj połączyć pomiędzy procesorem, a pamięcią operacyjną. No i teraz mamy cztery tak naprawdę, cztery tak naprawdę różne architektury komputerów, które"
+		},
+		{
+			"timestamps": {
+				"from": "01:01:00,000",
+				"to": "01:01:30,000"
+			},
+			"offsets": {
+				"from": 3660000,
+				"to": 3690000
+			},
+			"text": " no powiedzmy sobie szczerze są pewnego rodzaju permutacją. Czyli na przykład, jak mogło Państwo zobaczyć, mamy cist, czyli single instruction single data, pojedyncze instrukcja, pojedyncze data uzyskujemy jakiś wynik. Simt, single instruction multiple data, mist, multiple instruction single data i mist, multiple instruction multiple data. No i jak to wygląda w praktyce? Praktyce wygląda to w ten sposób, że jeżeli chodzi o cist, no to jest to przetwarzanie jeden po jeden, czyli mamy jeden sumi danych, jeden"
+		},
+		{
+			"timestamps": {
+				"from": "01:01:30,000",
+				"to": "01:02:00,000"
+			},
+			"offsets": {
+				"from": 3690000,
+				"to": 3720000
+			},
+			"text": " program, który jakiś wykonujemy sobie. I to są, to są komputer, które wykonują jakieś operacje w postaci sekwencyjnej. Simt, gdzie mamy pojedynczą instrukcję, ale wiele danych, no to w tym przypadku przetwarzamy równolegle, wiele struminy danych. W związku z czym jesteśmy uzyskać szybciej pewne informacje, na, ale musimy mieć sytuację, gdzie rzeczywiście, daną instrukcję musimy wykonać na wielu danych równoleg. Czyli jest to często sytuacja,"
+		},
+		{
+			"timestamps": {
+				"from": "01:02:00,000",
+				"to": "01:02:30,000"
+			},
+			"offsets": {
+				"from": 3720000,
+				"to": 3750000
+			},
+			"text": " no, zaleźć. I to są, to są komputer, które wykonują jakieś operacje w postaci sekwencyjnej. Simt, gdzie mamy pojedynczą instrukcję, ale wiele danych, no to w tym przypadku przetwarzamy równolegle, wiele struminy danych. W związku z czym jesteśmy uzyskać szybciej pewne informacje, na, ale musimy mieć sytuację, gdzie rzeczywiście, daną instrukcję musimy wykonać na wielu danych równoleg. Czyli jest to często sytuacja, no, zależy od, od operacji,"
+		},
+		{
+			"timestamps": {
+				"from": "01:02:30,000",
+				"to": "01:03:00,000"
+			},
+			"offsets": {
+				"from": 3750000,
+				"to": 3780000
+			},
+			"text": " i w przypadku naszych komputerów, różnie może być. W związku z czym, no, tego typu komputery są raczej tak zwanymi komputerami wektorowymi, które są dedykowane do pewnego rodzaju obliczeń. Mist, multist, multiple, instructions, data, odwrotna sytuacja, tak? Mamy różne operacje, które wykonujemy na tych samych, tych samych danych. W związku z czym tutaj tego typu komputery wykorzystuje się do przetworzenia,"
+		},
+		{
+			"timestamps": {
+				"from": "01:03:00,000",
+				"to": "01:03:30,000"
+			},
+			"offsets": {
+				"from": 3780000,
+				"to": 3810000
+			},
+			"text": " to do systemów, gdzie chcemy zminimalizować jak najbardziej wszelkie o rodzaju błędy obliczeń, wszelkie o rodzaju pomyły. No i MIMT, który jest najbardziej złożonym rozwiązaniem tutaj i najbardziej kosztownym, czyli mamy wiele instrukcji i wiele struminy danych, które równolegle są wykonywane. W tym przypadku mówimy już o komputerach, wieloprocesorowych, o serwerach, o klastrach,"
+		},
+		{
+			"timestamps": {
+				"from": "01:03:30,000",
+				"to": "01:04:00,000"
+			},
+			"offsets": {
+				"from": 3810000,
+				"to": 3840000
+			},
+			"text": " rozważających pewne dane. Architekturę komputerów możemy również rozpatrywać w oparciu o listę instrukcji. Mamy listę instrukcji CSK, risk oraz CCR. CSK jak sama nazwa wskazuje komplekt Instruction Set Computer, czyli w przypadku tego typu rozwiązania mamy pełny zestaw instrukcji, który ten komputer może wykonać. Architektora riskowa,"
+		},
+		{
+			"timestamps": {
+				"from": "01:04:00,000",
+				"to": "01:04:30,000"
+			},
+			"offsets": {
+				"from": 3840000,
+				"to": 3870000
+			},
+			"text": " to jest Rydios Instruction Set Computer, czyli w tym przypadku ta lista instrukcji jest znacznie zpomnijszona. No i mamy jeszcze architekturę CCR, która jest najczęściej wykorzystywana współcześnie. To jest tak zwany siskorisk. W rzeczywistości, prędzeń mamy riskowe, czyli z redukowaną liczbą instrukcji, a sam procesor widziany jest przez programiste przez naszą komputer jako procesor ciskowe, czyli posiadający"
+		},
+		{
+			"timestamps": {
+				"from": "01:04:30,000",
+				"to": "01:05:00,000"
+			},
+			"offsets": {
+				"from": 3870000,
+				"to": 3900000
+			},
+			"text": " przez cały zestaw tych instrukcji, które mogą być wykona. W związku z czymś musimy sobie skaraktoryzować, czym się tak naprawdę różni z risku. Poza tym, że musimy sobie skaraktoryzować, nie tylko wykonać. W związku z czymś musimy sobie skaraktoryzować, czym się tak naprawdę różni z risku. Poza tym, że oczywiście różni się liczbą operacji. W przypadku procesorów siskowych mamy dużo liczbetych."
+		},
+		{
+			"timestamps": {
+				"from": "01:05:00,000",
+				"to": "01:05:30,000"
+			},
+			"offsets": {
+				"from": 3900000,
+				"to": 3930000
+			},
+			"text": " W związku z czym nie są tak naprawdę najczęściej nam potrzebne. Przez to, że te instrukcje jest tak dużo, ten procesor też nie jest w ogóle zoptimalizowany. W związku z czym niestety, ale procesor był stosunkowo powolny."
+		},
+		{
+			"timestamps": {
+				"from": "01:05:30,000",
+				"to": "01:06:00,000"
+			},
+			"offsets": {
+				"from": 3930000,
+				"to": 3960000
+			},
+			"text": " Powolny, ponieważ w dwieci czasu potrzebowaliśmy na odnalezienie w ogóle wśród kilkuset, kilku tysięcy instrukcji, tej, którą chcemy wykonać. Więc to niestety, ale ten tego typu procesor był bardzo, bardzo skomplikowany. Dekodę rozkazów też był skomplikowany, no bo w końcu musiało rozeznać kilkaset kilka tysięcy tych operacji. W przypadku architektury riskowej, no to tutaj mamy minimum tych"
+		},
+		{
+			"timestamps": {
+				"from": "01:06:00,000",
+				"to": "01:06:30,000"
+			},
+			"offsets": {
+				"from": 3960000,
+				"to": 3990000
+			},
+			"text": " tych rozkazów, tych instrukcji, które są nam potrzebnych. Jest ich dosłownie kilkadziesiąt. No i w przypadku architektury riskowej. Tutaj możemy już wprost sobie powiedzieć, że ponieważ jesteś kilkadziesiąt, ten też procesor działa. Dużo szybciej mamy dużo wyższe taktowania. Ten decoder w rozkazów jest prosty, no bo dużo rzeczy tutaj nie mamy do odnalezienia, no ale niestety ma to również swoje"
+		},
+		{
+			"timestamps": {
+				"from": "01:06:30,000",
+				"to": "01:07:00,000"
+			},
+			"offsets": {
+				"from": 3990000,
+				"to": 4020000
+			},
+			"text": " minusy. Minusy w postaci takiej, że jeżeli chodzi o programiste, no to już nie ma takiej z takiej swobody, że okej, wykonaj mi tą instrukcję, wykonaj mi tą instrukcję. Jeżeli instrukcji, którą akurat potrzebujemy, jakiejś konkretnej specyficznej nie ma, musimy ją napisać samodzielnie z tych instrukcji, które mamy. No oczywiście musimy sobie zdawać, że z tych kilkudziesięciu instrukcji, które mamy riskowym, możemy stworzyć dowolną inną, złożoną instrukcję,"
+		},
+		{
+			"timestamps": {
+				"from": "01:07:00,000",
+				"to": "01:07:30,000"
+			},
+			"offsets": {
+				"from": 4020000,
+				"to": 4050000
+			},
+			"text": " która będzie nam potrzebna. I w związku z czym dlatego, między siskiem ariskiem, tak łatwo było przyjść, ponieważ większość instrukcji siskowych było złożeniem tych instrukcji, które zostały w architekturze, że riskowy. No dobrze, no ale ostatecznie oczywiście wygrała, wygrała swoboda i wygoda wykorzystywania tego typu urządzeń. W związku z czym, no z punktu widzenia programisty,"
+		},
+		{
+			"timestamps": {
+				"from": "01:07:30,000",
+				"to": "01:08:00,000"
+			},
+			"offsets": {
+				"from": 4050000,
+				"to": 4080000
+			},
+			"text": " my jednak chcemy cały zestaw tych instrukcji. W związku z czym, mamy tą technologię CCR, tak? Sisk, kor, risk. Od zewnątrz wygląda to, jak procesor siskowy, w rzeczywistości rdzeń jest riskowy. Zatrodukowaną liczbą rozkazów. W jaki sposób to działa? Oczywiście nie działa, to tak szybko jak wszyscy procesor siskowy, bo ja już mamy ten obważany kciskowy, przez który wszystkie, wszystkie operacje muszą przejść, ale jeżeli operacje jest w tych podstawowych, to od razu zostaje przekazana do procesor ariskowych,"
+		},
+		{
+			"timestamps": {
+				"from": "01:08:00,000",
+				"to": "01:08:30,000"
+			},
+			"offsets": {
+				"from": 4080000,
+				"to": 4110000
+			},
+			"text": " tego ono to wykonuje zwraca wynik. Jeżeli potrzebujemy już rzeczywiście jakiś specyficznej, złożony operacji instrukcji, którą chcemy wykonać, no to wtedy już najpierw ten obważanyk, definiuje nam, ok, musimy najpierw wykonać. To Instrukcja później, tą później, tą później, tą później, tą, żeby uzyskać ten efekt i kolejno wysyła już te informacje, które, które instrukcje wykonać do procesor ariskowego. W związku z czym, mamy dodatkowy po prostu taki układ, który"
+		},
+		{
+			"timestamps": {
+				"from": "01:08:30,000",
+				"to": "01:09:00,000"
+			},
+			"offsets": {
+				"from": 4110000,
+				"to": 4140000
+			},
+			"text": " w przypadku bardziej złożonych operacji wykonuje je na naszym miejscu. Dobrze, tak więc, tak więc tutaj mamy tego typu, tego typu element. No i jeszcze jest jeden podział, który, którego nie możemy pominąć, a mianowicie podział ze względu na sposób organizacji pamięci i wykonywania programu, czyli standardowe, najważniejsze,"
+		},
+		{
+			"timestamps": {
+				"from": "01:09:00,000",
+				"to": "01:09:30,000"
+			},
+			"offsets": {
+				"from": 4140000,
+				"to": 4170000
+			},
+			"text": " bardziej podstawowy podział architektur komputerów, czyli architektura wonojmana, architektura harwardka oraz architektura mieszana. Architektura wonojmana, kiedyś również nazywana jako architektura Princeton, ponieważ została, została stworona, harwardka oraz architektura mieszana. Architektura wonojmana, kiedyś również nazywana jako architektura Princeton, ponieważ została stworona przez dzwonnojmana na Uniwersytercie w Princeton, opiewała na pewnego roku,"
+		},
+		{
+			"timestamps": {
+				"from": "01:09:30,000",
+				"to": "01:10:00,000"
+			},
+			"offsets": {
+				"from": 4170000,
+				"to": 4200000
+			},
+			"text": " który podział ze względu na sposób organizacji pamięci i wykonywania programu, czyli standardowe, najważniejsze, podstawowy podział architektur komputerów, czyli architektura wonojmana, architektura harwardka oraz architektura mieszana. Architektura wonojmana, kiedyś również nazywana jako architektura Princeton, ponieważ została stworona,"
+		},
+		{
+			"timestamps": {
+				"from": "01:10:00,000",
+				"to": "01:10:30,000"
+			},
+			"offsets": {
+				"from": 4200000,
+				"to": 4230000
+			},
+			"text": " została stworona przez dzwonnojmana na Uniwersytercie w Princeton, opiewała na pewnego rodzaju założenia, a mianowicie założenia, że jeżeli mamy nasz procesor, który coś tam nam przetwarza, no to musimy w jakiś sposób móc zapisywać informacje, w tym do tego służyła nam jakaś pamięć. Ta pamięć w przypadku architektur wonojmana jest jednym blokiem pamięci, który przechowuje tam zarówno program jak i"
+		},
+		{
+			"timestamps": {
+				"from": "01:10:30,000",
+				"to": "01:11:00,000"
+			},
+			"offsets": {
+				"from": 4230000,
+				"to": 4260000
+			},
+			"text": " dane, na których ten program będzie przetwarzany. Oczywiście tego typu rozwiązania jest bardzo wygodne, ponieważ umożliwia nam automodifikacje tego naszego programu, wyklucza, jednoczeę, wyklucza wszelkiego rodzaju problemy typu, zabraknie nam, zabraknie nam pamięci na dane, zabraknie nam pamięci na rozkazy, ponieważ ta pamięć jest jednak współdzielona na obat, na obiety składowe, ale niestety jedno i drugie mogło się modifikować."
+		},
+		{
+			"timestamps": {
+				"from": "01:11:00,000",
+				"to": "01:11:30,000"
+			},
+			"offsets": {
+				"from": 4260000,
+				"to": 4290000
+			},
+			"text": " I co więcej, równolegle nie mogliśmy pobrać jednocześnie rozkazu i danej, tylko najpierw musieliśmy pobrać rozkaz, a później musieliśmy pobrać dane. W związku z czym tutaj już mieliśmy dwie, dwie operacje do wykonania, zamiast jednej równoległy. W związku z czym no oczywiście ta architektura była bardzo fajna, pozwalała również na automodifikację tego programu, co było bardzo kluczowe, ale niestety niestety"
+		},
+		{
+			"timestamps": {
+				"from": "01:11:30,000",
+				"to": "01:12:00,000"
+			},
+			"offsets": {
+				"from": 4290000,
+				"to": 4320000
+			},
+			"text": " miało to swoje minus. W związku z czym zaproponowano architektura harwarską, oczywiście zaproponowaną na uniwisować harwarda, gdzie rozdzielono tu, pamięć danych od pamięci program. W tym przypadku już mogliśmy jednocześnie pobierać zarówno instrukcje jak i operacje, które chcieliśmy wykonywać w ramach, w ramach danego tiku procesora, w związku z czym mogliśmy to wykonywać już dwukrotnie, szybciej."
+		},
+		{
+			"timestamps": {
+				"from": "01:12:00,000",
+				"to": "01:12:30,000"
+			},
+			"offsets": {
+				"from": 4320000,
+				"to": 4350000
+			},
+			"text": " No ale tutaj niestety doszliśmy do drugiego problemu, którego nie było w tantej architekturze, a my no widzicie co jeżeli zabraknie nam pamięci danych, albo co jeżeli zabraknie nam pamięci programu, no nie mamy niestety tutaj żadnych możliwości, żadnej opcji do wyboru, nie byśmy musieli po prostu to pamięć danych czy pamięć programu, prostrzeżyć fizycznie. W związku z czym no było to stosunkowo problematyczne. W związku z czym to co"
+		},
+		{
+			"timestamps": {
+				"from": "01:12:30,000",
+				"to": "01:13:00,000"
+			},
+			"offsets": {
+				"from": 4350000,
+				"to": 4380000
+			},
+			"text": " mamy aktualnie w ramach taszych komputerów, to jest tak zwana architektura mieszana, architektura mieszana, gdzie połączono plusy i zarówno architektury w ono i mana, jak i architektury harwardzkiej i architektura mieszana nosi nazwę architektury harward priniston od nas w dwóch uniwersydu, na których powstały te macieżyste rozwiązania. No i na czym tak architektura mieszana polega."
+		},
+		{
+			"timestamps": {
+				"from": "01:13:00,000",
+				"to": "01:13:30,000"
+			},
+			"offsets": {
+				"from": 4380000,
+				"to": 4410000
+			},
+			"text": " Mamy z powrotem jedną wspólną pamięć, ale została ona rozdzielona w taki sposób, że jedna i druga pamięć, czyli pamięć danych i pamięć programu, o sobie nawzajem, nie widzą się. Jednak mamy na plus taki element, że jedno i drugie jeżeli byśmy tylko chcieli i byśmy na to zezwolili, może się modifikować, czyli mamy możemy się automotyfikować z programu i co więcej, jeżeli zabraknie nam pamięci danych czy pamięci"
+		},
+		{
+			"timestamps": {
+				"from": "01:13:30,000",
+				"to": "01:14:00,000"
+			},
+			"offsets": {
+				"from": 4410000,
+				"to": 4440000
+			},
+			"text": " programu, ten podział pomiędzy pamięci udanych i pamięci oprogramu, może się swobodnie przemiesz, czyli jeżeli będziemy minimalny program, ale bardzo dużo danych bez problemu tego typu, architektura to. Udźwi. Dobrze, widzę kilka pytań, dek co to za firma dzisiaj, niestety firma dek już nie jest po wprowadzeniu tego swojego ostatniego procesora, niestety, ale splaitowała, tak jak już o tym wspominało. Czy będziemy na tym przedmiotcie omawiać,"
+		},
+		{
+			"timestamps": {
+				"from": "01:14:00,000",
+				"to": "01:14:30,000"
+			},
+			"offsets": {
+				"from": 4440000,
+				"to": 4470000
+			},
+			"text": " czy różnicem między ich z 76 a rm? Nie przewiduje rozoznawania tych różnic, ponieważ tutaj byśmy musieli już wejść dużo, dużo głębiej w założenia. Tego typu rozróżnienie na pewno dostaną Państwo w ramach przedmiotu syd, czyli systemy cyfrowe na trzecim semestrze, o ile mnie pamięć nie myli, ale na ten moment na jak na pierwszy semestr jest to zagadnienie"
+		},
+		{
+			"timestamps": {
+				"from": "01:14:30,000",
+				"to": "01:15:00,000"
+			},
+			"offsets": {
+				"from": 4470000,
+				"to": 4500000
+			},
+			"text": " troszeczkę zbyt złożone, żeby wszyscy nie mogli w pełni zrozumieć. Okazuje się, że intel 7 pozostaje najbardziej niezawodnym, z najnowszych modeli. Czy jest najbardziej niezawodnym? Jeszcze jest za krótko, żeby to okresić, chociaż powiem szczerze, że patrząc na rynek dużo bardziej niezawodnym jest, okazuje się intel 9."
+		},
+		{
+			"timestamps": {
+				"from": "01:15:00,000",
+				"to": "01:15:30,000"
+			},
+			"offsets": {
+				"from": 4500000,
+				"to": 4530000
+			},
+			"text": " Takie te podziały na architektury trzeba dokładnie rozróżniać i wiedzieć na czym polegają, tak jak najbardziej należy je znać i należy je rozróżniać między sobą. No dobrze, no i tym sam doszliśmy do końca dzisiejszego wykładu. Zostało nam jeszcze 12 minut, więc idealnie, żeby właśnie odpowiedź na wszelkiego rodzaju pytania z Państwa strony, w związku z czym czekam na takowe. Jeżeli nie ma pytań z Państwa strony, no to wtedy"
+		},
+		{
+			"timestamps": {
+				"from": "01:15:30,000",
+				"to": "01:16:00,000"
+			},
+			"offsets": {
+				"from": 4530000,
+				"to": 4560000
+			},
+			"text": " z mojej strony na dzisiaj to wszystko i są Państwo wolni. Jeżeli są, to jeszcze przez kilka minut tutaj pobędę i będę odpowiada na bieżąco na pytania, które będą się pojawiały."
+		},
+		{
+			"timestamps": {
+				"from": "01:16:00,000",
+				"to": "01:16:30,000"
+			},
+			"offsets": {
+				"from": 4560000,
+				"to": 4590000
+			},
+			"text": " Ile będzie pytań na egzaminie? Nie wiem, ale mogę podejrzewać, że będzie ich o może 30, może 50. To zobaczymy, tak jak mówiłem, kwestia egzaminu jest"
+		},
+		{
+			"timestamps": {
+				"from": "01:16:30,000",
+				"to": "01:17:00,000"
+			},
+			"offsets": {
+				"from": 4590000,
+				"to": 4620000
+			},
+			"text": " trżowa znać dokładnie daty pojawiania się o tych procesorów. Nie w żadnym wypadku, nie będę Państwa męczył o żadne daty. Jedynie co, no to fajnie byłoby jakby kojarzyli Państwo mniej więcej okresy, w jakich to było, tak. Ale w żadnym wypadku dat nie będę"
+		},
+		{
+			"timestamps": {
+				"from": "01:17:00,000",
+				"to": "01:17:30,000"
+			},
+			"offsets": {
+				"from": 4620000,
+				"to": 4650000
+			},
+			"text": " pytała, nie będę oczekiwał od Państwa. Czy prezentacja będzie na teams? Tak, prezentacja będzie na teams. Za chwilkę ją wygeneruje, jak skończy wykład i Państwu wrzucę do zakładki plik i tam, gdzie znajduje się zresztą, znajdują się również zasady zaliczenia. Przeda granie wykładu będzie udostępiony po wykładzie, nie nagrywam wykładu oraz nie udostępuje."
+		},
+		{
+			"timestamps": {
+				"from": "01:17:30,000",
+				"to": "01:18:00,000"
+			},
+			"offsets": {
+				"from": 4650000,
+				"to": 4680000
+			},
+			"text": " Wstępniam, jeżeli chodzi o wykładę realizowane w formie online, mają one charakter online, a nie z zapisu udostępnianego po wykładzie. Czy będziemy dostawać pracę domowe? No po niektórych wykładach to nie będą pracę domowe, tylko to będą ewentualnie jakieś tam zadanka, które pozwolą Państwu przećwiczyć pewne, praktyczne, praktyczne,"
+		},
+		{
+			"timestamps": {
+				"from": "01:18:00,000",
+				"to": "01:18:30,000"
+			},
+			"offsets": {
+				"from": 4680000,
+				"to": 4710000
+			},
+			"text": " elementy omawiane podczas wykładów, ale to nie będą sensów strichty pracy domowe, nie będą musieli Państwa mi wysyłać, nie będą one w żaden sposób oceniane."
+		},
+		{
+			"timestamps": {
+				"from": "01:18:30,000",
+				"to": "01:19:00,000"
+			},
+			"offsets": {
+				"from": 4710000,
+				"to": 4740000
+			},
+			"text": " Sposów, jak i Państwu przedstawiłem te architektury jest naprawdę pobierzony i nie powiedziałem, że jest to akurat szczegółowy sposób reprezentacji tych architektur, mają Państwo główne podziały i w jakiś sposób one działają. W związku z czym tak jak najbardziej ta wiedza jest potrzebna, ale nie powiedziałbym, że jest ona szczegółowa, żeby wierzylibyśmyście i te wszystkie architektury omówić szczegółowo,"
+		},
+		{
+			"timestamps": {
+				"from": "01:19:00,000",
+				"to": "01:19:30,000"
+			},
+			"offsets": {
+				"from": 4740000,
+				"to": 4770000
+			},
+			"text": " to powiem szczerze, że zabraku by nam nawet ich tych 15 wykładów na samę te podzały we architektury, których sobie już pokrótce omówiliśmy. Czy wszystkie wykłady będą online? Tak, w przypadku tego semestru wszystkie wykłady w przedmiotu tak będą realizowane w ten sposób, jak w dzisiejszym, czyli będą miały formę online. Czy wszystkie pozycje z literatury są niezbędne do zdaniem przedmiot?"
+		},
+		{
+			"timestamps": {
+				"from": "01:19:30,000",
+				"to": "01:20:00,000"
+			},
+			"offsets": {
+				"from": 4770000,
+				"to": 4800000
+			},
+			"text": " I czwarta i piąta są dodatkowymi? Czy powinny być przeczytane przez pierwszym semestru, trzymają się przydać na dłużej? One się przydadzą Państwo na dłużej, tak naprawdę do końca semestru i również później do pracy zawodowej. Trzeba obecność jest w jaki sposób sprawdzajna nas online wykładów. Jeżeli chodzi o obecność, ona jest automatycznie rejestrowana, bo to jest jednak spotkanie online."
+		},
+		{
+			"timestamps": {
+				"from": "01:20:00,000",
+				"to": "01:20:30,000"
+			},
+			"offsets": {
+				"from": 4800000,
+				"to": 4830000
+			},
+			"text": " Prze skoro nie ma nagrań z lekcji, to czy będzie można się na dodatkowe konsultacje fakturutety umówić? Jak najbardziej realizuje konsultacje na uczelni w ramach tego przedmiotu? Bez problemu, bez problemu mogą Państwo się na to umawiać. Majlowo najlepiej tego przezam, tego typu konsultacje trwają przeważnie 15-20 minut."
+		},
+		{
+			"timestamps": {
+				"from": "01:20:30,000",
+				"to": "01:21:00,000"
+			},
+			"offsets": {
+				"from": 4830000,
+				"to": 4860000
+			},
+			"text": " W związku z czym wtedy muszą Państwo już przyjść z przygotowanymi, jakimiś pytaniami. Oczywiście proszę pamiętać, że jeżeli mają Państwo jakieś pytania, to można je pytać, jezadować, zaraz na podczas wykładów, jak i gdzieś lokalni na uczelni, jeżeli Państwo spotkają, a jestem na uczelni praktycznie codziennie. Jakie oczywiście w formie mailowe? W jaki sposób jest sprawdzana obecność? Jest sprawdzana automatycznie w momencie, jak Państwo wchodzą i wychodzą."
+		},
+		{
+			"timestamps": {
+				"from": "01:21:00,000",
+				"to": "01:21:30,000"
+			},
+			"offsets": {
+				"from": 4860000,
+				"to": 4890000
+			},
+			"text": " z spotkania."
+		}
+	]
+}

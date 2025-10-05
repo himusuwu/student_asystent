@@ -1,0 +1,66 @@
+# GitHub Actions Workflow (Future - when tests are added)
+# Currently commented out as we don't have tests yet
+
+# name: CI
+
+# on:
+#   push:
+#     branches: [ main, develop ]
+#   pull_request:
+#     branches: [ main, develop ]
+
+# jobs:
+#   test:
+#     runs-on: ubuntu-latest
+    
+#     strategy:
+#       matrix:
+#         node-version: [18.x, 20.x]
+    
+#     steps:
+#     - uses: actions/checkout@v3
+    
+#     - name: Use Node.js ${{ matrix.node-version }}
+#       uses: actions/setup-node@v3
+#       with:
+#         node-version: ${{ matrix.node-version }}
+    
+#     - name: Install backend dependencies
+#       run: |
+#         cd server
+#         npm ci
+    
+#     - name: Run backend tests
+#       run: |
+#         cd server
+#         npm test
+    
+#     - name: Check backend
+#       run: bash check-backend.sh
+
+#   lint:
+#     runs-on: ubuntu-latest
+    
+#     steps:
+#     - uses: actions/checkout@v3
+    
+#     - name: Use Node.js 20.x
+#       uses: actions/setup-node@v3
+#       with:
+#         node-version: 20.x
+    
+#     - name: Install dependencies
+#       run: |
+#         cd server
+#         npm ci
+    
+#     - name: Run ESLint
+#       run: |
+#         cd server
+#         npm run lint
+
+# TODO: Add when tests are implemented
+# - Unit tests for backend
+# - Integration tests
+# - E2E tests with Playwright
+# - Frontend linting

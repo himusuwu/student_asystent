@@ -1,0 +1,1825 @@
+{
+	"systeminfo": "WHISPER : COREML = 0 | OPENVINO = 0 | Metal : EMBED_LIBRARY = 1 | CPU : NEON = 1 | ARM_FMA = 1 | FP16_VA = 1 | DOTPROD = 1 | ACCELERATE = 1 | REPACK = 1 | ",
+	"model": {
+		"type": "small",
+		"multilingual": true,
+		"vocab": 51865,
+		"audio": {
+			"ctx": 1500,
+			"state": 768,
+			"head": 12,
+			"layer": 12
+		},
+		"text": {
+			"ctx": 448,
+			"state": 768,
+			"head": 12,
+			"layer": 12
+		},
+		"mels": 80,
+		"ftype": 1
+	},
+	"params": {
+		"model": "/Users/dawid/dev/student_asystent/models/whisper-cpp/ggml-small.bin",
+		"language": "pl",
+		"translate": false
+	},
+	"result": {
+		"language": "pl"
+	},
+	"transcription": [
+		{
+			"timestamps": {
+				"from": "00:00:00,000",
+				"to": "00:00:30,000"
+			},
+			"offsets": {
+				"from": 0,
+				"to": 30000
+			},
+			"text": " Jeszcze chwilkę, poczekamy sobie aż na pewno wszyscy nam dołączą i za momentik zaczniemy nasz pierwszy wykład."
+		},
+		{
+			"timestamps": {
+				"from": "00:00:30,000",
+				"to": "00:01:00,000"
+			},
+			"offsets": {
+				"from": 30000,
+				"to": 60000
+			},
+			"text": " Zresztą mamy większość osób dołączonych."
+		},
+		{
+			"timestamps": {
+				"from": "00:01:00,000",
+				"to": "00:01:30,000"
+			},
+			"offsets": {
+				"from": 60000,
+				"to": 90000
+			},
+			"text": " Dla osób, które na przykład są po technikach lub które są zainteresowane i zaangażowane w ramach techniki technik komputerowych. Jeżeli chodzi o osoby, które dopiero rozpoczynają swoją pracę, swoją ścieżkę z informatyką, to tutaj właśnie w ramach tego przedmiotu będziemy sobie omawiać od historii, po współczesność jak te nasze"
+		},
+		{
+			"timestamps": {
+				"from": "00:01:30,000",
+				"to": "00:02:00,000"
+			},
+			"offsets": {
+				"from": 90000,
+				"to": 120000
+			},
+			"text": " To nie jest pełny, oczywiście, wykaz informacji, które będziemy chcieli państwu przekazać, ale takiego tak pokrótce zaczniemy sobie właśnie od historii samego rozwoju informatyki podstawowych pojęć,"
+		},
+		{
+			"timestamps": {
+				"from": "00:02:00,000",
+				"to": "00:02:30,000"
+			},
+			"offsets": {
+				"from": 120000,
+				"to": 150000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:02:30,000",
+				"to": "00:03:00,000"
+			},
+			"offsets": {
+				"from": 150000,
+				"to": 180000
+			},
+			"text": " Dzień, do zobaczenia. Dzień, do zobaczenia. Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:03:00,000",
+				"to": "00:03:30,000"
+			},
+			"offsets": {
+				"from": 180000,
+				"to": 210000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:03:30,000",
+				"to": "00:04:00,000"
+			},
+			"offsets": {
+				"from": 210000,
+				"to": 240000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:04:00,000",
+				"to": "00:04:30,000"
+			},
+			"offsets": {
+				"from": 240000,
+				"to": 270000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:04:30,000",
+				"to": "00:05:00,000"
+			},
+			"offsets": {
+				"from": 270000,
+				"to": 300000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:05:00,000",
+				"to": "00:05:30,000"
+			},
+			"offsets": {
+				"from": 300000,
+				"to": 330000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:05:30,000",
+				"to": "00:06:00,000"
+			},
+			"offsets": {
+				"from": 330000,
+				"to": 360000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:06:00,000",
+				"to": "00:06:30,000"
+			},
+			"offsets": {
+				"from": 360000,
+				"to": 390000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:06:30,000",
+				"to": "00:07:00,000"
+			},
+			"offsets": {
+				"from": 390000,
+				"to": 420000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:07:00,000",
+				"to": "00:07:30,000"
+			},
+			"offsets": {
+				"from": 420000,
+				"to": 450000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:07:30,000",
+				"to": "00:08:00,000"
+			},
+			"offsets": {
+				"from": 450000,
+				"to": 480000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:08:00,000",
+				"to": "00:08:30,000"
+			},
+			"offsets": {
+				"from": 480000,
+				"to": 510000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:08:30,000",
+				"to": "00:09:00,000"
+			},
+			"offsets": {
+				"from": 510000,
+				"to": 540000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:09:00,000",
+				"to": "00:09:30,000"
+			},
+			"offsets": {
+				"from": 540000,
+				"to": 570000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:09:30,000",
+				"to": "00:10:00,000"
+			},
+			"offsets": {
+				"from": 570000,
+				"to": 600000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:10:00,000",
+				"to": "00:10:30,000"
+			},
+			"offsets": {
+				"from": 600000,
+				"to": 630000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:10:30,000",
+				"to": "00:11:00,000"
+			},
+			"offsets": {
+				"from": 630000,
+				"to": 660000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:11:00,000",
+				"to": "00:11:30,000"
+			},
+			"offsets": {
+				"from": 660000,
+				"to": 690000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:11:30,000",
+				"to": "00:12:00,000"
+			},
+			"offsets": {
+				"from": 690000,
+				"to": 720000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:12:00,000",
+				"to": "00:12:30,000"
+			},
+			"offsets": {
+				"from": 720000,
+				"to": 750000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:12:30,000",
+				"to": "00:13:00,000"
+			},
+			"offsets": {
+				"from": 750000,
+				"to": 780000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:13:00,000",
+				"to": "00:13:30,000"
+			},
+			"offsets": {
+				"from": 780000,
+				"to": 810000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:13:30,000",
+				"to": "00:14:00,000"
+			},
+			"offsets": {
+				"from": 810000,
+				"to": 840000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:14:00,000",
+				"to": "00:14:30,000"
+			},
+			"offsets": {
+				"from": 840000,
+				"to": 870000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:14:30,000",
+				"to": "00:15:00,000"
+			},
+			"offsets": {
+				"from": 870000,
+				"to": 900000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:15:00,000",
+				"to": "00:15:30,000"
+			},
+			"offsets": {
+				"from": 900000,
+				"to": 930000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:15:30,000",
+				"to": "00:16:00,000"
+			},
+			"offsets": {
+				"from": 930000,
+				"to": 960000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:16:00,000",
+				"to": "00:16:30,000"
+			},
+			"offsets": {
+				"from": 960000,
+				"to": 990000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:16:30,000",
+				"to": "00:17:00,000"
+			},
+			"offsets": {
+				"from": 990000,
+				"to": 1020000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:17:00,000",
+				"to": "00:17:30,000"
+			},
+			"offsets": {
+				"from": 1020000,
+				"to": 1050000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:17:30,000",
+				"to": "00:18:00,000"
+			},
+			"offsets": {
+				"from": 1050000,
+				"to": 1080000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:18:00,000",
+				"to": "00:18:30,000"
+			},
+			"offsets": {
+				"from": 1080000,
+				"to": 1110000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:18:30,000",
+				"to": "00:19:00,000"
+			},
+			"offsets": {
+				"from": 1110000,
+				"to": 1140000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:19:00,000",
+				"to": "00:19:30,000"
+			},
+			"offsets": {
+				"from": 1140000,
+				"to": 1170000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:19:30,000",
+				"to": "00:20:00,000"
+			},
+			"offsets": {
+				"from": 1170000,
+				"to": 1200000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:20:00,000",
+				"to": "00:20:30,000"
+			},
+			"offsets": {
+				"from": 1200000,
+				"to": 1230000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:20:30,000",
+				"to": "00:21:00,000"
+			},
+			"offsets": {
+				"from": 1230000,
+				"to": 1260000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:21:00,000",
+				"to": "00:21:30,000"
+			},
+			"offsets": {
+				"from": 1260000,
+				"to": 1290000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:21:30,000",
+				"to": "00:22:00,000"
+			},
+			"offsets": {
+				"from": 1290000,
+				"to": 1320000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:22:00,000",
+				"to": "00:22:30,000"
+			},
+			"offsets": {
+				"from": 1320000,
+				"to": 1350000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:22:30,000",
+				"to": "00:23:00,000"
+			},
+			"offsets": {
+				"from": 1350000,
+				"to": 1380000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:23:00,000",
+				"to": "00:23:30,000"
+			},
+			"offsets": {
+				"from": 1380000,
+				"to": 1410000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:23:30,000",
+				"to": "00:24:00,000"
+			},
+			"offsets": {
+				"from": 1410000,
+				"to": 1440000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:24:00,000",
+				"to": "00:24:30,000"
+			},
+			"offsets": {
+				"from": 1440000,
+				"to": 1470000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:24:30,000",
+				"to": "00:25:00,000"
+			},
+			"offsets": {
+				"from": 1470000,
+				"to": 1500000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:25:00,000",
+				"to": "00:25:30,000"
+			},
+			"offsets": {
+				"from": 1500000,
+				"to": 1530000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:25:30,000",
+				"to": "00:26:00,000"
+			},
+			"offsets": {
+				"from": 1530000,
+				"to": 1560000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:26:00,000",
+				"to": "00:26:30,000"
+			},
+			"offsets": {
+				"from": 1560000,
+				"to": 1590000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:26:30,000",
+				"to": "00:27:00,000"
+			},
+			"offsets": {
+				"from": 1590000,
+				"to": 1620000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:27:00,000",
+				"to": "00:27:30,000"
+			},
+			"offsets": {
+				"from": 1620000,
+				"to": 1650000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:27:30,000",
+				"to": "00:28:00,000"
+			},
+			"offsets": {
+				"from": 1650000,
+				"to": 1680000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:28:00,000",
+				"to": "00:28:30,000"
+			},
+			"offsets": {
+				"from": 1680000,
+				"to": 1710000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:28:30,000",
+				"to": "00:29:00,000"
+			},
+			"offsets": {
+				"from": 1710000,
+				"to": 1740000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:29:00,000",
+				"to": "00:29:30,000"
+			},
+			"offsets": {
+				"from": 1740000,
+				"to": 1770000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:29:30,000",
+				"to": "00:30:00,000"
+			},
+			"offsets": {
+				"from": 1770000,
+				"to": 1800000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:30:00,000",
+				"to": "00:30:30,000"
+			},
+			"offsets": {
+				"from": 1800000,
+				"to": 1830000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:30:30,000",
+				"to": "00:31:00,000"
+			},
+			"offsets": {
+				"from": 1830000,
+				"to": 1860000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:31:00,000",
+				"to": "00:31:30,000"
+			},
+			"offsets": {
+				"from": 1860000,
+				"to": 1890000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:31:30,000",
+				"to": "00:32:00,000"
+			},
+			"offsets": {
+				"from": 1890000,
+				"to": 1920000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:32:00,000",
+				"to": "00:32:30,000"
+			},
+			"offsets": {
+				"from": 1920000,
+				"to": 1950000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:32:30,000",
+				"to": "00:33:00,000"
+			},
+			"offsets": {
+				"from": 1950000,
+				"to": 1980000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:33:00,000",
+				"to": "00:33:30,000"
+			},
+			"offsets": {
+				"from": 1980000,
+				"to": 2010000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:33:30,000",
+				"to": "00:34:00,000"
+			},
+			"offsets": {
+				"from": 2010000,
+				"to": 2040000
+			},
+			"text": " Dzień, do zobaczenia."
+		},
+		{
+			"timestamps": {
+				"from": "00:34:00,000",
+				"to": "00:34:30,000"
+			},
+			"offsets": {
+				"from": 2040000,
+				"to": 2070000
+			},
+			"text": " No i w tym przypadku mieliśmy bardzo mocny rozwój tych mikroprocesorów, szczególnie ujęciu firmy Intel, gdzie na początku mieliśmy chociażby E4 bitowy procesor 44004, później mieliśmy 8 bitowe procesory 8008 albo 880, gdzie te procesory 880 były jednymi z najbardziej popularnych. No tutaj mówimy sobie o procesorach 8 bitowych, tak? Współcześnie mamy procesory."
+		},
+		{
+			"timestamps": {
+				"from": "00:34:30,000",
+				"to": "00:35:00,000"
+			},
+			"offsets": {
+				"from": 2070000,
+				"to": 2100000
+			},
+			"text": " W przypadku naszych komputerów 64 bitowe, a w przypadku rozwiązań serwerowych tutaj mówimy również o rozwiązaniach 128, 256 i 512 bitowych, w związku z czym mamy też bardzo duży skok technologiczny w przeciągu 50 lat. No teraz te 50 lat rzeczywiście brzmi jak stosunkowo dużo, ale no patrząc na to, jak to wyglądało kiedyś, no współcześnie można powiedzieć,"
+		},
+		{
+			"timestamps": {
+				"from": "00:35:00,000",
+				"to": "00:35:30,000"
+			},
+			"offsets": {
+				"from": 2100000,
+				"to": 2130000
+			},
+			"text": " że jesteśmy uszczytu techniki. Co więcej, jak mogą Państwo zobaczyć, w 1975 roku istniała również taka firma jak DEC. DEC, który rewolucjonizował troszeczkę rynek, ponieważ w 1975 roku zaproponowali swój 8 bitowy mikroprocesor, który posiadał niedość, że pamięć półprzewodnikową, czyli taką jak mamy współcześnie wykorzystywaną, ale również procesor zmienny"
+		},
+		{
+			"timestamps": {
+				"from": "00:35:30,000",
+				"to": "00:36:00,000"
+			},
+			"offsets": {
+				"from": 2130000,
+				"to": 2160000
+			},
+			"text": " przecinkowy, ponieważ musimy sobie zdawać sprawę, że wcześniejsze procesory i przez bardzo długi okres, również kolejne kolejne rozwiązania, kolejne procesory działały tylko i wyłącznie na liczbach całkowitych. W tym przypadku w 1975 pojawił się już procesor, który mógł pracować również z wartościami zmienno przecinkowymi. W związku z czym, no jak widać, w tym 1975 roku"
+		},
+		{
+			"timestamps": {
+				"from": "00:36:00,000",
+				"to": "00:36:30,000"
+			},
+			"offsets": {
+				"from": 2160000,
+				"to": 2190000
+			},
+			"text": " jednak było to troszeczkę przełomowe. Jednak, no cóż, powiedzmy sobie szczerze, rynek zrewidował potrzebę stwierdzone, że no skoro do tej pory sobie dawaliśmy radę bez tego, no i teraz sobie damy bez tego radę. W związku z czym, no ten mikroprocesor nie był jakiś, jakiś popularny, no to no kosztował dużo, dużo więcej niż rówieśnic. W kolejnych latach"
+		},
+		{
+			"timestamps": {
+				"from": "00:36:30,000",
+				"to": "00:37:00,000"
+			},
+			"offsets": {
+				"from": 2190000,
+				"to": 2220000
+			},
+			"text": " Intel dalej rozwijał swoje, swoje mikroprocesory razem z innymi firmami, chociażby z IBM czy, czy innymi rozwiązaniami. Tutaj już mamy mikroprocesory 16 bitowe, tak jak mogą Państwo zobaczycie, 8086, 8286 i w 1985 dopiero roku. W związku z czym, jak mogą Państwo zobaczyć, 10 lat po firmie DEC, firma Intel"
+		},
+		{
+			"timestamps": {
+				"from": "00:37:00,000",
+				"to": "00:37:30,000"
+			},
+			"offsets": {
+				"from": 2220000,
+				"to": 2250000
+			},
+			"text": " stwierdziła, OK, zrobiliśmy mikroprocesor już 32 bitowy, czyli jesteśmy blisko tej współczesności i dopiero tutaj mamy pamięć półprzewodnikową wewnętrzną, aktualnie znaną jako pamięć cash i właśnie co procesor zmiennoprzecinkowy, który pozwalał nam na wykonywanie operacji zmiennoprzecinkowych. Dopiero 10 lat później Intel to wprowadził do swoich mikroprocesorów i dopiero wtedy tak naprawdę konsumenci stwierdzili, OK, rzeczywiście dobrze, przyda nam się."
+		},
+		{
+			"timestamps": {
+				"from": "00:37:30,000",
+				"to": "00:38:00,000"
+			},
+			"offsets": {
+				"from": 2250000,
+				"to": 2280000
+			},
+			"text": " Jest to przydatne, pozwala na szybsze przeliczenia różnych wartości, pozwala nam na wygodniejsze operacje na liczbach. Generacja czwarta ciągnie się cały czas, tak jak już Państwu wspominałem, czyli tak naprawdę ten przysłowy wyścig zbroje. Ale to co jest ciekawe, tak jak już Państwu wspomniałem, ta firma DEC była przełomowa. No i znowu możemy zobaczyć 1992 początek"
+		},
+		{
+			"timestamps": {
+				"from": "00:38:00,000",
+				"to": "00:38:30,000"
+			},
+			"offsets": {
+				"from": 2280000,
+				"to": 2310000
+			},
+			"text": " 4-bitowych mikroprocesorów DEC Alpha. No i niestety w tym przypadku firma DEC znowu była do przodu, bardzo ładnie rozwijała ten swój mikroprocesor, tylko, no cóż, był on drogi i znowu konsumenci stwierdzili, ale mamy 30W bitowe, to nam wystarcza w zupełności. W związku z czym ten procesor znowu nie był popularny, no i niestety firma DEC w tym przypadku już spliteowała po wypuszczeniu tego mikroprocesora."
+		},
+		{
+			"timestamps": {
+				"from": "00:38:30,000",
+				"to": "00:39:00,000"
+			},
+			"offsets": {
+				"from": 2310000,
+				"to": 2340000
+			},
+			"text": " No i na rynku głównie oczywiście została firma Intel, która rozwijała swoje procesory, chociażby cała linia procesorów Intel Pentium. Intel Pentium 1, 2, 3, 4 pro itd. Tutaj jak najbardziej była bardzo szeroko rozwijana ta ścieżka. Tak jak możemy zobaczyć również mamy oczywiście poza Intel'em inne firmy, które"
+		},
+		{
+			"timestamps": {
+				"from": "00:39:00,000",
+				"to": "00:39:30,000"
+			},
+			"offsets": {
+				"from": 2340000,
+				"to": 2370000
+			},
+			"text": " realizowały swoje procesory, chociażby w Japonii mieliśmy jeden procesor, który osiągnął jako pierwszy zakres jednego gigaherca, jeżeli chodzi o częstotliwość wykonywania operacji w ramach tego procesora, a w 2000 IBM wprowadziła pierwszy procesor z dwoma radzeniami. Tak zwane IBM Power 4, chociaż tak naprawdę za kuluarami można było powiedzieć, że to są dwa procesory"
+		},
+		{
+			"timestamps": {
+				"from": "00:39:30,000",
+				"to": "00:40:00,000"
+			},
+			"offsets": {
+				"from": 2370000,
+				"to": 2400000
+			},
+			"text": " Intel Pentium po prostu połączone ze sobą, ale był to rzeczywiście wtedy już uznawany za pierwszy procesor dwurceniowy. No a jak już mieliśmy procesor dwurceniowy, no to lecieliśmy dalej wraz z kolejnymi latami, w związku z czy tych radzeni, to taktoowanie bardzo szybko nam narastało. Tak, czyli już mieliśmy pro mikroprocesory 64 bitowe od 2003 roku, mieliśmy również"
+		},
+		{
+			"timestamps": {
+				"from": "00:40:00,000",
+				"to": "00:40:30,000"
+			},
+			"offsets": {
+				"from": 2400000,
+				"to": 2430000
+			},
+			"text": " dwurceniowe, później pojawiały nam się cztero, ośmiordzeniowe, no aktualnie mamy to rozwiązanie dużo, dużo szersze. Współcześnie jak sobie zobaczymy, no to oczywiście mamy już entą generację procesorów Intel Core, w tym przypadku już mamy również odnogę od tej generacji. No i to wszystko rozwijało się bardzo, bardzo płynnie, aż do"
+		},
+		{
+			"timestamps": {
+				"from": "00:40:30,000",
+				"to": "00:41:00,000"
+			},
+			"offsets": {
+				"from": 2430000,
+				"to": 2460000
+			},
+			"text": " mniej więcej ubiegłego roku. Mniej więcej ubiegłego roku, ponieważ powoli dochodzimy do pewnych ograniczeń, które stawia nam stawia nam stawia nam zarówno fizyka, jak i pewnego rodzaju ograniczenia chemiczne. No tak jak mogą Państwo zobaczyć, tutaj są tak wylistowane po krótce, że 2022 Intel wprowadził procesory w oparciu o"
+		},
+		{
+			"timestamps": {
+				"from": "00:41:00,000",
+				"to": "00:41:30,000"
+			},
+			"offsets": {
+				"from": 2460000,
+				"to": 2490000
+			},
+			"text": " technologię 7 nanometrową. Za chwilkę sobie powiemy co to znaczy, że mamy 7 nanometrów i jakie są różnice kiedyś w rozumieniu litografii danych procesorów, czyli rozmiaru tak naprawdę tego najgorszego tranzystora 7 nanometrów. Później 2023-2024 mieliśmy już zapowiedziane Intel 18a Intel 20a, czyli 1 8 nanometra, 2 nanometry. W tym roku Intel porzucił 20a, czyli porzucił"
+		},
+		{
+			"timestamps": {
+				"from": "00:41:30,000",
+				"to": "00:42:00,000"
+			},
+			"offsets": {
+				"from": 2490000,
+				"to": 2520000
+			},
+			"text": " technologię 20a nanometrową, ale stwierdził, że okej, będziemy cały czas pracować nad technologią 1 8 nanometra. No współcześnie jeżeli sobie popatrzymy po rynku, to możemy nawet znaleźć informacje, że mamy procesory 3 nanometrowe aktualnie już zrealizowane. Tylko że tak jak mówię, to są pewnego rodzaju zabiegi marketingowe i posiadamy pewne ograniczenia, z których musimy zdawać sobie sprawę. No i teraz o tych ograniczeniach po krótce sobie"
+		},
+		{
+			"timestamps": {
+				"from": "00:42:00,000",
+				"to": "00:42:30,000"
+			},
+			"offsets": {
+				"from": 2520000,
+				"to": 2550000
+			},
+			"text": " powiedzmy. Pierwsze, takie najbardziej ogólne ograniczenie to jest prawo mura. Prawo mura sformułowane w 65 roku, które mówiło w tamtych czasach, że liczba tranzystorów będzie się podwajać co roku. No oczywiście to prawo bardzo ładnie działało, aż do pewnego momentu, między innymi w 1999 roku, sam autor tego prawa stwierdził, że nie, to podwojenie nie będzie następować co roku, tylko to"
+		},
+		{
+			"timestamps": {
+				"from": "00:42:30,000",
+				"to": "00:43:00,000"
+			},
+			"offsets": {
+				"from": 2550000,
+				"to": 2580000
+			},
+			"text": " 4-5 lat. No i rzeczywiście to podwojenie następowało co 4-5 lat, aż do okresu, kiedy nastał covid. W momencie kiedy mieliśmy czasy covidowe, to tutaj niestety mieliśmy bardzo duże ograniczenie, bardzo duże spowolnienie rozwijania tej technologii. Tak jak mogło Państwo pamiętać, na pewno trudno było o elektronikę, ta elektronika była bardzo droga firmy, też nie działały lub działały w bardzo dużym ograniczeniu, w związku z czym to wszystko"
+		},
+		{
+			"timestamps": {
+				"from": "00:43:00,000",
+				"to": "00:43:30,000"
+			},
+			"offsets": {
+				"from": 2580000,
+				"to": 2610000
+			},
+			"text": " się nam w tym okresie rozjechało. Aktualnie z powrotem rzeczywiście wróciliśmy już do momentu, gdzie możemy powiedzieć, że rzeczywiście ta liczba tranzystorów będzie się nam podwajać co około 5 lat, ale jednocześnie mamy od razu informację, że nie będzie to miało miejsca w nieskończoność, w związku z czym tutaj również sam autor zdaje sobie sprawę z pewnych ograniczeń. Tutaj na kolejnym slajdzie"
+		},
+		{
+			"timestamps": {
+				"from": "00:43:30,000",
+				"to": "00:44:00,000"
+			},
+			"offsets": {
+				"from": 2610000,
+				"to": 2640000
+			},
+			"text": " Państwo mniej więcej przedstawioną to liczbę tranzystorów w okresie czasowym do mniej więcej 2015-2020 roku, tak pić razy drzwi oczywiście. Ale ograniczenie, które jest dużo ważniejsze i dużo więcej elementów nam definiuje, to jest to ograniczenie z zasady landejera. Zasady landejera"
+		},
+		{
+			"timestamps": {
+				"from": "00:44:00,000",
+				"to": "00:44:30,000"
+			},
+			"offsets": {
+				"from": 2640000,
+				"to": 2670000
+			},
+			"text": " została stworzona w oparciu o działający już tranzystor. No i teraz, w jaki sposób możemy sobie tą zasadę tłumaczyć. Każdy tranzystor, który nam działa, wydziela również jakieś ciepło. Tak jak zapewne Państwo wiedzą, no jak mamy komputer, następny komputer się grzeje w jakimś zakresie. No i grzeje się nam, no i częściej właśnie proces."
+		},
+		{
+			"timestamps": {
+				"from": "00:44:30,000",
+				"to": "00:45:00,000"
+			},
+			"offsets": {
+				"from": 2670000,
+				"to": 2700000
+			},
+			"text": " Procesor zbudowany z tranzystorów. No i teraz, jeżeli mamy taki tranzystor i chcemy wymazać jakąś informację, jakiś bit informacji albo zapisać jakiś bit informacji, no to w efekcie tego tej operacji będzie wydzielone pewne ciepło. No my jednak mamy coraz większą skalę integracji, czyli coraz więcej tych tranzystorów pakujemy w ramach naszego procesora. W związku z czym, no niestety"
+		},
+		{
+			"timestamps": {
+				"from": "00:45:00,000",
+				"to": "00:45:30,000"
+			},
+			"offsets": {
+				"from": 2700000,
+				"to": 2730000
+			},
+			"text": " musimy sobie zdawać sprawę z tego, że im więcej tych tranzystorów tak sobie upakujemy, na przykład w ramach jednego centymetra kwadratowego, to niestety tym więcej tej energii, tego ciepła będzie musiało być odbierane od takiego urządzenia, bo coraz więcej będzie wydzielane. No i jeżeli oczywiście nie będziemy odbierać tego ciepła, no to co się, co, co się stanie? No nasze urządzenie ulegnie przegrzaniu, a w efekcie awarni i uszkodzenie"
+		},
+		{
+			"timestamps": {
+				"from": "00:45:30,000",
+				"to": "00:46:00,000"
+			},
+			"offsets": {
+				"from": 2730000,
+				"to": 2760000
+			},
+			"text": " W związku z czym sama zasada Landera wskazuje nam na pewnego rodzaju wzór, który pozwala nam na, na wskazanie ile energii zostanie wydzielonej, czyli jakie ciepło zostanie wydzielone w efekcie wymazanie jednego bitu informacji wydanej jakiejś stałej temperaturze. To jest określone jako K, gdzie K to jest ta Boltzmana,"
+		},
+		{
+			"timestamps": {
+				"from": "00:46:00,000",
+				"to": "00:46:30,000"
+			},
+			"offsets": {
+				"from": 2760000,
+				"to": 2790000
+			},
+			"text": " przez \"T\" będzie to jest jakaś stała temperatura, problemu nożona przez logarytm naturalny z dwóch. Oczywiście ja nie będę kazał Państwu tego, z tego zapamiętywać, a nie będę kazał Państwu tego liczyć, więc na spokojnie to jest tylko takie informacyjnie, że Państwo nie więcej wiedzieli, no ale co to tak naprawdę dla nas oznacza, co z tego wynika? No wynika to z tego, wynika z tego to, że jeżeli mamy tą samą powierzchnię i upakowujemy tam coraz więcej"
+		},
+		{
+			"timestamps": {
+				"from": "00:46:30,000",
+				"to": "00:47:00,000"
+			},
+			"offsets": {
+				"from": 2790000,
+				"to": 2820000
+			},
+			"text": " i więcej tych tranzystorów, w pewnym momencie produkcja wydzielanie tego ciepła, będzie na tyle duża, że nie będziemy w stanie go odpierać już. W związku z czym, no przewiduje się, że w przeciągu najbliższych około 5-10 lat, poza, poza zwiększaniem upakowania tych tranzystorów, będziemy również musieli zwiększać rozmiary samych procesorów."
+		},
+		{
+			"timestamps": {
+				"from": "00:47:00,000",
+				"to": "00:47:30,000"
+			},
+			"offsets": {
+				"from": 2820000,
+				"to": 2850000
+			},
+			"text": " No i powiedzmy sobie szczerze, powoli już ma to miejsce. W związku z czym, szczególnie jeżeli chodzi o rozwiązanie serwerowe lub wysoko wydajne, w związku z czym, no powoli to już się nam zaczyna, no ale trzeba mieć z tyłu głowy również to ograniczenie. Ale sama zasadana idea, no to mówi nam tylko tyle, że nie będziemy w stanie upakowywać tego w nieskończoność, tak? No ale mamy rozwiązanie, no możemy te procesory zrobić po prostu na większej powietrzu."
+		},
+		{
+			"timestamps": {
+				"from": "00:47:30,000",
+				"to": "00:48:00,000"
+			},
+			"offsets": {
+				"from": 2850000,
+				"to": 2880000
+			},
+			"text": " No dobrze, ale mamy niestety jeszcze drugie ograniczenie, które jest dużo ważniejsze i dużo bardziej problematyczne, a mianowicie sama fizyka. Sama fizyka i chemia, gdzie mówimy sobie tutaj o odległości atomów krzemu. Jak my mówimy, że coś jest w litografii, znam przykład 27 nanometrów, to to oznacza, że w ramach tych 27 nanometrów"
+		},
+		{
+			"timestamps": {
+				"from": "00:48:00,000",
+				"to": "00:48:30,000"
+			},
+			"offsets": {
+				"from": 2880000,
+				"to": 2910000
+			},
+			"text": " znajduje się około 100 atomów krzemu. I tu mówimy o atomach, tak? W związku z czym to jest naprawdę mała ilość, a mówimy 100 atomów w 27 nanometrach. No dobrze, mieliśmy również litografię chociażby 7 nanometrów, no to wtedy już tych atomów krzemu było 26. Te atomy krzemu również mają pewnego rodzaju swoje wytrzymałości. Z racji tego, że"
+		},
+		{
+			"timestamps": {
+				"from": "00:48:30,000",
+				"to": "00:49:00,000"
+			},
+			"offsets": {
+				"from": 2910000,
+				"to": 2940000
+			},
+			"text": " z tych atomów krzemu budujemy wadasz tranzystory i na podstawie nich działamy w oparciu o elektronikę, no to w tym przypadku interesuje nas odporność takich atomów krzemu na wytrzymałość elektryczna. W tym przypadku musimy patrzeć na wytrzymałość elektryczną w utlenku krzemu, która wynosi mniej więcej około 5 megawolt na centymetr. No i teraz, to jest megawolt na centymetr."
+		},
+		{
+			"timestamps": {
+				"from": "00:49:00,000",
+				"to": "00:49:30,000"
+			},
+			"offsets": {
+				"from": 2940000,
+				"to": 2970000
+			},
+			"text": " A my mówimy jednak o czymś dużo, dużo mniejszym, bo to są nanometry. Jak przeliczymy sobie to w oparciu, że na przykład w 27 nanometrach mamy 100 atomów krzemu, no to uzyskamy przy tej wytrzymałości elektrycznej informacji, że okej, taka bramka, taki tranzystor będzie nam działał do maksymalnego napięcia około 13,5 V. Nie ma to dla nas żadnego problemu."
+		},
+		{
+			"timestamps": {
+				"from": "00:49:30,000",
+				"to": "00:50:00,000"
+			},
+			"offsets": {
+				"from": 2970000,
+				"to": 3000000
+			},
+			"text": " Jak mieliśmy 7 nanometrowy, no to mieliśmy ograniczenie do około 3,5 V. Jak najbardziej procesory najczęściej były właśnie zasilane w tamtym czasie poprzez 3,3 V, później były zasilane przez 1,2,1,5 V, w związku z czym ta litografia 5 nm też bez problemu tutaj nam odgrywała rolę, ale wszystko działało. Tylko no właśnie, jak my na rynku aktualnie mamy"
+		},
+		{
+			"timestamps": {
+				"from": "00:50:00,000",
+				"to": "00:50:30,000"
+			},
+			"offsets": {
+				"from": 3000000,
+				"to": 3030000
+			},
+			"text": " 2 nanometry, albo 3 nanometry. Co to dla nas oznacza? No oznacza dla nas to, że nie dość, że tych atomów krzemu jest bardzo mało, co jeszcze napięcie maksymalne spada nam w przypadku 3 nanometrów do około 0,5-0,6 V. A jest bardzo trudno otrzymać tak mały voltage i jednocześnie wzbudzić wszystko,"
+		},
+		{
+			"timestamps": {
+				"from": "00:50:30,000",
+				"to": "00:51:00,000"
+			},
+			"offsets": {
+				"from": 3030000,
+				"to": 3060000
+			},
+			"text": " co to się nam tam przetwarzało i co więcej utrzymać to na przykład 0,5 V, żeby nie było żadnego skoku napięcia na przykład do 0,6-0,7, co już skutkowałoby uszkodzeniem takiego procesora. No już pomijając oczywiście liczbę atomów krzemu. No dobrze, no ale w jakiś sposób jednak te na przykład 3 nanometrowe procesory mamy."
+		},
+		{
+			"timestamps": {
+				"from": "00:51:00,000",
+				"to": "00:51:30,000"
+			},
+			"offsets": {
+				"from": 3060000,
+				"to": 3090000
+			},
+			"text": " W związku z czym, no jak to się dzieje? Możemy powiedzieć z pełnym z ręką na sercu, że od 7 nanometrów pojęcie litografia nie dotyczy już tej litografii, którą kiedyś mieliśmy na myśli. Nie jest to już długość odległość, długość boku danej bramki danego tranzystora."
+		},
+		{
+			"timestamps": {
+				"from": "00:51:30,000",
+				"to": "00:52:00,000"
+			},
+			"offsets": {
+				"from": 3090000,
+				"to": 3120000
+			},
+			"text": " Po siedmiu nanometrach każde kolejne, każde kolejne litografie, które uzyskujemy, już dotyczą zupełnie czegoś innego. Jak mogą Państwo zobaczyć tutaj, po tym, po tym jak mam 14 nanometrów, 10 nanometrów, 7 nanometrów, w rzeczywistości już nawet przy tych litografiach często się zdarzało, że no dobrze, mamy tą litografię, ale gdzie ona tak naprawdę jest? Tutaj mamy gatepeach na poziomie 60,"
+		},
+		{
+			"timestamps": {
+				"from": "00:52:00,000",
+				"to": "00:52:30,000"
+			},
+			"offsets": {
+				"from": 3120000,
+				"to": 3150000
+			},
+			"text": " 70, 50 nanometrów, to mamy fin pitch na poziomie 42, 30 nanometrów. Tutaj mamy transistor fin width, ok, mamy 8 nanometrów przy 14, 10 przy 14, 7 przy 10. Więc ok, no tutaj coś już mamy bliższego tego, tak, ale dalej nie mamy nigdzie tej konkretnej litografii. Możemy powiedzieć, że większość litografii, którymi spotykamy się współcześnie, jak słyszymy, że ktoś ma,"
+		},
+		{
+			"timestamps": {
+				"from": "00:52:30,000",
+				"to": "00:53:00,000"
+			},
+			"offsets": {
+				"from": 3150000,
+				"to": 3180000
+			},
+			"text": " ktoś ma właśnie 3 nanometry, albo tak jak Intel opracowuje aktualnie 1,8 nanometra. Te wszystkie litografie nie mówią nam już, że to jest długość wzłuż bramki, wzłuż danego tranzystora, tylko definiuje nam, że ten procesor i to upakowanie tranzystorów ma wydajność jakby była to litografia na przykład właśnie"
+		},
+		{
+			"timestamps": {
+				"from": "00:53:00,000",
+				"to": "00:53:30,000"
+			},
+			"offsets": {
+				"from": 3180000,
+				"to": 3210000
+			},
+			"text": " 1,8 nanometra. W związku z czym już od dłuższego czasu jest to zabieg czysto, czysto komercyjny, czysto ekonomiczny, ponieważ my się przyzwyczailiśmy do tego, że ok i mniejsza litografia tym lepiej, no to, no oczywiście firmy poszły za tym, w takim razie ok, to będzie już nie litografia, czy tylko procesor o wydajności litografii taki."
+		},
+		{
+			"timestamps": {
+				"from": "00:53:30,000",
+				"to": "00:54:00,000"
+			},
+			"offsets": {
+				"from": 3210000,
+				"to": 3240000
+			},
+			"text": " Oczywiście wydajność jest liczona na podstawie tych rzeczywistych litografii, które mamy w ramach naszego procesor, więc warto po prostu sobie zdawać z tego sprawę i nie dać się zwariować, szczególnie w dzisiejszych czasach, gdzie no te klasy procesu technologicznego są już zdecydowanie czymś innym niż kiedyś. Dobrze, to już chodzi o ograniczenia. Co dalej?"
+		},
+		{
+			"timestamps": {
+				"from": "00:54:00,000",
+				"to": "00:54:30,000"
+			},
+			"offsets": {
+				"from": 3240000,
+				"to": 3270000
+			},
+			"text": " Powiedzmy sobie również pokrótce o samym sposobie opisu tych naszych systemów komputerowych, ponieważ mamy ich kilka. Nas będzie interesowało tylko część z nich, które tutaj mogą Państwo zobaczyć w ramach tego slajdu, bo możemy sobie wyodrębnić od samego dołu. Fizyka, no to troszeczkę sobie już o tym powiedzieliśmy."
+		},
+		{
+			"timestamps": {
+				"from": "00:54:30,000",
+				"to": "00:55:00,000"
+			},
+			"offsets": {
+				"from": 3270000,
+				"to": 3300000
+			},
+			"text": " Właśnie o podstawie podzespołach, czyli tranzystory, diody, rezystory i tak dalej. O tym również będziemy sobie mówić w ramach tego przedmiotu. Podziom obwodów analogowych i poziom obwodów cyflowych oraz poziom logiczny również tutaj sobie tworzymy pewne podzespoły, które wykonują pewne operacje, czy to logiczne czy cyfrowe łączymy je w coś większego. Te trzy elementy również będziemy sobie omawiać. Microarchitektura, czyli to, jak troszeczkę bardziej wyższym poziomie abstrakcji ten nasz komputer działa,"
+		},
+		{
+			"timestamps": {
+				"from": "00:55:00,000",
+				"to": "00:55:30,000"
+			},
+			"offsets": {
+				"from": 3300000,
+				"to": 3330000
+			},
+			"text": " też będziemy sobie o tym mówić, jakie magistrale mamy w ramach naszych komputerów, w jaki sposób one działają, w jaki sposób się komunikują i jak zachodzi współpraca i przetwarzanie pewnych informacji pomiędzy nimi. Sam architektura, no to to już jest pełen układ elektroniczny z perspektywy programisty. No my na tym przedmiocie nie będziemy się zajmować z sensu stricte programowania, w związku z czym już ten etap i wyższe dotyczą innych przedmiotów. Samą architekturę i system operacyjny będą Państwo"
+		},
+		{
+			"timestamps": {
+				"from": "00:55:30,000",
+				"to": "00:56:00,000"
+			},
+			"offsets": {
+				"from": 3330000,
+				"to": 3360000
+			},
+			"text": " omawiać w ramach przedmiotu SOP, czyli systemy operacyjne. Oprogramowanie, troszeczkę już Państwo zaczęli omawiać ten temat w ramach przedmiotu PAPEOS, czyli podstawy programowania w języku Java. Tak więc tutaj mamy te kilka podstawowych poziomów, które będą nas interesowały, no ale musimy sobie zdawać sprawę, że oczywiście nie mówimy w ramach tego przedmiotu ich wszystkich. Co dalej? No dobrze, to zacznijmy może"
+		},
+		{
+			"timestamps": {
+				"from": "00:56:00,000",
+				"to": "00:56:30,000"
+			},
+			"offsets": {
+				"from": 3360000,
+				"to": 3390000
+			},
+			"text": " od tej architektury bardzo szeroko pojętej, czym w ogóle jest architektura? Architektura sama w sobie jest pewnego rodzaju bardzo szeroko pojętej, czym w ogóle jest architektura? Musimy sobie zdawać sprawę, że oczywiście nie mówimy w ramach tego przedmiotu ich wszystkich. Co dalej? No dobrze, to zacznijmy może od tej architektury bardzo szeroko pojętej, czym w ogóle jest architektura? Architektura sama w sobie jest pewnego rodzaju"
+		},
+		{
+			"timestamps": {
+				"from": "00:56:30,000",
+				"to": "00:57:00,000"
+			},
+			"offsets": {
+				"from": 3390000,
+				"to": 3420000
+			},
+			"text": " dyscypliną, którą Pan Amda Hala, który zaprojektował jeden z pierwszych komputerów w serii IBM System 360, który był nomen omen bardzo przewrotnym komputerem i bardzo wydajnym, to on wtedy zdefiniował czym jest tak naprawdę architektura, ale w ujęciu naszego komputera. I czym to tak naprawdę jest? Jest to sposób organizacji elementów tworzących też na ten nasz komputer. Dokładnie cytując jego definicję, oczywiście przełożenie"
+		},
+		{
+			"timestamps": {
+				"from": "00:57:00,000",
+				"to": "00:57:30,000"
+			},
+			"offsets": {
+				"from": 3420000,
+				"to": 3450000
+			},
+			"text": " na polskim architektura komputera jest to charakterystyka komputera, którą musi znać programista, aby napisać poprawny program w języku wewnętrznym dla tego komputera. No i jak najbardziej ta definicja jest cały czas dla nas wiążąca i jak najbardziej jest dla nas istotna. Tylko z Państwa punktu widzenia nie programują Państwo i nie będą Państwo jeszcze na pewno długo programować tak na niskim poziomie, żeby pisać programy bezpośrednio"
+		},
+		{
+			"timestamps": {
+				"from": "00:57:30,000",
+				"to": "00:58:00,000"
+			},
+			"offsets": {
+				"from": 3450000,
+				"to": 3480000
+			},
+			"text": " w języku wewnętrznym dla tego komputera. Jak piszą Państwo w Java, to to jest język bardzo wysoko poziomowy, w związku z czym nie muszą Państwo znać tej architektury, żeby napisać jakiś program. W związku z czym no programowanie współczesień jest troszeczkę łatwiejsze, ale jeżeli ktoś chciałby tego typu język poznać, no to tutaj chociażby można zagłębić się w tajemnicę języka typu Assembler. No dobrze, jeżeli mamy taką definicję architektury, no to możemy sobie"
+		},
+		{
+			"timestamps": {
+				"from": "00:58:00,000",
+				"to": "00:58:30,000"
+			},
+			"offsets": {
+				"from": 3480000,
+				"to": 3510000
+			},
+			"text": " określić i zwizualizować to w taki sposób, że mamy jakiś komputer z jakimś typem procesora, musimy znać jego architekturę, żeby napisać algorytm, przekazać jakieś dane wejściowe, żeby uzyskać oczywiście jakiś określony rezultat. W związku z czym no tutaj rzeczywiście w takim ujęciu no było potrzebne, żeby wiedzieć jak ten komputer działa wewnątrz współcześnie, tylko jeżeli chcemy coś"
+		},
+		{
+			"timestamps": {
+				"from": "00:58:30,000",
+				"to": "00:59:00,000"
+			},
+			"offsets": {
+				"from": 3510000,
+				"to": 3540000
+			},
+			"text": " zrobić rzeczywiście nisko poziomowego, czyli na przykład sterowanie jakiś, oprogramowanie jakiś urządzeń lub sterowanie jakiś konkretnych podzespołów. Samo architekturę musimy również rozpatrywać w kilku ujęciach, tak, to co Państwo aktualnie zobaczyli i sam ten podział na poziomy, no to to jest jeden z podziałów, a tak naprawdę tych podziałów architektur mamy dużo, dużo więcej, bo możemy również podzielić sobie architekturę na tak zaną exo i endo architekturę."
+		},
+		{
+			"timestamps": {
+				"from": "00:59:00,000",
+				"to": "00:59:30,000"
+			},
+			"offsets": {
+				"from": 3540000,
+				"to": 3570000
+			},
+			"text": " Jak z architektura to jest architektura widziona tak bardzo na poziomy, no to to jest jeden z podziałów, a tak naprawdę w komputerze mamy dysk twardy, mamy płytę główną, mamy procesor, mamy jakiś układ salony, czyli bardzo tak ogólnie w postaci pewnego rodzaju takich klocków, tak, ale to jest bardzo ogólny opis. Jeżeli potrzebujemy dowiedzieć się czegoś więcej, to wtedy musimy zejść na poziom endo architektury,"
+		},
+		{
+			"timestamps": {
+				"from": "00:59:30,000",
+				"to": "01:00:00,000"
+			},
+			"offsets": {
+				"from": 3570000,
+				"to": 3600000
+			},
+			"text": " w tym przypadku mamy sześć bramek typu negacji, czym jest bramka, czym jest negacja, też później sobie będzie mówić na kolejnych wykładach,"
+		},
+		{
+			"timestamps": {
+				"from": "01:00:00,000",
+				"to": "01:00:30,000"
+			},
+			"offsets": {
+				"from": 3600000,
+				"to": 3630000
+			},
+			"text": " więc na razie to jest oczywiście dla państwa taka wielka niewiadoma, gdzie jest jakiś rysunek z jakimiś sześcioma trójkątami, z kółeczkami, ale tą stopniowo będziemy sobie również tłumaczyć, ale to co chciałbym, żeby państwo zapamiętali, exo architektura to jest taki ogólny opis, endo architektura już wejście w bardzo duże implementacyjne szczegóły. No i tak samo dla nas, dla nas exo architektura może być powiedzieć,"
+		},
+		{
+			"timestamps": {
+				"from": "01:00:30,000",
+				"to": "01:01:00,000"
+			},
+			"offsets": {
+				"from": 3630000,
+				"to": 3660000
+			},
+			"text": " że mamy procesor, endo architektura będzie okej w tym procesorze, mamy jakieś rejestry, mamy jakieś magistrale danych, mamy jakąś jednostkę przetwarzającą, czyli jednostkę artytmetyczno-logiczną i tak dalej, i tak dalej, więc tutaj mamy również taki podział. Innym podziałem architektur jest podział ze względu na rodzaj połączyń pomiędzy procesorem, a pamięcią operacyjną. No i teraz mamy cztery tak naprawdę różne architektury komputerów,"
+		},
+		{
+			"timestamps": {
+				"from": "01:01:00,000",
+				"to": "01:01:30,000"
+			},
+			"offsets": {
+				"from": 3660000,
+				"to": 3690000
+			},
+			"text": " no powiedzmy sobie szczerze, są pewnego rodzaju permutacją, czyli np. jak mogą państwo zobaczyć, mamy SIST, czyli Single Instruction, Single Data, pojedyncza instrukcja, pojedyncza dana, uzyskujemy jakiś wynik. SIMT, Single Instruction, Multiple Data, MIST, Multiple Instruction, Single Data i MIMT, Multiple Instruction, Multiple Data. No i jak to wygląda w praktyce? W praktyce wygląda to w ten sposób, że jeżeli chodzi o SIST, no to jest to przetwarzanie 1 po 1, czyli mamy jeden sumień danych,"
+		},
+		{
+			"timestamps": {
+				"from": "01:01:30,000",
+				"to": "01:02:00,000"
+			},
+			"offsets": {
+				"from": 3690000,
+				"to": 3720000
+			},
+			"text": " ten program, który jakiś wykonujemy sobie i to są, to są komputery, które wykonują jakieś operacje w postaci sekwencyjnej. SIMT, gdzie mamy pojedynczą instrukcję, ale wiele danych, no to w tym przypadku przetwarzamy równolegle wiele strumień danych, w związku z czym jesteśmy w stanie uzyskać szybciej pewne informacje, no ale musimy mieć sytuację, gdzie rzeczywiście daną instrukcję musimy wykonać na wielu danych równoległych. Czyli jest to"
+		},
+		{
+			"timestamps": {
+				"from": "01:02:00,000",
+				"to": "01:02:30,000"
+			},
+			"offsets": {
+				"from": 3720000,
+				"to": 3750000
+			},
+			"text": " często sytuacja, no zależy od"
+		},
+		{
+			"timestamps": {
+				"from": "01:02:30,000",
+				"to": "01:03:00,000"
+			},
+			"offsets": {
+				"from": 3750000,
+				"to": 3780000
+			},
+			"text": " w związku z czym, no tego typu komputery są raczej tak zwanymi komputerami wektorowymi, które są dedykowane do pewnego rodzaju obliczeń. MIST, Multiple Instruction, Single Data, odwrotna sytuacja, tak? Mamy różne operacje, które wykonujemy na tych samych, tych samych danych. W związku z czym tutaj tego typu komputery wykorzystuje się do przetworzenia, do przetworzenia"
+		},
+		{
+			"timestamps": {
+				"from": "01:03:00,000",
+				"to": "01:03:30,000"
+			},
+			"offsets": {
+				"from": 3780000,
+				"to": 3810000
+			},
+			"text": " do systemów, gdzie chcemy zminimalizować jak najbardziej wszelkiego rodzaju błędy obliczeń, wszelkiego rodzaju pomyłek. No i MIST, który jest najbardziej złożonym rozwiązaniem tutaj i najbardziej kosztownym, czyli mamy wiele instrukcji i wiele strumień danych, które równolegle są wykonywane. W tym przypadku mówimy już o komputerach, wieloprocesorowych, o serwerach, o klasstrach przetwarzania."
+		},
+		{
+			"timestamps": {
+				"from": "01:03:30,000",
+				"to": "01:04:00,000"
+			},
+			"offsets": {
+				"from": 3810000,
+				"to": 3840000
+			},
+			"text": " Architektury komputerów możemy również rozpatrywać w oparciu o listę instrukcji. Mamy listę instrukcji SISC, RISC oraz CCR. SISC jak sama na to was wskazuje, Complex Instruction Set Computer, czyli w przypadku tego typu rozwiązania mamy pełny zestaw instrukcji, który ten komputer może wykonać. Architektora riskowa,"
+		},
+		{
+			"timestamps": {
+				"from": "01:04:00,000",
+				"to": "01:04:30,000"
+			},
+			"offsets": {
+				"from": 3840000,
+				"to": 3870000
+			},
+			"text": " to jest Reduced Instruction Set Computer, czyli w tym przypadku ta lista instrukcji jest znacznie wspomnijszona. No i mamy jeszcze architekturę CCR, która jest najczęściej wykorzystywana współcześnie. To jest tak zwane SISC or risk. W rzeczywistości rdzeń mamy riskowy, czyli ze zredukowaną liczbą instrukcji, a sam procesor widziany jest przez programistę, przez nasz komputer jako procesor SISCowy, czyli posiadający"
+		},
+		{
+			"timestamps": {
+				"from": "01:04:30,000",
+				"to": "01:05:00,000"
+			},
+			"offsets": {
+				"from": 3870000,
+				"to": 3900000
+			},
+			"text": " cały zestaw instrukcji, które mogą być wykonane. W związku z czym musimy charakteryzować, czym się różni SISC od RISC. Poza tym, że różni SISC od RISC. Poza tym, że różni się liczbą operacji. W przypadku procesorów SISCowych mamy dużo liczbę"
+		},
+		{
+			"timestamps": {
+				"from": "01:05:00,000",
+				"to": "01:05:30,000"
+			},
+			"offsets": {
+				"from": 3900000,
+				"to": 3930000
+			},
+			"text": " instrukcji, które są już zdefiniowane. Ich może być kilkaset, a nawet kilka tysięcy, w zależności oczywiście od procesora. Występ pływą tam bardzo często te instrukcje, bardzo złożone, bardzo specjalistyczne i specyficzne, których możemy nawet nigdy nie wykonywać. W związku z czym nie są tak naprawdę najczęściej nam potrzebne. Przez to, że tych instrukcji jest tak dużo, ten procesor też nie jest w ogóle zoptymalizowany. W związku z czym niestety, ale procesor był stosunkowo powolny."
+		},
+		{
+			"timestamps": {
+				"from": "01:05:30,000",
+				"to": "01:06:00,000"
+			},
+			"offsets": {
+				"from": 3930000,
+				"to": 3960000
+			},
+			"text": " Powolny, ponieważ w więcej czasu potrzebowaliśmy na odnalezienie w ogóle wśród kilkuset, kilkutysięcy instrukcji, tej, którą chcemy wykonać. Więc no niestety, ale tego typu procesory były bardzo, bardzo skomplikowane. Dekoder rozkazów też był skomplikowany, no bo w końcu musiał rozeznać kilkaset, kilka tysięcy tych operacji. W przypadku architektury RISCowej, no to tutaj mamy minimum tych"
+		},
+		{
+			"timestamps": {
+				"from": "01:06:00,000",
+				"to": "01:06:30,000"
+			},
+			"offsets": {
+				"from": 3960000,
+				"to": 3990000
+			},
+			"text": " tych rozkazów, tych instrukcji, które są nam potrzebnych. Jest ich dosłownie kilkadziesiąt. No i w przypadku architektury RISCowej tutaj możemy już wprost sobie powiedzieć, że ponieważ jesteś kilkadziesiąt, ten nasz procesor działa dużo szybciej, mamy dużo wyższe taktowania. Ten dekoder rozkazów jest prosty, no bo dużo rzeczy tutaj nie mamy do odnalezienia, no ale niestety ma to również swoje"
+		},
+		{
+			"timestamps": {
+				"from": "01:06:30,000",
+				"to": "01:07:00,000"
+			},
+			"offsets": {
+				"from": 3990000,
+				"to": 4020000
+			},
+			"text": " minusy, minusy w postaci takiej, że jeżeli chodzi o programistę, no to już nie ma takiej, takich schowody, że OK, wykonaj mi tą instrukcję, wykonaj mi tą instrukcję. Jeżeli instrukcji, którą akurat potrzebujemy, jakiejś konkretnej, specyficznej nie ma, musimy ją napisać samodzielnie z tych instrukcji, które mamy. No bo oczywiście musimy sobie zdawać sprawia, że z tych kilkudziesięciu instrukcji, które mamy w RISCowym, możemy stworzyć dowolną inną, złożoną instrukcję,"
+		},
+		{
+			"timestamps": {
+				"from": "01:07:00,000",
+				"to": "01:07:30,000"
+			},
+			"offsets": {
+				"from": 4020000,
+				"to": 4050000
+			},
+			"text": " która będzie nam potrzebna. W związku z czym, dlatego między SISKiem a RISKiem tak łatwo było przyjść, ponieważ większość instrukcji SISKowych było złożeniem tych instrukcji, które zostały w architekturze RISKowej. No dobrze, no ale ostatecznie oczywiście wygrała swoboda i wygoda wykorzystywania tego typu urządzeń. W związku z czym z punktu widzenia programisty"
+		},
+		{
+			"timestamps": {
+				"from": "01:07:30,000",
+				"to": "01:08:00,000"
+			},
+			"offsets": {
+				"from": 4050000,
+				"to": 4080000
+			},
+			"text": " my jednak chcemy mieć cały zestaw tych instrukcji. W związku z czym mamy tą technologię CCR, tak, SISK Cor RISK. Od zewnątrz wygląda to jak procesor SISKowy, w rzeczywistości rdzeń jest RISKowy, zredukowaną liczbą rozkazów. W jaki sposób to działa? Oczywiście nie działa to tak szybko jak czysty procesor RISKowy, ponieważ mamy ten obważanek SISKowy, przez który wszystkie operacje muszą przejść, ale jeżeli operacja jest z tych podstawowych, to od razu zostaje przekazana do procesora RISKowego,"
+		},
+		{
+			"timestamps": {
+				"from": "01:08:00,000",
+				"to": "01:08:30,000"
+			},
+			"offsets": {
+				"from": 4080000,
+				"to": 4110000
+			},
+			"text": " ono to wykonuje zwraca wynik. Jeżeli potrzebujemy już rzeczywiście jakiś specyficzny i złożony operacji instrukcji, którą chcemy wykonać, no to wtedy już najpierw ten obważanek definiuje nam ok, musimy najpierw wykonać tą instrukcję później tą, później tą, później tą, żeby uzyskać ten efekt i kolejno wysyła już te informacje, które instrukcje wykonać do procesora RISKowego. W związku z czym mamy dodatkowy po prostu taki układ, który"
+		},
+		{
+			"timestamps": {
+				"from": "01:08:30,000",
+				"to": "01:09:00,000"
+			},
+			"offsets": {
+				"from": 4110000,
+				"to": 4140000
+			},
+			"text": " w przypadku bardziej złożonych operacji wykonuje je na naszym miejscu. Dobrze, tak więc tutaj mamy tego typu element. No i jeszcze jest jeden podział, którego nie możemy pominąć, a mianowicie podział ze względu na sposób organizacji pamięci i wykonywania programu, czyli standardowe,"
+		},
+		{
+			"timestamps": {
+				"from": "01:09:00,000",
+				"to": "01:09:30,000"
+			},
+			"offsets": {
+				"from": 4140000,
+				"to": 4170000
+			},
+			"text": " podstawowy podział architektur komputerów, czyli Architektura von Neumann, Architektura Harwartka oraz Architektura Mieszana. Architektura von Neumann, kiedyś również nazywana jako Architektura Princeton, ponieważ została stworzona, Harwartka oraz Architektura Mieszana. Architektura von Neumann, kiedyś również nazywana jako Architektura Princeton, ponieważ została stworzona przez von Neumann na Uniwersytecie w Princeton,"
+		},
+		{
+			"timestamps": {
+				"from": "01:09:30,000",
+				"to": "01:10:00,000"
+			},
+			"offsets": {
+				"from": 4170000,
+				"to": 4200000
+			},
+			"text": " a kiedyś została stworzona przez von Neumann na Uniwersytecie w Princeton, a potem było stworzone przez von Neumann."
+		},
+		{
+			"timestamps": {
+				"from": "01:10:00,000",
+				"to": "01:10:30,000"
+			},
+			"offsets": {
+				"from": 4200000,
+				"to": 4230000
+			},
+			"text": " A mianowicie założenia, że jeżeli mamy nasz procesor, który coś tam nam przetwarza, no to musimy w jakiś sposób móc zapisywać informacje. W tym do tego służyła nam jakaś pamięć. Ta pamięć, w przypadku architektury von Neumann, jest jednym blokiem pamięci, który przechowuje tam zarówno program, jak i program"
+		},
+		{
+			"timestamps": {
+				"from": "01:10:30,000",
+				"to": "01:11:00,000"
+			},
+			"offsets": {
+				"from": 4230000,
+				"to": 4260000
+			},
+			"text": " dane, na których ten program będzie przetwarzany. Oczywiście tego typu rozwiązanie jest bardzo wygodne, ponieważ umożliwia nam automodifikację tego naszego programu, wyklucza, wyklucza wszelkiego rodzaju problemy typu zabraknie nam, zabraknie nam pamięci na dane, zabraknie nam pamięci na rozkazy, ponieważ ta pamięć jest jednak współdzielona na obiet składowe, ale niestety jedno i drugie mogło się modyfikować."
+		},
+		{
+			"timestamps": {
+				"from": "01:11:00,000",
+				"to": "01:11:30,000"
+			},
+			"offsets": {
+				"from": 4260000,
+				"to": 4290000
+			},
+			"text": " I co więcej równolegle nie mogliśmy pobrać jednocześnie rozkazu i danych, tylko najpierw musieliśmy pobrać rozkaz, a później musieliśmy pobrać dane, w związku z czym tutaj już mieliśmy dwie operacje do wykonania zamiast jednej równoległej. W związku z czym oczywiście ta architektura była bardzo fajna, pozwalała również na automodyfikację tego programu, co było bardzo kluczowe, ale niestety"
+		},
+		{
+			"timestamps": {
+				"from": "01:11:30,000",
+				"to": "01:12:00,000"
+			},
+			"offsets": {
+				"from": 4290000,
+				"to": 4320000
+			},
+			"text": " miało to swoje minusy. W związku z czym zaproponowano architekturę harwarską, oczywiście zaproponowaną na Uniwersytet Harwarda, gdzie rozdzielono tą pamięć danych od pamięci programu. W tym przypadku już mogliśmy jednocześnie pobierać zarówno instrukcje jak i operacje, które chcieliśmy wykonywać w ramach danego typu procesora, w związku z czym mogliśmy to wykonywać już dwukrotnie szybciej."
+		},
+		{
+			"timestamps": {
+				"from": "01:12:00,000",
+				"to": "01:12:30,000"
+			},
+			"offsets": {
+				"from": 4320000,
+				"to": 4350000
+			},
+			"text": " W związku z czym to było to stosunkowo problematyczne."
+		},
+		{
+			"timestamps": {
+				"from": "01:12:30,000",
+				"to": "01:13:00,000"
+			},
+			"offsets": {
+				"from": 4350000,
+				"to": 4380000
+			},
+			"text": " W związku z czym mamy aktualnie w ramach naszych komputerów to jest tak zwana architektura mieszana. Architektura mieszana, gdzie połączono plusy i zarówno architektury von Neumann, jak i architektury harvardskiej, i ta architektura mieszana nosi nazwę architektury Harvard-Priniston od nas dwóch uniwersytetów, na których powstały te macierzyste rozwiązania. No i na czym taka architektura mieszana polega?"
+		},
+		{
+			"timestamps": {
+				"from": "01:13:00,000",
+				"to": "01:13:30,000"
+			},
+			"offsets": {
+				"from": 4380000,
+				"to": 4410000
+			},
+			"text": " Mamy z powrotem jedną wspólną pamięć, ale została ona rozdzielona w taki sposób, że jedna i druga pamięć, czyli pamięć danych i pamięć programu, o sobie nawzajem nie widzą się. Jednak mamy na plus taki element, że jedno i drugie, jeżeli byśmy tylko chcieli i byśmy na to zezwolili, może się modyfikować, czyli mamy możliwość automodyfikacji programu. I co więcej, jeżeli zabraknie nam pamięci danych czy pamięć"
+		},
+		{
+			"timestamps": {
+				"from": "01:13:30,000",
+				"to": "01:14:00,000"
+			},
+			"offsets": {
+				"from": 4410000,
+				"to": 4440000
+			},
+			"text": " programu, ten podział pomiędzy pamięć danych i pamięć programu może się swobodnie przemieszczeć, czyli jeżeli będziemy mieli mały program, ale bardzo dużo danych, bez problemu tego typu architektura to udźwignik. Dobrze, widzę kilka pytań. Dek, co to za firma dzisiaj? Niestety firma Dek już nie istnieje po wprowadzeniu tego swojego ostatniego procesora, niestety, ale spliteowała, tak jak już o tym wspominałem. Czy będziemy na tym przedmiocie omawiać?"
+		},
+		{
+			"timestamps": {
+				"from": "01:14:00,000",
+				"to": "01:14:30,000"
+			},
+			"offsets": {
+				"from": 4440000,
+				"to": 4470000
+			},
+			"text": " Różnice między X86 a RM nie przewiduje rozoznawania tych różnic, ponieważ tutaj byśmy musieli już wejść dużo, dużo głębiej w założenia. Tego typu rozróżnienie na pewno dostaną Państwo w ramach przedmiotu SYTS, czyli systemy cyfrowe na trzecim semestrze, o ile mnie pamięć nie myli, ale na ten moment, jak na pierwszy semestr jest to zagadnienie"
+		},
+		{
+			"timestamps": {
+				"from": "01:14:30,000",
+				"to": "01:15:00,000"
+			},
+			"offsets": {
+				"from": 4470000,
+				"to": 4500000
+			},
+			"text": " troszeczkę zbyt złożone, żeby wszyscy nie mogli w pełni zrozumieć. Okazuje się, że Intel 7 pozostaje najbardziej niezawodnym z najnowszych modeli. Czy jest najbardziej niezawodnym? Jeszcze jest za krótko, żeby to określić, chociaż powiem szczerze, że patrząc na rynek dużo bardziej niezawodnym jest okazuje się Intel 9."
+		},
+		{
+			"timestamps": {
+				"from": "01:15:00,000",
+				"to": "01:15:30,000"
+			},
+			"offsets": {
+				"from": 4500000,
+				"to": 4530000
+			},
+			"text": " Wszystkie te podziały na architektury trzeba dokładnie rozróżniać i wiedzieć na czym polegają. Tak jak najbardziej należy je znać i należy je rozróżniać między sobą. No dobrze, no i tym samym doszliśmy do końca dzisiejszego wykładu. Zostało nam jeszcze 12 minut, więc idealnie, żeby właśnie odpowiedź na wszelkiego rodzaju pytania z Państwa strony. W związku z czym czekam na takowe. Jeżeli nie ma pytań z Państwa strony, no to wtedy"
+		},
+		{
+			"timestamps": {
+				"from": "01:15:30,000",
+				"to": "01:16:00,000"
+			},
+			"offsets": {
+				"from": 4530000,
+				"to": 4560000
+			},
+			"text": " z mojej strony na dzisiaj to wszystko i są Państwo wolni. Jeżeli są, to jeszcze przez kilka minut tutaj pobędę i będę odpowiadał na bieżąco na pytania, które będą się pojawiały."
+		},
+		{
+			"timestamps": {
+				"from": "01:16:00,000",
+				"to": "01:16:30,000"
+			},
+			"offsets": {
+				"from": 4560000,
+				"to": 4590000
+			},
+			"text": " Ile będzie pytań na egzaminie? Nie wiem, ale mogę podejrzewać, że będzie ich o może 30, może 50. To zobaczymy, tak jak mówiłem kwestia egzaminu jest rzeczą"
+		},
+		{
+			"timestamps": {
+				"from": "01:16:30,000",
+				"to": "01:17:00,000"
+			},
+			"offsets": {
+				"from": 4590000,
+				"to": 4620000
+			},
+			"text": " do sprecyzowania podczas ostatniego wykładu. Czy trzeba znać dokładnie daty pojawiania się tych procesorów? Nie, w żadnym wypadku nie będę Państwa męczył o żadne daty. Jedenie co, no to fajnie byłoby jakby kojarzyli Państwo mniej więcej okresy w jakich to było, tak? Ale w żadnym wypadku dat nie będę"
+		},
+		{
+			"timestamps": {
+				"from": "01:17:00,000",
+				"to": "01:17:30,000"
+			},
+			"offsets": {
+				"from": 4620000,
+				"to": 4650000
+			},
+			"text": " nie będę pytała, nie będę oczekiwał od Państwa. Czy prezentacja będzie na Teams? Tak, prezentacja będzie na Teams. Za chwilkę ją wygeneruję jak skończę wykład i Państwu wrzucę do zakładki pliki tam, gdzie znajdują się zresztą znajdują się również zasady zaliczenia. Czy nagranie wykładu będzie udostępnione po wykładzie? Nie, nie nagrywam wykładu oraz nie udostępniam."
+		},
+		{
+			"timestamps": {
+				"from": "01:17:30,000",
+				"to": "01:18:00,000"
+			},
+			"offsets": {
+				"from": 4650000,
+				"to": 4680000
+			},
+			"text": " Jeżeli chodzi o wykłady realizowane w formie online mają one charakter online, a nie zapisu udostępnianego po wykładzie. Czy będziemy dostawać prace domowe? No po niektórych wykładach to nie będą prace domowe, tylko to będą ewentualnie jakieś zadanka, które pozwolą Państwu przećwiczyć pewne praktyczne"
+		},
+		{
+			"timestamps": {
+				"from": "01:18:00,000",
+				"to": "01:18:30,000"
+			},
+			"offsets": {
+				"from": 4680000,
+				"to": 4710000
+			},
+			"text": " elementy omawiane podczas wykładów, ale to nie będą sensu, stricte prace domowe, nie będą musieli Państwom ich wysyłać, nie będą one w żaden sposób oceniane. Czy naprawdę musimy znać tak dużą ilość tych architektur, aż w tak szczegółowy sposób?"
+		},
+		{
+			"timestamps": {
+				"from": "01:18:30,000",
+				"to": "01:19:00,000"
+			},
+			"offsets": {
+				"from": 4710000,
+				"to": 4740000
+			},
+			"text": " W sposób w jaki Państwu przedstawiłem ten architektur jest naprawdę pobieżny i nie powiedziałbym, że jest to akurat szczegółowy sposób reprezentacji tych architektur, mają Państwo główne podziały i w jaki sposób one działają, w związku z czym tak jak najbardziej ta wiedza jest potrzebna, ale nie powiedziałbym, że jest ona szczegółowa, żeby jeżeli byśmy chcieli te wszystkie architektury omówić szczegółowe,"
+		},
+		{
+			"timestamps": {
+				"from": "01:19:00,000",
+				"to": "01:19:30,000"
+			},
+			"offsets": {
+				"from": 4740000,
+				"to": 4770000
+			},
+			"text": " to powiem szczerze, że zabrakłoby nam nawet i tych 15 wykładów na same te podstawowe architektury, które sobie już po krótce omówiliśmy. Czy wszystkie wykłady będą online? Tak, w przypadku tego semestru wszystkie wykłady sprzedmiotu tak będą realizowane w ten sposób, jak w dzisiejszym, czyli będą miały formę online. Czy wszystkie pozycje z literatury są niezbędne do zdania przedmiotu?"
+		},
+		{
+			"timestamps": {
+				"from": "01:19:30,000",
+				"to": "01:20:00,000"
+			},
+			"offsets": {
+				"from": 4770000,
+				"to": 4800000
+			},
+			"text": " I czwarta i piąta są dodatkowymi. Czy powinny być przeczytane na pierwszym semestru, czy mają się przydać na dłużej? One się przydadzą Państwo na dużo dłużej do końca semestru i również później do pracy zawodowej. Czy obecność jest w jakiś sposób sprawdzana z online wykładów? Jeżeli chodzi o obecność, ona jest automatycznie rejestrowana, no bo to jest jednak spotkanie online."
+		},
+		{
+			"timestamps": {
+				"from": "01:20:00,000",
+				"to": "01:20:30,000"
+			},
+			"offsets": {
+				"from": 4800000,
+				"to": 4830000
+			},
+			"text": " Przez skoro nie ma nagrań z lekcji, to czy będzie można się na dodatkowe konsultacje faktury umówić. Jak najbardziej realizuję konsultacje na uczelni w ramach tego przedmiotu. Bez problemu, bez problemu mogą Państwo się na to umawiać. Mailowo najlepiej, tylko uprzedzam tego typu konsultacje, trwają przeważnie 15-20 minut."
+		},
+		{
+			"timestamps": {
+				"from": "01:20:30,000",
+				"to": "01:21:00,000"
+			},
+			"offsets": {
+				"from": 4830000,
+				"to": 4860000
+			},
+			"text": " W związku z czym wtedy muszą Państwo już przyjść z przygotowanymi jakimiś pytaniami. Oczywiście proszę pamiętać, że jeżeli mają Państwo jakieś pytania, to można je pytać, je zadawać podczas wykładów, jak i gdzieś lokalnie na uczelni, jeżeli nie Państwo spotkają, a jestem na uczelni praktycznie codziennie. I jaki oczywiście w formie mailowej? W jaki sposób jest sprawdana obecność? Jest sprawdana automatycznie w momencie, jak Państwo wchodzą i wychodzą."
+		},
+		{
+			"timestamps": {
+				"from": "01:21:00,000",
+				"to": "01:21:30,000"
+			},
+			"offsets": {
+				"from": 4860000,
+				"to": 4890000
+			},
+			"text": " z spotkania."
+		}
+	]
+}

@@ -1,13 +1,662 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0f172a" />
-    <title>Asystent Studenta</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-  </html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="StudyFlow - Inteligentny asystent studenta z transkrypcją AI, fiszkami SRS i zarządzaniem notatkami">
+    <title>StudyFlow - Twój Inteligentny Asystent</title>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="./frontend/css/main.css">
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/idb@8.0.0/build/umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
+</head>
+<body>
+    <div class="background-gradient"></div>
+    
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">📚</div>
+                <span>StudyFlow</span>
+            </div>
+            <div class="user-info">
+                <div class="avatar">U</div>
+                <span id="username">Student</span>
+            </div>
+        </header>
+
+        <nav>
+            <button class="nav-btn active" data-tab="dashboard">📊 Dashboard</button>
+            <button class="nav-btn" data-tab="flashcards">🎴 Fiszki</button>
+            <button class="nav-btn" data-tab="lectures">📖 Wykłady</button>
+            <button class="nav-btn" data-tab="new-lecture">✨ Nowy wykład</button>
+            <button class="nav-btn" data-tab="subjects">📚 Przedmioty</button>
+            <button class="nav-btn" data-tab="schedule">📅 Plan zajęć</button>
+            <button class="nav-btn" data-tab="settings">⚙️ Ustawienia</button>
+        </nav>
+
+        <!-- Dashboard -->
+        <div class="content active" id="dashboard">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-flashcards">0</div>
+                    <div class="stat-label">Fiszek opanowanych</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-subjects">0</div>
+                    <div class="stat-label">Aktywnych przedmiotów</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-accuracy">0%</div>
+                    <div class="stat-label">Średnia skuteczność</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-streak">0</div>
+                    <div class="stat-label">Dni streak</div>
+                </div>
+            </div>
+
+            <h2 style="margin-bottom: 20px; font-size: 22px;">Ostatnia aktywność</h2>
+            <div class="grid" id="recent-activity">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+
+        <!-- Flashcards -->
+        <div class="content" id="flashcards">
+            <div class="action-bar">
+                <input type="text" class="search-box" id="flashcard-search" placeholder="🔍 Szukaj fiszek...">
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn" id="btn-collapse-all" 
+                            style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1)); 
+                                   border: 1px solid rgba(99, 102, 241, 0.3); 
+                                   color: var(--primary); 
+                                   padding: 10px 16px;" 
+                            title="Zwiń wszystkie sekcje">
+                        ▲ Zwiń wszystko
+                    </button>
+                    <button class="btn" id="btn-expand-all" 
+                            style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1)); 
+                                   border: 1px solid rgba(99, 102, 241, 0.3); 
+                                   color: var(--primary); 
+                                   padding: 10px 16px;" 
+                            title="Rozwiń wszystkie sekcje">
+                        ▼ Rozwiń wszystko
+                    </button>
+                    <button class="btn btn-primary" id="btn-add-flashcard">+ Dodaj fiszkę</button>
+                </div>
+            </div>
+
+            <h2 style="margin-bottom: 20px; font-size: 22px;">Twoje fiszki</h2>
+            <div id="flashcards-grid">
+                <!-- Dynamic flashcards -->
+            </div>
+        </div>
+
+        <!-- Lectures -->
+        <div class="content" id="lectures">
+            <div class="action-bar">
+                <input type="text" class="search-box" id="lecture-search" placeholder="🔍 Szukaj wykładów...">
+                <button class="btn btn-primary" id="btn-add-lecture">+ Dodaj wykład</button>
+            </div>
+
+            <h2 style="margin-bottom: 20px; font-size: 22px;">Twoje wykłady</h2>
+            <div id="lectures-list">
+                <!-- Dynamic lectures -->
+            </div>
+        </div>
+
+        <!-- Lecture View -->
+        <div class="content" id="lecture-view">
+            <div style="margin-bottom: 20px;">
+                <button class="btn" id="btn-back-to-lectures" style="background: var(--bg-card);">
+                    ← Powrót do wykładów
+                </button>
+            </div>
+
+            <div style="max-width: 1200px; margin: 0 auto;">
+                <div style="margin-bottom: 30px;">
+                    <h1 id="lecture-view-title" style="font-size: 32px; margin-bottom: 10px;">Tytuł wykładu</h1>
+                    <p id="lecture-view-meta" style="color: var(--text-secondary);">Przedmiot • Data</p>
+                </div>
+
+                <!-- Tabs -->
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--bg-card); flex-wrap: wrap;">
+                    <button class="tab-btn active" data-lecture-tab="notes">📝 Notatki</button>
+                    <button class="tab-btn" data-lecture-tab="detailed">📋 Szczegółowa</button>
+                    <button class="tab-btn" data-lecture-tab="short">📄 Krótka</button>
+                    <button class="tab-btn" data-lecture-tab="keypoints">🎯 Kluczowe</button>
+                    <button class="tab-btn" data-lecture-tab="flashcards">🎴 Fiszki</button>
+                    <button class="tab-btn" data-lecture-tab="quiz">📝 Quiz</button>
+                    <button class="tab-btn" data-lecture-tab="transcription">📄 Transkrypcja</button>
+                </div>
+
+                <!-- Tab Content: Notes -->
+                <div class="lecture-tab-content active" id="lecture-tab-notes">
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3>Notatki z wykładu</h3>
+                            <button class="btn btn-primary" id="btn-generate-notes">
+                                ✨ Generuj z AI
+                            </button>
+                        </div>
+                        <div id="lecture-notes-content" style="min-height: 200px;">
+                            <p style="color: var(--text-secondary); text-align: center; padding: 40px;">
+                                Brak notatek. Użyj przycisku "Generuj z AI" aby stworzyć notatki automatycznie.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Flashcards -->
+                <div class="lecture-tab-content" id="lecture-tab-flashcards">
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3>Fiszki do nauki</h3>
+                            <button class="btn btn-primary" id="btn-generate-flashcards">
+                                ✨ Generuj z AI
+                            </button>
+                        </div>
+                        <div id="lecture-flashcards-content" style="min-height: 200px;">
+                            <p style="color: var(--text-secondary); text-align: center; padding: 40px;">
+                                Brak fiszek. Użyj przycisku "Generuj z AI" aby stworzyć fiszki automatycznie.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Detailed Note -->
+                <div class="lecture-tab-content" id="lecture-tab-detailed">
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3>Szczegółowa notatka</h3>
+                            <button class="btn btn-primary" id="btn-generate-detailed">
+                                ✨ Generuj z AI
+                            </button>
+                        </div>
+                        <div id="lecture-detailed-content" class="markdown-content" style="min-height: 200px;">
+                            <p style="color: var(--text-secondary); text-align: center; padding: 40px;">
+                                Brak szczegółowej notatki. Użyj przycisku "Generuj z AI".
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Short Note -->
+                <div class="lecture-tab-content" id="lecture-tab-short">
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3>Krótka notatka</h3>
+                            <button class="btn btn-primary" id="btn-generate-short">
+                                ✨ Generuj z AI
+                            </button>
+                        </div>
+                        <div id="lecture-short-content" class="markdown-content" style="min-height: 200px;">
+                            <p style="color: var(--text-secondary); text-align: center; padding: 40px;">
+                                Brak krótkiej notatki. Użyj przycisku "Generuj z AI".
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Key Points -->
+                <div class="lecture-tab-content" id="lecture-tab-keypoints">
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3>Kluczowe punkty</h3>
+                            <button class="btn btn-primary" id="btn-generate-keypoints">
+                                ✨ Generuj z AI
+                            </button>
+                        </div>
+                        <div id="lecture-keypoints-content" class="markdown-content" style="min-height: 200px;">
+                            <p style="color: var(--text-secondary); text-align: center; padding: 40px;">
+                                Brak kluczowych punktów. Użyj przycisku "Generuj z AI".
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Quiz -->
+                <div class="lecture-tab-content" id="lecture-tab-quiz">
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3>Quiz</h3>
+                            <button class="btn btn-primary" id="btn-generate-quiz">
+                                ✨ Generuj z AI
+                            </button>
+                        </div>
+                        <div id="lecture-quiz-content" style="min-height: 200px;">
+                            <p style="color: var(--text-secondary); text-align: center; padding: 40px;">
+                                Brak quizu. Użyj przycisku "Generuj z AI" aby stworzyć quiz automatycznie.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Transcription -->
+                <div class="lecture-tab-content" id="lecture-tab-transcription">
+                    <div class="card">
+                        <h3 style="margin-bottom: 20px;">Transkrypcja nagrania</h3>
+                        <div id="lecture-transcription-content" style="white-space: pre-wrap; font-family: monospace; background: var(--bg-dark); padding: 20px; border-radius: 8px; min-height: 200px;">
+                            <p style="color: var(--text-secondary);">Brak transkrypcji</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Lecture -->
+        <div class="content" id="new-lecture">
+            <h2 style="margin-bottom: 30px; font-size: 28px;">✨ Utwórz nowy wykład</h2>
+            
+            <div class="card" style="max-width: 800px; margin: 0 auto;">
+                <form id="new-lecture-form">
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Przedmiot</label>
+                        <select id="lecture-subject" class="search-box" required style="width: 100%;">
+                            <option value="">Wybierz przedmiot...</option>
+                        </select>
+                    </div>
+
+                    <!-- Auto-generated title (shown after transcription) -->
+                    <div id="lecture-title-section" style="margin-bottom: 20px; display: none;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">
+                            ✨ Tytuł wykładu (wygenerowany automatycznie)
+                        </label>
+                        <input type="text" id="lecture-title" class="search-box" 
+                               placeholder="Tytuł zostanie wygenerowany po transkrypcji..." 
+                               style="width: 100%;">
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                            Możesz edytować tytuł przed zapisaniem
+                        </p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Nagranie audio (opcjonalne)</label>
+                        <div style="display: flex; gap: 10px;">
+                            <button type="button" class="btn btn-primary" id="btn-start-recording">
+                                🎤 Rozpocznij nagrywanie
+                            </button>
+                            <button type="button" class="btn" id="btn-upload-audio" 
+                                    style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1)); 
+                                           border: 1px solid rgba(99, 102, 241, 0.3); 
+                                           color: var(--primary);">
+                                📁 Wgraj plik
+                            </button>
+                            <input type="file" id="audio-file-input" accept="audio/*" style="display: none;">
+                        </div>
+                        <div id="recording-status" style="margin-top: 10px; display: none;">
+                            <span style="color: var(--accent);">● Nagrywanie...</span>
+                            <button type="button" class="btn" id="btn-stop-recording" style="background: var(--accent); color: white;">
+                                ⏹ Zatrzymaj
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 20px;" id="transcription-section" style="display: none;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Transkrypcja</label>
+                        <div id="transcription-progress" style="margin-bottom: 10px; display: none;">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="transcription-progress-bar" style="width: 0%"></div>
+                            </div>
+                            <p style="text-align: center; margin-top: 8px; color: var(--text-secondary);">
+                                Transkrybowanie...
+                            </p>
+                        </div>
+                        <textarea id="lecture-transcription" class="search-box" rows="10" 
+                                  placeholder="Transkrypcja pojawi się tutaj..." 
+                                  style="width: 100%; font-family: monospace;"></textarea>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Notatki</label>
+                        <textarea id="lecture-notes" class="search-box" rows="6" 
+                                  placeholder="Dodaj swoje notatki..." 
+                                  style="width: 100%;"></textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button type="button" class="btn" id="btn-cancel-lecture" 
+                                style="background: var(--bg-card);">
+                            Anuluj
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            💾 Zapisz wykład
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Subjects -->
+        <div class="content" id="subjects">
+            <div class="action-bar">
+                <input type="text" class="search-box" id="subject-search" placeholder="🔍 Szukaj przedmiotów...">
+                <button class="btn btn-primary" id="btn-add-subject">+ Dodaj przedmiot</button>
+            </div>
+
+            <h2 style="margin-bottom: 20px; font-size: 22px;">Twoje przedmioty</h2>
+            <div class="grid" id="subjects-grid">
+                <!-- Dynamic subjects -->
+            </div>
+        </div>
+
+        <!-- Schedule -->
+        <div class="content" id="schedule">
+            <div class="action-bar">
+                <button class="btn btn-primary" id="btn-add-schedule">+ Dodaj zajęcia</button>
+            </div>
+
+            <h2 style="margin-bottom: 20px; font-size: 22px;">📅 Plan zajęć</h2>
+            
+            <div id="schedule-view" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                <!-- Dynamic schedule will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="content" id="settings">
+            <h2 style="margin-bottom: 30px; font-size: 28px;">⚙️ Ustawienia</h2>
+            
+            <div style="max-width: 800px; margin: 0 auto;">
+                <!-- Whisper Settings -->
+                <div class="card" style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 20px;">🎤 Transkrypcja (Whisper)</h3>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Model</label>
+                        <select id="setting-whisper-model" class="search-box" style="width: 100%;">
+                            <option value="tiny">Tiny (szybki, 75MB)</option>
+                            <option value="base" selected>Base (optymalny, 142MB)</option>
+                            <option value="small">Small (dokładny, 466MB)</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Język</label>
+                        <select id="setting-whisper-language" class="search-box" style="width: 100%;">
+                            <option value="pl">Polski</option>
+                            <option value="en">Angielski</option>
+                            <option value="auto">Auto-detect</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 0;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Backend URL</label>
+                        <input type="text" id="setting-backend-url" class="search-box" 
+                               value="http://localhost:3001" style="width: 100%;">
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 8px; margin-bottom: 12px;">
+                            ⚠️ <strong>Backend musi być uruchomiony!</strong>
+                        </p>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button type="button" id="btn-check-backend" class="btn" 
+                                    style="background: var(--primary); color: white;">
+                                🔍 Sprawdź backend
+                            </button>
+                            <span id="backend-status" style="font-size: 14px;"></span>
+                        </div>
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 12px; padding: 12px; background: var(--bg-hover); border-radius: 8px;">
+                            <strong>📝 Jak uruchomić backend:</strong><br>
+                            Otwórz nowy terminal i wpisz: <code style="background: var(--bg-dark); padding: 2px 6px; border-radius: 4px; color: var(--primary);">npm run server</code>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- GitHub Settings -->
+                <div class="card" style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 20px;">🔄 Synchronizacja GitHub</h3>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Repository (owner/repo)</label>
+                        <input type="text" id="setting-github-repo" class="search-box" 
+                               placeholder="np. username/my-notes" style="width: 100%;">
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Personal Access Token</label>
+                        <input type="password" id="setting-github-token" class="search-box" 
+                               placeholder="ghp_..." style="width: 100%;">
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                            <a href="https://github.com/settings/tokens" target="_blank" style="color: var(--primary);">
+                                Stwórz token na GitHub →
+                            </a>
+                        </p>
+                    </div>
+
+                    <div style="margin-bottom: 0;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Branch</label>
+                        <input type="text" id="setting-github-branch" class="search-box" 
+                               value="main" style="width: 100%;">
+                    </div>
+                </div>
+
+                <!-- User Settings -->
+                <div class="card" style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 20px;">👤 Profil</h3>
+                    
+                    <div style="margin-bottom: 0;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Nazwa użytkownika</label>
+                        <input type="text" id="setting-username" class="search-box" 
+                               placeholder="Twoje imię" style="width: 100%;">
+                    </div>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="card" style="margin-bottom: 20px; border: 2px solid var(--accent);">
+                    <h3 style="margin-bottom: 15px; color: var(--accent);">⚠️ Strefa niebezpieczna</h3>
+                    
+                    <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">
+                        Te operacje są nieodwracalne i usuwają wszystkie dane z aplikacji.
+                    </p>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <button type="button" class="btn" id="btn-clear-lectures" 
+                                style="background: var(--accent)22; color: var(--accent); width: 100%; justify-content: center;">
+                            🗑️ Usuń wszystkie wykłady
+                        </button>
+                        
+                        <button type="button" class="btn" id="btn-clear-flashcards" 
+                                style="background: var(--accent)22; color: var(--accent); width: 100%; justify-content: center;">
+                            🗑️ Usuń wszystkie fiszki
+                        </button>
+                        
+                        <button type="button" class="btn" id="btn-clear-schedule" 
+                                style="background: var(--accent)22; color: var(--accent); width: 100%; justify-content: center;">
+                            🗑️ Usuń cały plan zajęć
+                        </button>
+                        
+                        <button type="button" class="btn" id="btn-clear-subjects" 
+                                style="background: var(--accent)22; color: var(--accent); width: 100%; justify-content: center;">
+                            🗑️ Usuń wszystkie przedmioty
+                        </button>
+                        
+                        <button type="button" class="btn" id="btn-clear-all-data" 
+                                style="background: var(--accent); color: white; width: 100%; justify-content: center; font-weight: 700;">
+                            ⚠️ USUŃ WSZYSTKIE DANE
+                        </button>
+                    </div>
+                    
+                    <p style="color: var(--text-secondary); margin-top: 15px; font-size: 12px; font-style: italic;">
+                        💡 Wskazówka: Te funkcje są przydatne podczas testowania aplikacji
+                    </p>
+                </div>
+
+                <!-- Save Button -->
+                <div style="display: flex; justify-content: flex-end;">
+                    <button class="btn btn-primary" id="btn-save-settings">
+                        💾 Zapisz ustawienia
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    
+    <!-- Add Subject Modal -->
+    <div id="modal-add-subject" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 20px;">📚 Dodaj nowy przedmiot</h3>
+            <form id="form-add-subject">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Nazwa przedmiotu</label>
+                    <input type="text" id="input-subject-name" class="search-box" required 
+                           placeholder="np. Matematyka" style="width: 100%;" autofocus>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Kolor</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button type="button" class="color-btn" data-color="#6366f1" style="background: #6366f1;"></button>
+                        <button type="button" class="color-btn" data-color="#8b5cf6" style="background: #8b5cf6;"></button>
+                        <button type="button" class="color-btn" data-color="#ec4899" style="background: #ec4899;"></button>
+                        <button type="button" class="color-btn" data-color="#10b981" style="background: #10b981;"></button>
+                        <button type="button" class="color-btn" data-color="#f59e0b" style="background: #f59e0b;"></button>
+                        <button type="button" class="color-btn active" data-color="#ef4444" style="background: #ef4444;"></button>
+                    </div>
+                    <input type="hidden" id="input-subject-color" value="#ef4444">
+                </div>
+
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="btn" onclick="closeModal('modal-add-subject')" 
+                            style="background: var(--bg-card);">
+                        Anuluj
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        ✅ Dodaj przedmiot
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Flashcard Modal -->
+    <div id="modal-add-flashcard" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 20px;">🎴 Dodaj nową fiszkę</h3>
+            <form id="form-add-flashcard">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Przednia strona (pytanie)</label>
+                    <textarea id="input-flashcard-front" class="search-box" rows="3" required 
+                              placeholder="np. Co to jest rekurencja?" 
+                              style="width: 100%; resize: vertical;" autofocus></textarea>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Tylna strona (odpowiedź)</label>
+                    <textarea id="input-flashcard-back" class="search-box" rows="3" required 
+                              placeholder="np. Funkcja która wywołuje samą siebie..." 
+                              style="width: 100%; resize: vertical;"></textarea>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Przedmiot</label>
+                    <select id="input-flashcard-subject" class="search-box" required style="width: 100%;">
+                        <option value="">Wybierz przedmiot...</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="btn" onclick="closeModal('modal-add-flashcard')" 
+                            style="background: var(--bg-card);">
+                        Anuluj
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        ✅ Dodaj fiszkę
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Schedule Event Modal -->
+    <div id="modal-add-schedule" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 20px;">📅 Dodaj zajęcia do planu</h3>
+            <form id="form-add-schedule">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Przedmiot</label>
+                    <select id="input-schedule-subject" class="search-box" required style="width: 100%;">
+                        <option value="">Wybierz przedmiot...</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Nazwa zajęć (opcjonalnie)</label>
+                    <input type="text" id="input-schedule-title" class="search-box" 
+                           placeholder="np. Wykład, Ćwiczenia, Laboratorium..." style="width: 100%;">
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        Jeśli puste, użyta zostanie nazwa przedmiotu
+                    </p>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Dzień tygodnia</label>
+                    <select id="input-schedule-day" class="search-box" required style="width: 100%;">
+                        <option value="1">Poniedziałek</option>
+                        <option value="2">Wtorek</option>
+                        <option value="3">Środa</option>
+                        <option value="4">Czwartek</option>
+                        <option value="5">Piątek</option>
+                        <option value="6">Sobota</option>
+                        <option value="0">Niedziela</option>
+                    </select>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Godzina rozpoczęcia</label>
+                        <input type="time" id="input-schedule-start" class="search-box" required style="width: 100%;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Godzina zakończenia</label>
+                        <input type="time" id="input-schedule-end" class="search-box" required style="width: 100%;">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Miejsce (opcjonalnie)</label>
+                    <input type="text" id="input-schedule-location" class="search-box" 
+                           placeholder="np. Sala A101, Budynek Informatyki..." style="width: 100%;">
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Typ zajęć</label>
+                    <select id="input-schedule-type" class="search-box" style="width: 100%;">
+                        <option value="lecture">Wykład</option>
+                        <option value="exercise">Ćwiczenia</option>
+                        <option value="lab">Laboratorium</option>
+                        <option value="seminar">Seminarium</option>
+                        <option value="exam">Egzamin</option>
+                        <option value="other">Inne</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Notatki (opcjonalnie)</label>
+                    <textarea id="input-schedule-notes" class="search-box" rows="3" 
+                              placeholder="Dodatkowe informacje..." 
+                              style="width: 100%; resize: vertical;"></textarea>
+                </div>
+
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="btn" onclick="closeModal('modal-add-schedule')" 
+                            style="background: var(--bg-card);">
+                        Anuluj
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        ✅ Dodaj do planu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App Script -->
+    <script type="module" src="./frontend/js/app.js"></script>
+</body>
+</html>

@@ -42,8 +42,9 @@ const upload = multer({
   limits: { fileSize: 1024 * 1024 * 1024 } // 1GB limit dla bardzo długich nagrań (1.5h)
 })
 
-// Cache dla modelu
+// Cache dla modeli
 let transcriberCache = {}
+let summarizerCache = null
 
 console.log('[Server] Starting Student Asystent Backend...')
 console.log(`[Server] Model path: ${env.localModelPath}`)
@@ -224,7 +225,7 @@ app.post('/transcribe-cpp', upload.single('audio'), async (req, res) => {
         whisperArgs.push('-l', language)
       }
 
-      const whisperResult = await execFile('/opt/homebrew/opt/whisper-cpp/bin/whisper-cli', whisperArgs)
+      const whisperResult = await execFile('/opt/homebrew/bin/whisper-cli', whisperArgs)
       
       const duration = ((Date.now() - startTime) / 1000).toFixed(1)
       console.log(`[TranscribeCPP] Zakończono w ${duration}s`)
@@ -449,7 +450,7 @@ app.post('/transcribe-stream-cpp', upload.single('audio'), async (req, res) => {
 
       sendProgress(60, 'przetwarzanie audio')
 
-      const whisperResult = await execFile('/opt/homebrew/opt/whisper-cpp/bin/whisper-cli', whisperArgs)
+      const whisperResult = await execFile('/opt/homebrew/bin/whisper-cli', whisperArgs)
       
       const duration = ((Date.now() - startTime) / 1000).toFixed(1)
       console.log(`[TranscribeStreamCPP] Zakończono w ${duration}s`)
@@ -559,14 +560,753 @@ async function audioBufferToPCM(buffer) {
   }
 }
 
+// ============================================
+// AI TEXT GENERATION
+// ============================================
+
+// Endpoint do generowania tytułu wykładu z transkrypcji
+app.post('/generate-title', express.json(), async (req, res) => {
+  try {
+    const { transcription } = req.body;
+    
+    if (!transcription || transcription.trim().length === 0) {
+      return res.status(400).json({ error: 'Brak transkrypcji' });
+    }
+    
+    console.log(`[GenerateTitle] Otrzymano transkrypcję: ${transcription.length} znaków`);
+    
+    // === OLLAMA LLM - Ten sam model co do generowania notatek ===
+    const ollamaUrl = 'http://localhost:11434';
+    const model = 'qwen2.5:14b'; // Lub phi3.5:3.8b jeśli qwen nie działa
+    
+    // Prompt dla LLM
+    const prompt = `Przeanalizuj poniższą transkrypcję wykładu i wygeneruj ZWIĘZŁY tytuł (maksymalnie 60 znaków).
+
+TRANSKRYPCJA:
+"${transcription.substring(0, 8000)}"${transcription.length > 8000 ? `\n\n[... i ${transcription.length - 8000} znaków więcej]` : ''}
+
+ZASADY:
+- Tytuł musi być KRÓTKI (max 60 znaków)
+- Opisuj GŁÓWNY TEMAT wykładu
+- Pomiń wprowadzenia ("dzisiaj będziemy", "chwilkę poczekamy")
+- Użyj formy rzeczownikowej (np. "Algorytmy sortowania" zamiast "Omawiać algorytmy")
+- TYLKO tytuł, bez dodatkowego tekstu
+
+TYTUŁ:`;
+
+    console.log(`[GenerateTitle] Wywołuję Ollama model: ${model}...`);
+    const startTime = Date.now();
+    
+    // Timeout 60s
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
+    
+    try {
+      const response = await fetch(`${ollamaUrl}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model,
+          prompt,
+          stream: false,
+          options: {
+            temperature: 0.1, // Deterministyczne
+            top_p: 0.9,
+            top_k: 40,
+            num_predict: 100 // Max 100 tokenów (~60 znaków)
+          }
+        })
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`Ollama error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const duration = Date.now() - startTime;
+      
+      let title = data.response.trim();
+      
+      // Oczyszczanie odpowiedzi LLM
+      title = title
+        .replace(/^(Tytuł|TYTUŁ|Title):\s*/i, '')
+        .replace(/^["']|["']$/g, '') // Usuń cudzysłowy
+        .replace(/\n.*/g, '') // Tylko pierwsza linia
+        .trim();
+      
+      // Obetnij do 60 znaków
+      if (title.length > 60) {
+        const lastSpace = title.substring(0, 60).lastIndexOf(' ');
+        title = lastSpace > 40 ? title.substring(0, lastSpace) + '...' : title.substring(0, 60) + '...';
+      }
+      
+      // Capitalize pierwsza litera
+      if (title.length > 0) {
+        title = title.charAt(0).toUpperCase() + title.slice(1);
+      }
+      
+      console.log(`[GenerateTitle] Wygenerowano w ${duration}ms: "${title}"`);
+      
+      res.json({
+        success: true,
+        title: title,
+        model: model,
+        duration: duration
+      });
+      
+    } catch (ollamaError) {
+      clearTimeout(timeoutId);
+      
+      // Sprawdź czy to timeout
+      if (ollamaError.name === 'AbortError') {
+        console.error('[GenerateTitle] Timeout - Ollama nie odpowiedziała w 60s');
+        return res.status(504).json({ error: 'Timeout - model nie odpowiedział w czasie' });
+      }
+      
+      // Próbuj fallback na mniejszy model
+      console.log('[GenerateTitle] Qwen nie działa, próbuję phi3.5:3.8b...');
+      
+      try {
+        const fallbackResponse = await fetch(`${ollamaUrl}/api/generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'phi3.5:3.8b',
+            prompt,
+            stream: false,
+            options: { temperature: 0.1, num_predict: 100 }
+          })
+        });
+        
+        if (fallbackResponse.ok) {
+          const data = await fallbackResponse.json();
+          let title = data.response.trim()
+            .replace(/^(Tytuł|TYTUŁ|Title):\s*/i, '')
+            .replace(/^["']|["']$/g, '')
+            .substring(0, 60);
+          
+          console.log(`[GenerateTitle] Fallback sukces: "${title}"`);
+          return res.json({ success: true, title, model: 'phi3.5:3.8b (fallback)' });
+        }
+      } catch {}
+      
+      throw ollamaError;
+    }
+    
+  } catch (error) {
+    console.error('[GenerateTitle] Błąd:', error);
+    
+    // Sprawdź czy Ollama działa
+    try {
+      const healthCheck = await fetch('http://localhost:11434/api/tags');
+      if (!healthCheck.ok) {
+        return res.status(503).json({ 
+          error: 'Ollama nie jest dostępna',
+          details: 'Uruchom: ollama serve'
+        });
+      }
+    } catch {
+      return res.status(503).json({ 
+        error: 'Ollama nie jest dostępna',
+        details: 'Zainstaluj i uruchom: ollama serve'
+      });
+    }
+    
+    res.status(500).json({ 
+      error: error.message || 'Błąd generowania tytułu'
+    });
+  }
+});
+
+// Helper: Inteligentne generowanie tytułu z transkrypcji
+function generateTitleFromTranscription(transcription) {
+  console.log(`[TitleGen] Analiza ${transcription.length} znaków transkrypcji...`);
+  
+  // Oczyszczanie
+  let text = transcription.trim().replace(/\s+/g, ' ').toLowerCase();
+  
+  // Usuń typowe artefakty audio
+  text = text.replace(/\b(um|uh|eh|hmm|eee|no to|dobra|dobrze|okej|ok)\b/gi, ' ');
+  text = text.replace(/\s+/g, ' '); // Normalizuj spacje
+  
+  // === STRATEGIA 1: Szukaj explicytnego tematu w całym tekście ===
+  const topicIndicators = [
+    // "temat wykładu to: TEMAT"
+    /temat\s+(dzisiejsz[eyo]+\s+)?(wykładu|zajęć|lekcji)\s+(to\s+)?[:\-]?\s*([a-ząćęłńóśźż\s]{10,80})/gi,
+    
+    // "dzisiaj będziemy [czasownik] TEMAT" - pomijamy czasownik!
+    /dzisiaj\s+będziemy\s+(omawiać|poznawać|uczyć się|mówić o)\s+([a-ząćęłńóśźż\s]{10,80})/gi,
+    /dzisiaj\s+(omówimy|poznamy)\s+([a-ząćęłńóśźż\s]{10,80})/gi,
+    
+    // "mówimy dziś o TEMAT"
+    /mówimy\s+(dziś|dzisiaj)\s+o\s+([a-ząćęłńóśźż\s]{10,80})/gi,
+    
+    // "zajmiemy się TEMAT"
+    /zajmiemy się\s+([a-ząćęłńóśźż\s]{10,80})/gi,
+    
+    // "omówimy TEMAT"
+    /omówimy\s+(teraz|dzisiaj|dziś)?\s*([a-ząćęłńóśźż\s]{10,80})/gi,
+  ];
+  
+  const foundTopics = [];
+  for (const pattern of topicIndicators) {
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      const topic = match[match.length - 1].trim();
+      if (topic.length > 10 && topic.length < 80) {
+        foundTopics.push(cleanAndCapitalize(topic));
+      }
+    }
+  }
+  
+  if (foundTopics.length > 0) {
+    console.log(`[TitleGen] Znaleziono explicytne tematy: ${foundTopics.join(', ')}`);
+    // Użyj pierwszego znalezionego tematu
+    let title = truncateAtBoundary(foundTopics[0], 60);
+    console.log(`[TitleGen] Wybrany tytuł (explicytny): "${title}"`);
+    return title;
+  }
+  
+  // === STRATEGIA 2: Analiza częstotliwości terminów (TF) ===
+  console.log(`[TitleGen] Brak explicytnego tematu, analizuję terminy...`);
+  
+  // Podziel na słowa i licz częstotliwość
+  const words = text.split(/\s+/).filter(w => w.length > 3);
+  const stopWords = new Set([
+    'jest', 'są', 'był', 'była', 'było', 'były', 'będzie', 'będą', 
+    'może', 'mają', 'miał', 'miała', 'miały', 'oraz', 'albo', 'czyli',
+    'który', 'która', 'które', 'tego', 'tych', 'temu', 'przy', 'przez',
+    'bardzo', 'także', 'również', 'jeśli', 'gdyby', 'ponieważ', 'dlatego',
+    'tutaj', 'teraz', 'wtedy', 'zawsze', 'nigdy', 'czasami', 'często',
+    'więc', 'więcej', 'mniej', 'wszystko', 'nic', 'coś', 'ktoś', 'nikt',
+    'żeby', 'jakby', 'jeszcze', 'już', 'tylko', 'nawet', 'właśnie',
+    'mamy', 'macie', 'masz', 'mieć', 'wiemy', 'wiesz', 'wiecie',
+    'można', 'trzeba', 'należy', 'warto', 'chodzi', 'chce', 'chcemy'
+  ]);
+  
+  const wordFreq = {};
+  for (const word of words) {
+    if (!stopWords.has(word) && /^[a-ząćęłńóśźż]+$/.test(word)) {
+      wordFreq[word] = (wordFreq[word] || 0) + 1;
+    }
+  }
+  
+  // Sortuj według częstotliwości
+  const sortedWords = Object.entries(wordFreq)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10); // Top 10 słów
+  
+  console.log(`[TitleGen] Top terminy: ${sortedWords.map(([w, c]) => `${w}(${c})`).join(', ')}`);
+  
+  // === STRATEGIA 3: Szukaj fraz z top słowami ===
+  const topKeywords = sortedWords.slice(0, 3).map(([w]) => w);
+  
+  // Szukaj zdań zawierających top słowa kluczowe
+  const sentences = transcription.split(/[.!?]+/).filter(s => s.trim().length > 20);
+  
+  for (const keyword of topKeywords) {
+    for (const sentence of sentences.slice(0, 50)) { // Analizuj pierwsze 50 zdań
+      const lowerSentence = sentence.toLowerCase();
+      if (lowerSentence.includes(keyword)) {
+        // Wydobądź fragment wokół słowa kluczowego
+        const words = sentence.trim().split(/\s+/);
+        const keywordIndex = words.findIndex(w => w.toLowerCase().includes(keyword));
+        
+        if (keywordIndex !== -1) {
+          // Weź 3-7 słów wokół słowa kluczowego
+          const start = Math.max(0, keywordIndex - 2);
+          const end = Math.min(words.length, keywordIndex + 5);
+          const phrase = words.slice(start, end).join(' ');
+          
+          if (phrase.length > 15 && phrase.length < 100) {
+            let title = cleanAndCapitalize(phrase);
+            title = truncateAtBoundary(title, 60);
+            console.log(`[TitleGen] Wybrany tytuł (z kontekstu '${keyword}'): "${title}"`);
+            return title;
+          }
+        }
+      }
+    }
+  }
+  
+  // === STRATEGIA 4: Top słowa jako tytuł ===
+  if (topKeywords.length >= 2) {
+    const title = cleanAndCapitalize(topKeywords.slice(0, 3).join(' '));
+    console.log(`[TitleGen] Wybrany tytuł (top słowa): "${title}"`);
+    return title;
+  }
+  
+  // === FALLBACK: Pierwsze sensowne zdanie ===
+  console.log(`[TitleGen] Użycie fallback - pierwsze zdanie`);
+  for (const sentence of sentences.slice(0, 10)) {
+    const cleaned = sentence.trim()
+      .replace(/^(jeszcze|chwilkę|poczekamy|sobie|aż|pewno|wszyscy)/gi, '')
+      .trim();
+    
+    if (cleaned.length > 20) {
+      let title = cleanAndCapitalize(cleaned);
+      title = truncateAtBoundary(title, 60);
+      return title;
+    }
+  }
+  
+  return 'Wykład bez tytułu';
+}
+
+// Helper: Oczyszczanie i kapitalizacja
+function cleanAndCapitalize(text) {
+  // Usuń białe znaki na początku/końcu
+  text = text.trim();
+  
+  // Usuń artefakty na początku
+  text = text.replace(/^(um|uh|eh|hmm|eee|no to|dobra|dobrze|więc|tak więc|otóż|jeszcze|chwilkę|aż)\s+/gi, '');
+  
+  // Capitalize pierwsza litera
+  if (text.length > 0) {
+    text = text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+  }
+  
+  return text;
+}
+
+// Helper: Obcinanie na granicy zdania/słowa
+function truncateAtBoundary(text, maxLength) {
+  if (text.length <= maxLength) {
+    return text;
+  }
+  
+  let truncated = text.substring(0, maxLength);
+  
+  // Spróbuj ciąć na kropce/przecinku
+  const lastPeriod = truncated.lastIndexOf('.');
+  const lastComma = truncated.lastIndexOf(',');
+  
+  if (lastPeriod > maxLength * 0.6) {
+    return truncated.substring(0, lastPeriod);
+  }
+  
+  if (lastComma > maxLength * 0.7) {
+    return truncated.substring(0, lastComma);
+  }
+  
+  // Ciąć na słowie
+  const lastSpace = truncated.lastIndexOf(' ');
+  if (lastSpace > maxLength * 0.7) {
+    return truncated.substring(0, lastSpace) + '...';
+  }
+  
+  return truncated + '...';
+}
+
+// ============================================
+// OLLAMA AI - GENEROWANIE NOTATEK I FISZEK
+// ============================================
+
+// Helper: Wywołanie Ollama API
+async function callOllamaAPI(prompt, model = 'qwen2.5:14b', maxTokens = 2048) {
+  const ollamaUrl = 'http://localhost:11434';
+  
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s timeout
+  
+  try {
+    const response = await fetch(`${ollamaUrl}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model,
+        prompt,
+        stream: false,
+        options: {
+          temperature: 0.3,
+          top_p: 0.9,
+          top_k: 40,
+          num_predict: maxTokens
+        }
+      })
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`Ollama error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data.response.trim();
+    
+  } catch (error) {
+    clearTimeout(timeoutId);
+    
+    if (error.name === 'AbortError') {
+      throw new Error('Timeout - model nie odpowiedział w 120s');
+    }
+    
+    throw error;
+  }
+}
+
+// Endpoint: Generowanie notatek z transkrypcji
+app.post('/generate-notes', express.json(), async (req, res) => {
+  try {
+    const { transcription } = req.body;
+    
+    if (!transcription || transcription.trim().length === 0) {
+      return res.status(400).json({ error: 'Brak transkrypcji' });
+    }
+    
+    console.log(`[GenerateNotes] Otrzymano: ${transcription.length} znaków`);
+    
+    const prompt = `Jestem studentem i potrzebuję profesjonalnych notatek z tego wykładu.
+
+TRANSKRYPCJA:
+"${transcription.substring(0, 8000)}"${transcription.length > 8000 ? `\n\n[... i ${transcription.length - 8000} znaków więcej]` : ''}
+
+Wygeneruj KOMPLETNE notatki w formacie JSON:
+
+{
+  "formatted": "# Tytuł\\n\\n## Sekcja 1\\n\\nTreść...\\n\\n## Sekcja 2",
+  "structured": "1. **Pojęcie**\\n   - Punkt 1\\n   - Punkt 2",
+  "summary": "Podsumowanie w 2-3 zdaniach",
+  "keyPoints": "• Punkt kluczowy 1\\n• Punkt kluczowy 2",
+  "questions": "1. Pytanie 1\\n2. Pytanie 2"
+}
+
+WAŻNE: Odpowiedź TYLKO w JSON, bez dodatkowego tekstu!`;
+
+    const startTime = Date.now();
+    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 2048);
+    const duration = Date.now() - startTime;
+    
+    // Parsuj JSON
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('Brak JSON w odpowiedzi');
+    }
+    
+    const result = JSON.parse(jsonMatch[0]);
+    
+    console.log(`[GenerateNotes] Wygenerowano w ${duration}ms`);
+    
+    res.json({
+      success: true,
+      ...result,
+      duration
+    });
+    
+  } catch (error) {
+    console.error('[GenerateNotes] Błąd:', error);
+    res.status(500).json({ error: error.message || 'Błąd generowania notatek' });
+  }
+});
+
+// Endpoint: Generowanie fiszek z transkrypcji
+app.post('/generate-flashcards', express.json(), async (req, res) => {
+  try {
+    const { transcription } = req.body;
+    
+    if (!transcription || transcription.trim().length === 0) {
+      return res.status(400).json({ error: 'Brak transkrypcji' });
+    }
+    
+    console.log(`[GenerateFlashcards] Otrzymano: ${transcription.length} znaków`);
+    
+    const prompt = `Stwórz fiszki edukacyjne z tego materiału:
+
+MATERIAŁ:
+"${transcription.substring(0, 8000)}"${transcription.length > 8000 ? `\n\n[...]` : ''}
+
+Format JSON (TYLKO array, bez innych tekstów):
+[
+  {
+    "question": "Pytanie?",
+    "answer": "Odpowiedź",
+    "category": "definicja",
+    "difficulty": "easy"
+  }
+]
+
+ZASADY:
+- Różne poziomy: easy, medium, hard
+- Kategorie: definicja, zastosowanie, przykład, wzór
+- Wygeneruj tyle fiszek ile potrzeba, aby dogłębnie pokryć temat
+- Każdy ważny koncept powinien mieć własną fiszkę`;
+
+    const startTime = Date.now();
+    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 4096);
+    const duration = Date.now() - startTime;
+    
+    // Parsuj JSON array
+    const jsonMatch = response.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      throw new Error('Brak JSON array w odpowiedzi');
+    }
+    
+    const flashcards = JSON.parse(jsonMatch[0]);
+    
+    console.log(`[GenerateFlashcards] Wygenerowano ${flashcards.length} fiszek w ${duration}ms`);
+    
+    res.json({
+      success: true,
+      flashcards,
+      duration
+    });
+    
+  } catch (error) {
+    console.error('[GenerateFlashcards] Błąd:', error);
+    res.status(500).json({ error: error.message || 'Błąd generowania fiszek' });
+  }
+});
+
+// Endpoint: Generowanie szczegółowej notatki
+app.post('/generate-detailed-note', express.json(), async (req, res) => {
+  try {
+    const { transcription } = req.body;
+    
+    if (!transcription || transcription.trim().length === 0) {
+      return res.status(400).json({ error: 'Brak transkrypcji' });
+    }
+    
+    console.log(`[GenerateDetailedNote] Otrzymano: ${transcription.length} znaków`);
+    
+    const prompt = `Stwórz SZCZEGÓŁOWĄ notatkę akademicką z tego materiału w formacie Markdown.
+
+MATERIAŁ:
+"${transcription.substring(0, 10000)}"${transcription.length > 10000 ? `\n\n[... i więcej]` : ''}
+
+STRUKTURA:
+# Tytuł tematu
+
+## Wprowadzenie
+Kontekst i znaczenie tematu (2-3 zdania)
+
+## Główne zagadnienia
+
+### 1. [Pierwsze zagadnienie]
+- Definicja i wyjaśnienie
+- Szczegóły i przykłady
+- Powiązania z innymi tematami
+
+### 2. [Drugie zagadnienie]
+- Analogicznie
+
+## Kluczowe terminy
+- **Termin 1**: definicja
+- **Termin 2**: definicja
+
+## Podsumowanie
+Syntetyczne zestawienie najważniejszych punktów
+
+ZASADY:
+- Używaj struktury Markdown (nagłówki ##, listy, pogrubienia **)
+- Pisz językiem akademickim ale zrozumiałym
+- Uwzględnij WSZYSTKIE ważne informacje z materiału
+- Notatka powinna być tak szczegółowa i obszerna jak to konieczne do dogłębnego zrozumienia tematu
+- Nie skracaj treści - celem jest kompleksowe opracowanie zagadnienia`;
+
+    const startTime = Date.now();
+    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 8192);
+    const duration = Date.now() - startTime;
+    
+    console.log(`[GenerateDetailedNote] Wygenerowano notatkę w ${duration}ms`);
+    
+    res.json({
+      success: true,
+      note: response,
+      duration
+    });
+    
+  } catch (error) {
+    console.error('[GenerateDetailedNote] Błąd:', error);
+    res.status(500).json({ error: error.message || 'Błąd generowania szczegółowej notatki' });
+  }
+});
+
+// Endpoint: Generowanie krótkiej notatki
+app.post('/generate-short-note', express.json(), async (req, res) => {
+  try {
+    const { transcription } = req.body;
+    
+    if (!transcription || transcription.trim().length === 0) {
+      return res.status(400).json({ error: 'Brak transkrypcji' });
+    }
+    
+    console.log(`[GenerateShortNote] Otrzymano: ${transcription.length} znaków`);
+    
+    const prompt = `Stwórz KRÓTKĄ notatkę z tego materiału w formacie Markdown.
+
+MATERIAŁ:
+"${transcription.substring(0, 8000)}"${transcription.length > 8000 ? `\n\n[...]` : ''}
+
+STRUKTURA:
+# Tytuł
+
+## 📋 Najważniejsze punkty
+- Punkt 1
+- Punkt 2
+- Punkt 3
+
+## 💡 Kluczowe terminy
+- **Termin**: krótka definicja
+
+## 🎯 Wnioski
+Zwięzłe podsumowanie (2-3 zdania)
+
+ZASADY:
+- Maksymalnie 300 słów
+- Tylko najważniejsze informacje
+- Format Markdown
+- Emoji dla czytelności`;
+
+    const startTime = Date.now();
+    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 1024);
+    const duration = Date.now() - startTime;
+    
+    console.log(`[GenerateShortNote] Wygenerowano krótką notatkę w ${duration}ms`);
+    
+    res.json({
+      success: true,
+      note: response,
+      duration
+    });
+    
+  } catch (error) {
+    console.error('[GenerateShortNote] Błąd:', error);
+    res.status(500).json({ error: error.message || 'Błąd generowania krótkiej notatki' });
+  }
+});
+
+// Endpoint: Generowanie kluczowych punktów
+app.post('/generate-key-points', express.json(), async (req, res) => {
+  try {
+    const { transcription } = req.body;
+    
+    if (!transcription || transcription.trim().length === 0) {
+      return res.status(400).json({ error: 'Brak transkrypcji' });
+    }
+    
+    console.log(`[GenerateKeyPoints] Otrzymano: ${transcription.length} znaków`);
+    
+    const prompt = `Wyodrębnij KLUCZOWE PUNKTY z tego materiału w formacie Markdown.
+
+MATERIAŁ:
+"${transcription.substring(0, 8000)}"${transcription.length > 8000 ? `\n\n[...]` : ''}
+
+FORMAT:
+# 🎯 Kluczowe punkty
+
+## 📌 Główne tezy
+1. **[Teza 1]** - krótkie wyjaśnienie
+2. **[Teza 2]** - krótkie wyjaśnienie
+3. **[Teza 3]** - krótkie wyjaśnienie
+
+## 🔑 Terminy do zapamiętania
+- **Termin 1**: definicja
+- **Termin 2**: definicja
+
+## 📊 Fakty i liczby
+- Fakt 1
+- Fakt 2
+
+## ⚠️ Uwaga
+Najważniejsze zastrzeżenia lub wyjątki
+
+ZASADY:
+- Maksymalnie 8-12 punktów
+- Każdy punkt zwięzły (1 linia)
+- Tylko informacje istotne do zapamiętania
+- Format Markdown z emoji`;
+
+    const startTime = Date.now();
+    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 1024);
+    const duration = Date.now() - startTime;
+    
+    console.log(`[GenerateKeyPoints] Wygenerowano kluczowe punkty w ${duration}ms`);
+    
+    res.json({
+      success: true,
+      keyPoints: response,
+      duration
+    });
+    
+  } catch (error) {
+    console.error('[GenerateKeyPoints] Błąd:', error);
+    res.status(500).json({ error: error.message || 'Błąd generowania kluczowych punktów' });
+  }
+});
+
+// Endpoint: Generowanie quizu
+app.post('/generate-quiz', express.json(), async (req, res) => {
+  try {
+    const { transcription } = req.body;
+    
+    if (!transcription || transcription.trim().length === 0) {
+      return res.status(400).json({ error: 'Brak transkrypcji' });
+    }
+    
+    console.log(`[GenerateQuiz] Otrzymano: ${transcription.length} znaków`);
+    
+    const prompt = `Stwórz quiz wielokrotnego wyboru z tego materiału:
+
+MATERIAŁ:
+"${transcription.substring(0, 8000)}"${transcription.length > 8000 ? `\n\n[...]` : ''}
+
+Format JSON (TYLKO array, bez innych tekstów):
+[
+  {
+    "question": "Pytanie?",
+    "options": ["Opcja A", "Opcja B", "Opcja C", "Opcja D"],
+    "correctIndex": 0,
+    "category": "definicje"
+  }
+]
+
+ZASADY:
+- 8-12 pytań różnej trudności
+- Każde pytanie ma 4 opcje
+- correctIndex to indeks prawidłowej odpowiedzi (0-3)
+- Kategorie: definicje, zastosowania, analiza, fakty
+- Dystraktory (złe odpowiedzi) muszą być wiarygodne
+- Poprawna odpowiedź nie może być oczywista`;
+
+    const startTime = Date.now();
+    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 2048);
+    const duration = Date.now() - startTime;
+    
+    // Parsuj JSON array
+    const jsonMatch = response.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      throw new Error('Brak JSON array w odpowiedzi');
+    }
+    
+    const questions = JSON.parse(jsonMatch[0]);
+    
+    console.log(`[GenerateQuiz] Wygenerowano ${questions.length} pytań quizowych w ${duration}ms`);
+    
+    res.json({
+      success: true,
+      questions,
+      duration
+    });
+    
+  } catch (error) {
+    console.error('[GenerateQuiz] Błąd:', error);
+    res.status(500).json({ error: error.message || 'Błąd generowania quizu' });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`\n✅ Server uruchomiony na http://localhost:${PORT}`)
   console.log(`📁 Ścieżka modeli: ${env.localModelPath}`)
-  console.log(`\n� Silniki transkrypcji:`)
+  console.log(`\n🎙️ Silniki transkrypcji:`)
   console.log(`   🔧 Transformers.js - uniwersalny, działa w przeglądarce`)
   console.log(`   ⚡ Whisper.cpp - ultraszybki, Metal GPU (Apple M4 Pro)`)
-  console.log(`\n�🔗 Endpointy:`)
+  console.log(`\n🔗 Endpointy:`)
   console.log(`   GET  /health - sprawdź status i dostępne silniki`)
   console.log(`\n   📝 Transformers.js:`)
   console.log(`   POST /transcribe - transkrypcja (zwraca wynik)`)
@@ -574,5 +1314,15 @@ app.listen(PORT, () => {
   console.log(`\n   ⚡ Whisper.cpp (SZYBSZY):`)
   console.log(`   POST /transcribe-cpp - ultraszybka transkrypcja`)
   console.log(`   POST /transcribe-stream-cpp - ultraszybka z progress`)
-  console.log(`\n💡 Aby zatrzymać: Ctrl+C\n`)
+  console.log(`\n   🤖 AI (Ollama):`)
+  console.log(`   POST /generate-title - generuj tytuł z transkrypcji`)
+  console.log(`   POST /generate-notes - generuj notatki z transkrypcji`)
+  console.log(`   POST /generate-detailed-note - generuj szczegółową notatkę`)
+  console.log(`   POST /generate-short-note - generuj krótką notatkę`)
+  console.log(`   POST /generate-key-points - generuj kluczowe punkty`)
+  console.log(`   POST /generate-flashcards - generuj fiszki z transkrypcji`)
+  console.log(`   POST /generate-quiz - generuj quiz z transkrypcji`)
+  console.log(`\n💡 Ollama musi działać: ollama serve`)
+  console.log(`💡 Aby zatrzymać: Ctrl+C\n`)
 })
+
