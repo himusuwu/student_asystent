@@ -7,6 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.0] - 2025-10-06
+
+### 📄 Document Support - PDF & PowerPoint
+
+**Główna zmiana**: Możliwość tworzenia notatek z dokumentów (PDF/PPT) zamiast tylko z audio!
+
+#### ✨ Features
+- **PDF Support**:
+  - Ekstrakcja tekstu z PDF bezpośrednio w przeglądarce (PDF.js)
+  - Działa offline (nie wymaga backendu)
+  - Obsługa wielostronicowych dokumentów
+  - Progress bar podczas ekstrakcji
+  
+- **PowerPoint Support (PPTX)**:
+  - Przetwarzanie prezentacji na serwerze backend
+  - Wyekstrahowanie tekstu z każdego slajdu
+  - Zachowanie struktury (numeracja slajdów)
+  - Backend endpoint: `POST /api/extract-ppt`
+  
+- **Unified Interface**:
+  - Przełącznik źródła: 🎤 Audio / 📄 Dokument
+  - Wspólny workflow dla wszystkich typów źródeł
+  - Auto-generowanie tytułu z AI (dla obu typów)
+  - Jednolity sposób generowania notatek/fiszek/quizów
+
+#### 🏗️ Technical Implementation
+- **Frontend**:
+  - Nowy moduł: `document-processor.js`
+  - PDF.js CDN integration (v3.11.174)
+  - Walidacja plików (typ, rozmiar max 50MB)
+  - Progress tracking podczas ekstrakcji
+  
+- **Backend**:
+  - Nowa biblioteka: `jszip` dla parsowania PPTX
+  - XML parsing z tagów `<a:t>` w PPTX
+  - Error handling i user-friendly messages
+  - Logging ekstrakcji
+
+#### 📖 Documentation
+- Nowy guide: `DOCUMENT_SUPPORT.md` (kompletna dokumentacja)
+- Przykłady użycia: `DOCUMENT_EXAMPLES.md` (6 scenariuszy)
+- Quick reference: `DOCUMENT_QUICK_REFERENCE.md`
+- Zaktualizowany `README.md` z nową funkcją
+
+#### 🎯 Use Cases
+1. Notatki z wykładu PDF (gdy brak nagrania)
+2. Przetwarzanie prezentacji PowerPoint
+3. Szybkie przygotowanie do egzaminu (dokumenty)
+4. Grupowa praca projektowa (dzielenie PPTX)
+5. Porównanie różnych źródeł (audio + PDF)
+
+#### 🔧 Requirements
+- **PDF**: tylko przeglądarka (działa offline)
+- **PPTX**: wymaga działającego backendu (`npm run server`)
+- **Max file size**: 50 MB
+- **Supported formats**: `.pdf`, `.pptx` (stary `.ppt` NIE)
+
+#### 📊 Comparison: Audio vs Documents
+
+| Feature | Audio | PDF | PPTX |
+|---------|-------|-----|------|
+| Processing time | 5-15 min | 10-60 sec | 10-60 sec |
+| Backend required | Optional | NO | YES |
+| Works offline | Yes | Yes | No |
+| Typical size | 10-100 MB | 1-10 MB | 1-10 MB |
+
+#### 🐛 Known Limitations
+- Stare pliki `.ppt` nie są obsługiwane (wymaga konwersji)
+- PDF musi zawierać tekst (OCR nie jest obsługiwany)
+- PowerPoint ekstraktuje tylko tekst (bez obrazów/wykresów)
+
+---
+
 ## [2.2.0] - 2025-10-05
 
 ### 🤖 AI-Powered Title Generation

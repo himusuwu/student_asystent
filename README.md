@@ -1,8 +1,8 @@
-# 📚 Student Assistant v2.1
+# 📚 Student Assistant v2.3
 
-> Inteligentny asystent studenta z transkrypcją AI, fiszkami SRS i zarządzaniem notatkami
+> Inteligentny asystent studenta z transkrypcją AI, fiszkami SRS, zarządzaniem notatkami i obsługą dokumentów (PDF/PowerPoint)
 
-**Nowa wersja 2.1** - Backend ONLY! Szybka transkrypcja bez problemów! 🚀
+**Nowa wersja 2.3** - Teraz z obsługą dokumentów! Twórz notatki z PDF i prezentacji! �✨
 
 ---
 
@@ -25,14 +25,104 @@ npm run dev
 ## ✨ Główne funkcje
 
 - 🎤 **Transkrypcja AI** - Whisper models (tiny/base/small)
-- 🤖 **Auto-tytuł wykładu** - AI automatycznie generuje tytuł z transkrypcji
+- 📄 **Dokumenty PDF/PPT** - Twórz notatki z prezentacji i PDF-ów **(NOWOŚĆ!)**
+- 🤖 **Auto-tytuł wykładu** - AI automatycznie generuje tytuł z transkrypcji lub dokumentów
 - 🎴 **Fiszki SRS** - System powtórek z algorytmem SM-2
 - 📝 **Notatki** - Markdown, rich formatting
 - 📚 **Przedmioty** - Organizacja wykładów z kolorami
 - 🔄 **GitHub Sync** - Backup do prywatnego repo
 - 🌙 **Dark Mode** - Piękne gradienty
-- ⚡ **Offline** - Działa bez internetu
+- ⚡ **Offline** - Działa bez internetu (PDF też!)
 - 🎯 **100% UI** - Wszystko przez przyciski, zero konsoli F12!
+
+---
+
+## 🆕 Nowości w wersji 2.3: Obsługa dokumentów
+
+### 📄 PDF Support
+- Wgraj PDF z wykładu/materiałów
+- Automatyczna ekstrakcja tekstu (działa w przeglądarce!)
+- **Nie wymaga backendu** - 100% offline
+- Generuj notatki, fiszki i quizy z PDF
+
+### 📊 PowerPoint Support (PPTX)
+- Wgraj prezentację PowerPoint
+- Ekstrakcja tekstu z każdego slajdu
+- Zachowanie struktury (numeracja slajdów)
+- AI automatycznie generuje tytuł
+
+### 🎯 Kiedy używać?
+- **Nie masz nagrania audio** - użyj dokumentów!
+- **Szybkie powtórki** - import PDF przed egzaminem
+- **Materiały od wykładowcy** - slajdy w PDF/PPT
+
+### 📖 Dokumentacja
+- 📚 [Pełny przewodnik obsługi dokumentów](./docs/DOCUMENT_SUPPORT.md)
+- 🎬 [Przykłady użycia i scenariusze](./docs/DOCUMENT_EXAMPLES.md)
+- ⚡ [Szybka instrukcja](./docs/DOCUMENT_QUICK_REFERENCE.md)
+
+---
+
+## 📁 Nowa struktura projektu
+
+```
+student_asystent/
+├── index.html                    # ← Główny plik (otwórz ten)
+│
+├── frontend/                     # ← Cały kod frontendu
+│   ├── css/
+│   │   └── main.css             # Style
+│   ├── js/
+│   │   ├── app.js               # Main app logic
+│   │   └── modules/
+│   │       ├── database.js      # IndexedDB
+│   │       ├── settings.js      # Ustawienia
+│   │       ├── transcription.js # Whisper AI
+│   │       └── document-processor.js # PDF/PPT (NEW!)
+│   └── assets/
+│
+├── server/                       # ← Backend
+│   ├── server.js                # + endpoint dla PPTX
+│   └── package.json
+│
+├── docs/                         # ← Dokumentacja
+│   ├── README.md
+│   ├── DOCUMENT_SUPPORT.md      # NEW!
+│   ├── DOCUMENT_EXAMPLES.md     # NEW!
+│   ├── ARCHITECTURE.md
+│   └── ...
+│
+├── scripts/                      # ← Skrypty pomocnicze
+│   ├── start.sh
+│   ├── stop.sh
+│   └── ...
+│
+└── config/                       # ← Konfiguracja
+    ├── .editorconfig
+    └── .env.example
+```
+
+### 🎯 Co się zmieniło w v2.3?
+
+**Nowe możliwości:**
+- ✅ **PDF**: Wgraj PDF → AI generuje notatki → Ucz się!
+- ✅ **PowerPoint**: Wgraj PPTX → Ekstrakcja tekstu → Fiszki!
+- ✅ **Przełącznik źródła**: 🎤 Audio lub 📄 Dokument
+- ✅ **Offline PDF**: Działa bez internetu i backendu
+- ✅ **Auto-tytuł**: AI rozpoznaje temat z dokumentów
+
+**Poprzednie wersje:**
+- v2.2: AI-powered title generation
+- v2.1: 100% UI, zero konsoli F12
+- v2.0: Backend + modułowa architektura
+
+---
+
+## 🛠️ Komendy
+
+### Podstawowe (najczęściej używane)
+
+````
 
 ---
 

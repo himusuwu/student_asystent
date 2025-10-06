@@ -1,14 +1,6 @@
 # 📚 Student Assistant v2.0
 
-> Inteligentn## 📚 Dokumentacja
-
-> 📑 **[DOCUMENTATION_INDEX.md](./DOCUMENTATION_INDEX.md)** - Kompletny indeks całej dokumentacji
-
-- 📖 [**README.md**](./README.md) - Ten dokument
-- ❓ [**FAQ.md**](./FAQ.md) - Często zadawane pytania
-- 📖 [**ARCHITECTURE.md**](./ARCHITECTURE.md) - Szczegółowa architektura aplikacji
-- 🗺️ [**ROADMAP.md**](./ROADMAP.md) - Plan rozwoju i przyszłe funkcje
-- 🎨 [**FRONTEND.md**](./FRONTEND.md) - Frontend architecture i debuggingystent studenta z transkrypcją AI, fiszkami SRS i zarządzaniem notatkami
+> Inteligentny asystent studenta z transkrypcją AI, fiszkami SRS i zarządzaniem notatkami
 
 **Nowa wersja** z pięknym, nowoczesnym interfejsem i pełną funkcjonalnością offline!
 
@@ -22,6 +14,13 @@
 - **Wsparcie języków**: Polski, Angielski, Auto-detect
 - **Backend lokalny** - Szybsza transkrypcja z użyciem Node.js
 - **Tryb offline** - Wszystko działa w przeglądarce bez internetu
+
+### 📄 Obsługa dokumentów (NOWOŚĆ!)
+- **PDF** - Wyekstrahuj tekst z plików PDF bezpośrednio w przeglądarce
+- **PowerPoint (PPTX)** - Przetwarzaj prezentacje i twórz z nich notatki
+- **Bez nagrania** - Twórz notatki z dokumentów, gdy nie masz audio
+- **AI auto-tytuł** - Automatyczne generowanie tytułów z treści dokumentów
+- 📖 **[Pełna dokumentacja](./DOCUMENT_SUPPORT.md)**
 
 ### 🎴 Fiszki z SRS (Spaced Repetition System)
 - **Algorytm SM-2** - Inteligentne powtórki dopasowane do Twojej pamięci

@@ -20,6 +20,7 @@ Kompletny indeks całej dokumentacji projektu Student Assistant.
 |----------|------|---------------|
 | [**FRONTEND.md**](./FRONTEND.md) | Frontend - jak używać interfejsu | 8 min |
 | [**BACKEND_SETUP.md**](./BACKEND_SETUP.md) | Konfiguracja backendu | 5 min |
+| [**DOCUMENT_SUPPORT.md**](./DOCUMENT_SUPPORT.md) | Obsługa PDF i PowerPoint - nowa funkcja! | 10 min |
 | [**.env.example**](./.env.example) | Przykładowa konfiguracja zmiennych środowiskowych | 2 min |
 
 ### Deployment i hosting

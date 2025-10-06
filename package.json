@@ -1,7 +1,7 @@
 {
   "name": "student-assistant",
-  "version": "2.0.0",
-  "description": "Student Assistant - AI-powered learning tool with transcription, flashcards, and notes",
+  "version": "2.3.0",
+  "description": "Student Assistant - AI-powered learning tool with transcription, flashcards, notes, and document support (PDF/PowerPoint)",
   "type": "module",
   "scripts": {
     "dev": "npm run frontend",
@@ -9,12 +9,15 @@
     "server": "cd server && npm start",
     "server:dev": "cd server && npm run dev",
     "start": "bash scripts/start.sh",
+    "start:offline": "bash scripts/start-offline.sh",
     "stop": "bash scripts/stop.sh",
     "install:server": "cd server && npm install",
     "check-backend": "bash scripts/check-backend.sh",
     "download-models": "bash scripts/download-whisper-tiny-onnx.sh",
+    "test:offline": "open http://localhost:8000/test-offline.html",
     "clean": "rm -rf server/node_modules node_modules",
-    "docs": "open docs/README.md"
+    "docs": "open docs/README.md",
+    "docs:offline": "open docs/OFFLINE_GUIDE.md"
   },
   "keywords": [
     "education",

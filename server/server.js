@@ -1299,6 +1299,87 @@ ZASADY:
   }
 });
 
+// Endpoint: Ekstrakcja tekstu z PowerPoint (PPT/PPTX)
+app.post('/api/extract-ppt', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Brak pliku' });
+    }
+
+    const fileName = req.file.originalname.toLowerCase();
+    
+    if (!fileName.endsWith('.ppt') && !fileName.endsWith('.pptx')) {
+      return res.status(400).json({ error: 'Nieprawidłowy format pliku. Tylko PPT i PPTX są obsługiwane.' });
+    }
+
+    console.log(`[Extract-PPT] Przetwarzanie pliku: ${req.file.originalname}`);
+    
+    // Dla PPTX (format XML-based)
+    if (fileName.endsWith('.pptx')) {
+      try {
+        const JSZip = (await import('jszip')).default;
+        const zip = new JSZip();
+        const contents = await zip.loadAsync(req.file.buffer);
+        
+        let extractedText = '';
+        let slideNumber = 0;
+        
+        // Iteruj przez slajdy w folderze ppt/slides/
+        for (const filename in contents.files) {
+          if (filename.startsWith('ppt/slides/slide') && filename.endsWith('.xml')) {
+            slideNumber++;
+            const fileData = await contents.files[filename].async('text');
+            
+            // Parsuj XML i wyciągnij tekst z tagów <a:t>
+            const textMatches = fileData.match(/<a:t>([^<]+)<\/a:t>/g);
+            
+            if (textMatches) {
+              const slideText = textMatches
+                .map(match => match.replace(/<\/?a:t>/g, ''))
+                .join(' ');
+              
+              extractedText += `\n\n--- Slajd ${slideNumber} ---\n\n${slideText}`;
+            }
+          }
+        }
+        
+        if (!extractedText.trim()) {
+          return res.status(400).json({ 
+            error: 'Nie znaleziono tekstu w prezentacji. Prezentacja może zawierać tylko obrazy.' 
+          });
+        }
+        
+        console.log(`[Extract-PPT] Pomyślnie wyekstrahowano tekst z ${slideNumber} slajdów`);
+        
+        return res.json({ 
+          text: extractedText.trim(),
+          slideCount: slideNumber,
+          fileName: req.file.originalname
+        });
+        
+      } catch (zipError) {
+        console.error('[Extract-PPT] Błąd parsowania PPTX:', zipError);
+        return res.status(500).json({ 
+          error: 'Nie udało się przetworzyć pliku PPTX. Plik może być uszkodzony.' 
+        });
+      }
+    }
+    
+    // Dla starszych plików PPT - wymagałoby dodatkowych bibliotek
+    if (fileName.endsWith('.ppt')) {
+      return res.status(400).json({ 
+        error: 'Stare pliki PPT nie są jeszcze obsługiwane. Proszę przekonwertować do PPTX.' 
+      });
+    }
+    
+  } catch (error) {
+    console.error('[Extract-PPT] Błąd:', error);
+    res.status(500).json({ 
+      error: `Błąd serwera podczas przetwarzania pliku: ${error.message}` 
+    });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`\n✅ Server uruchomiony na http://localhost:${PORT}`)
@@ -1322,6 +1403,8 @@ app.listen(PORT, () => {
   console.log(`   POST /generate-key-points - generuj kluczowe punkty`)
   console.log(`   POST /generate-flashcards - generuj fiszki z transkrypcji`)
   console.log(`   POST /generate-quiz - generuj quiz z transkrypcji`)
+  console.log(`\n   📄 Dokumenty:`)
+  console.log(`   POST /api/extract-ppt - wyekstrahuj tekst z PowerPoint (PPTX)`)
   console.log(`\n💡 Ollama musi działać: ollama serve`)
   console.log(`💡 Aby zatrzymać: Ctrl+C\n`)
 })

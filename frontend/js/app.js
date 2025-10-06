@@ -5,6 +5,7 @@ import * as db from './modules/database.js';
 import * as settings from './modules/settings.js';
 import * as transcription from './modules/transcription.js';
 import * as ai from './modules/ai.js';
+import * as documentProcessor from './modules/document-processor.js';
 import { generateLectureTitle } from './modules/ai.js';
 
 // ============================================
@@ -13,6 +14,8 @@ import { generateLectureTitle } from './modules/ai.js';
 
 let currentTab = 'dashboard';
 let currentAudioFile = null;
+let currentDocumentFile = null;
+let currentContentSource = 'audio'; // 'audio' or 'document'
 let currentLectureId = null;
 let quizState = {
     selectedAnswers: new Map(),
@@ -58,7 +61,10 @@ window.addEventListener('click', (e) => {
 // ============================================
 
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🚀 ========================================');
     console.log('🚀 Student Assistant starting...');
+    console.log('🚀 Browser:', navigator.userAgent);
+    console.log('🚀 ========================================');
     
     // Initialize database
     await db.openDatabase();
@@ -73,15 +79,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Setup navigation
     setupNavigation();
+    console.log('✅ Navigation setup complete');
     
     // Setup event listeners
+    console.log('🔧 Setting up event listeners...');
     setupEventListeners();
+    console.log('✅ Event listeners setup complete');
     
     // Setup lecture view
     setupLectureViewListeners();
+    console.log('✅ Lecture view listeners setup complete');
     
     // Setup modal forms
     setupModalForms();
+    console.log('✅ Modal forms setup complete');
     
     // Load initial data
     await loadDashboard();
@@ -91,7 +102,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadSchedule();
     await loadSettings();
     
+    console.log('🚀 ========================================');
     console.log('✅ Application ready!');
+    console.log('🚀 ========================================');
 });
 
 // ============================================
@@ -173,6 +186,185 @@ function setupEventListeners() {
         document.getElementById('audio-file-input').click();
     });
     document.getElementById('audio-file-input').addEventListener('change', handleAudioFileUpload);
+    
+    // Document upload (PDF/PPT) - Firefox-compatible with <label> approach
+    console.log('🔍 Starting document upload setup...');
+    console.log('🔍 Browser:', navigator.userAgent);
+    
+    const pdfFileInput = document.getElementById('pdf-file-input');
+    const pptFileInput = document.getElementById('ppt-file-input');
+    const documentFileInput = document.getElementById('document-file-input');
+    const pdfLabel = document.getElementById('btn-upload-pdf-label');
+    const pptLabel = document.getElementById('btn-upload-ppt-label');
+    
+    console.log('🔍 Elements found:');
+    console.log('  - pdf-file-input:', pdfFileInput ? '✅' : '❌');
+    console.log('  - ppt-file-input:', pptFileInput ? '✅' : '❌');
+    console.log('  - document-file-input:', documentFileInput ? '✅' : '❌');
+    console.log('  - btn-upload-pdf-label:', pdfLabel ? '✅' : '❌');
+    console.log('  - btn-upload-ppt-label:', pptLabel ? '✅' : '❌');
+    
+    // New label-based approach (Firefox-compatible)
+    if (pdfFileInput) {
+        pdfFileInput.addEventListener('change', (e) => {
+            console.log('📕 PDF file selected via label (Firefox-compatible)');
+            console.log('📕 Event:', e);
+            console.log('📕 Files:', e.target.files);
+            if (e.target.files && e.target.files.length > 0) {
+                console.log('📕 File name:', e.target.files[0].name);
+                console.log('📕 File type:', e.target.files[0].type);
+                console.log('📕 File size:', e.target.files[0].size);
+            }
+            handleDocumentFileUpload(e);
+        });
+        console.log('✅ PDF file input listener added (label-based)');
+    } else {
+        console.error('❌ pdf-file-input element NOT FOUND!');
+    }
+    
+    if (pptFileInput) {
+        pptFileInput.addEventListener('change', (e) => {
+            console.log('📊 PPT file selected via label (Firefox-compatible)');
+            console.log('📊 Event:', e);
+            console.log('📊 Files:', e.target.files);
+            if (e.target.files && e.target.files.length > 0) {
+                console.log('📊 File name:', e.target.files[0].name);
+                console.log('📊 File type:', e.target.files[0].type);
+                console.log('📊 File size:', e.target.files[0].size);
+            }
+            handleDocumentFileUpload(e);
+        });
+        console.log('✅ PPT file input listener added (label-based)');
+    } else {
+        console.error('❌ ppt-file-input element NOT FOUND!');
+    }
+    
+    // Add click logging for labels
+    if (pdfLabel) {
+        pdfLabel.addEventListener('click', (e) => {
+            console.log('🖱️ PDF LABEL CLICKED!');
+            console.log('🖱️ Event:', e);
+            console.log('🖱️ Target:', e.target);
+            console.log('🖱️ Current target:', e.currentTarget);
+        });
+        console.log('✅ PDF label click logger added');
+    } else {
+        console.warn('⚠️ PDF label not found for click logging');
+    }
+    
+    if (pptLabel) {
+        pptLabel.addEventListener('click', (e) => {
+            console.log('🖱️ PPT LABEL CLICKED!');
+            console.log('🖱️ Event:', e);
+            console.log('🖱️ Target:', e.target);
+            console.log('🖱️ Current target:', e.currentTarget);
+        });
+        console.log('✅ PPT label click logger added');
+    } else {
+        console.warn('⚠️ PPT label not found for click logging');
+    }
+    
+    // Legacy button approach (kept for compatibility)
+    const btnUploadPdf = document.getElementById('btn-upload-pdf');
+    const btnUploadPpt = document.getElementById('btn-upload-ppt');
+    
+    if (btnUploadPdf) {
+        btnUploadPdf.addEventListener('click', (e) => {
+            console.log('📕 PDF upload button clicked (legacy mode)');
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Visual feedback
+            btnUploadPdf.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                btnUploadPdf.style.transform = 'scale(1)';
+            }, 100);
+            
+            const input = document.getElementById('document-file-input');
+            if (input) {
+                input.accept = '.pdf';
+                
+                // Firefox fix: dispatch native click event instead of calling click()
+                try {
+                    // Try modern approach first
+                    input.dispatchEvent(new MouseEvent('click', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    }));
+                    console.log('✅ File input clicked for PDF (MouseEvent)');
+                } catch (err) {
+                    // Fallback to direct click for older browsers
+                    console.log('⚠️ MouseEvent failed, using direct click()');
+                    input.click();
+                }
+            } else {
+                console.error('❌ Document file input not found');
+                alert('Błąd: Nie znaleziono pola wyboru pliku');
+            }
+        }, true); // Use capture phase for Firefox
+        console.log('✅ PDF upload button listener added (legacy)');
+    }
+    
+    if (btnUploadPpt) {
+        btnUploadPpt.addEventListener('click', (e) => {
+            console.log('📊 PPT upload button clicked (legacy mode)');
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Visual feedback
+            btnUploadPpt.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                btnUploadPpt.style.transform = 'scale(1)';
+            }, 100);
+            
+            const input = document.getElementById('document-file-input');
+            if (input) {
+                input.accept = '.ppt,.pptx';
+                
+                // Firefox fix: dispatch native click event instead of calling click()
+                try {
+                    // Try modern approach first
+                    input.dispatchEvent(new MouseEvent('click', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    }));
+                    console.log('✅ File input clicked for PPT (MouseEvent)');
+                } catch (err) {
+                    // Fallback to direct click for older browsers
+                    console.log('⚠️ MouseEvent failed, using direct click()');
+                    input.click();
+                }
+            } else {
+                console.error('❌ Document file input not found');
+                alert('Błąd: Nie znaleziono pola wyboru pliku');
+            }
+        }, true); // Use capture phase for Firefox
+        console.log('✅ PPT upload button listener added (legacy)');
+    }
+    
+    if (documentFileInput) {
+        documentFileInput.addEventListener('change', handleDocumentFileUpload);
+        console.log('✅ Document file input listener added (legacy)');
+    }
+    
+    // Source selector (audio vs document) - with safety check
+    const sourceSelectors = document.querySelectorAll('.source-selector');
+    console.log(`Found ${sourceSelectors.length} source selector buttons`);
+    if (sourceSelectors.length > 0) {
+        sourceSelectors.forEach((btn, index) => {
+            const source = btn.dataset.source;
+            console.log(`Setting up source selector ${index}: ${source}`);
+            btn.addEventListener('click', () => {
+                console.log(`Source selector clicked: ${source}`);
+                switchContentSource(source);
+            });
+        });
+        console.log('✅ Source selector listeners added');
+    } else {
+        console.error('❌ No source selector buttons found!');
+    }
     
     // Flashcards
     document.getElementById('btn-add-flashcard').addEventListener('click', addFlashcard);
@@ -631,6 +823,268 @@ async function handleTranscription(audioFile) {
             </h3>
             <div style="margin-bottom: 20px; line-height: 1.8; white-space: pre-wrap;">
                 ${errorHtml}
+            </div>
+            <button onclick="this.parentElement.remove()" 
+                    class="btn btn-primary" style="width: 100%;">
+                OK, rozumiem
+            </button>
+        `;
+        
+        document.body.appendChild(errorDialog);
+    }
+}
+
+// ============================================
+// DOCUMENT PROCESSING (PDF/PPT)
+// ============================================
+
+/**
+ * Switch between audio and document content sources
+ */
+function switchContentSource(source) {
+    console.log(`🔄 ========================================`);
+    console.log(`🔄 Switching content source to: ${source}`);
+    console.log(`🔄 ========================================`);
+    currentContentSource = source;
+    
+    // Update button styles
+    const selectors = document.querySelectorAll('.source-selector');
+    console.log(`🔄 Found ${selectors.length} source selector buttons`);
+    
+    selectors.forEach((btn, index) => {
+        console.log(`🔄 Button ${index}: dataset.source = ${btn.dataset.source}`);
+        if (btn.dataset.source === source) {
+            btn.classList.add('active');
+            btn.style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2))';
+            btn.style.border = '2px solid var(--primary)';
+            console.log(`🔄 Button ${index} is now ACTIVE`);
+        } else {
+            btn.classList.remove('active');
+            btn.style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1))';
+            btn.style.border = '1px solid rgba(99, 102, 241, 0.3)';
+            console.log(`🔄 Button ${index} is now INACTIVE`);
+        }
+    });
+    
+    // Show/hide appropriate section
+    const audioSection = document.getElementById('audio-source-section');
+    const documentSection = document.getElementById('document-source-section');
+    
+    console.log('🔍 Section elements:');
+    console.log('  - audioSection:', audioSection ? '✅ Found' : '❌ NOT FOUND');
+    console.log('  - documentSection:', documentSection ? '✅ Found' : '❌ NOT FOUND');
+    
+    if (audioSection) {
+        console.log('  - audioSection current display:', audioSection.style.display);
+    }
+    if (documentSection) {
+        console.log('  - documentSection current display:', documentSection.style.display);
+    }
+    
+    if (source === 'audio') {
+        if (audioSection) audioSection.style.display = 'block';
+        if (documentSection) documentSection.style.display = 'none';
+        console.log('✅ Showing audio section, hiding document section');
+    } else {
+        if (audioSection) audioSection.style.display = 'none';
+        if (documentSection) documentSection.style.display = 'block';
+        console.log('✅ Hiding audio section, SHOWING DOCUMENT SECTION');
+        
+        // Extra logging for document section
+        if (documentSection) {
+            console.log('📄 Document section details:');
+            console.log('  - display after change:', documentSection.style.display);
+            console.log('  - visibility:', documentSection.style.visibility);
+            console.log('  - offsetHeight:', documentSection.offsetHeight);
+            console.log('  - offsetWidth:', documentSection.offsetWidth);
+            
+            // Check if labels are visible and clickable
+            const pdfLabel = document.getElementById('btn-upload-pdf-label');
+            const pptLabel = document.getElementById('btn-upload-ppt-label');
+            const pdfInput = document.getElementById('pdf-file-input');
+            const pptInput = document.getElementById('ppt-file-input');
+            
+            console.log('📄 Label visibility:');
+            console.log('  - PDF label:', pdfLabel ? 'exists' : 'NOT FOUND');
+            console.log('  - PPT label:', pptLabel ? 'exists' : 'NOT FOUND');
+            console.log('  - PDF input:', pdfInput ? 'exists' : 'NOT FOUND');
+            console.log('  - PPT input:', pptInput ? 'exists' : 'NOT FOUND');
+            
+            if (pdfLabel) {
+                const pdfStyles = window.getComputedStyle(pdfLabel);
+                console.log('  - PDF label display:', pdfStyles.display);
+                console.log('  - PDF label visibility:', pdfStyles.visibility);
+                console.log('  - PDF label pointerEvents:', pdfStyles.pointerEvents);
+                console.log('  - PDF label cursor:', pdfStyles.cursor);
+                console.log('  - PDF label for attribute:', pdfLabel.getAttribute('for'));
+                console.log('  - PDF label offsetHeight:', pdfLabel.offsetHeight);
+                console.log('  - PDF label offsetWidth:', pdfLabel.offsetWidth);
+            }
+            if (pptLabel) {
+                const pptStyles = window.getComputedStyle(pptLabel);
+                console.log('  - PPT label display:', pptStyles.display);
+                console.log('  - PPT label visibility:', pptStyles.visibility);
+                console.log('  - PPT label pointerEvents:', pptStyles.pointerEvents);
+                console.log('  - PPT label cursor:', pptStyles.cursor);
+                console.log('  - PPT label for attribute:', pptLabel.getAttribute('for'));
+                console.log('  - PPT label offsetHeight:', pptLabel.offsetHeight);
+                console.log('  - PPT label offsetWidth:', pptLabel.offsetWidth);
+            }
+            
+            // Test if labels are actually clickable
+            if (pdfLabel) {
+                console.log('🧪 Testing PDF label clickability...');
+                const rect = pdfLabel.getBoundingClientRect();
+                console.log('  - PDF label position:', {
+                    top: rect.top,
+                    left: rect.left,
+                    width: rect.width,
+                    height: rect.height
+                });
+            }
+            if (pptLabel) {
+                console.log('🧪 Testing PPT label clickability...');
+                const rect = pptLabel.getBoundingClientRect();
+                console.log('  - PPT label position:', {
+                    top: rect.top,
+                    left: rect.left,
+                    width: rect.width,
+                    height: rect.height
+                });
+            }
+        }
+    }
+    
+    // Update label
+    const contentLabel = document.getElementById('content-label');
+    if (contentLabel) {
+        if (source === 'audio') {
+            contentLabel.textContent = 'Transkrypcja';
+        } else {
+            contentLabel.textContent = 'Wyekstrahowana treść';
+        }
+        console.log('✅ Content label updated');
+    }
+    
+    console.log(`🔄 ========================================`);
+    console.log(`🔄 switchContentSource COMPLETE`);
+    console.log(`🔄 ========================================`);
+}
+
+/**
+ * Handle document file upload (PDF or PowerPoint)
+ */
+async function handleDocumentFileUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Validate file
+    const validation = documentProcessor.validateDocumentFile(file);
+    if (!validation.valid) {
+        alert(`❌ ${validation.error}`);
+        return;
+    }
+    
+    currentDocumentFile = file;
+    
+    // Show document status
+    const statusDiv = document.getElementById('document-status');
+    const fileNameSpan = document.getElementById('document-file-name');
+    
+    let fileIcon = '📄';
+    if (file.name.toLowerCase().endsWith('.pdf')) fileIcon = '📕';
+    else if (file.name.toLowerCase().endsWith('.ppt') || file.name.toLowerCase().endsWith('.pptx')) fileIcon = '📊';
+    
+    fileNameSpan.textContent = `${fileIcon} ${file.name}`;
+    statusDiv.style.display = 'block';
+    
+    // Ask if user wants to extract content
+    if (confirm('Dokument załadowany! Czy chcesz wyekstrahować treść?')) {
+        await handleDocumentExtraction(file);
+    } else {
+        statusDiv.style.display = 'none';
+    }
+}
+
+/**
+ * Extract content from document and display it
+ */
+async function handleDocumentExtraction(file) {
+    const section = document.getElementById('transcription-section');
+    const progress = document.getElementById('transcription-progress');
+    const progressBar = document.getElementById('transcription-progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const textarea = document.getElementById('lecture-transcription');
+    const titleSection = document.getElementById('lecture-title-section');
+    const titleInput = document.getElementById('lecture-title');
+    const statusDiv = document.getElementById('document-status');
+    
+    try {
+        // Show section
+        section.style.display = 'block';
+        progress.style.display = 'block';
+        progressText.textContent = 'Przetwarzanie dokumentu...';
+        
+        // Get backend URL from settings
+        const appSettings = settings.getSettings();
+        const backendUrl = appSettings.backendUrl || 'http://localhost:3001';
+        
+        // Determine file type
+        const isPdf = file.name.toLowerCase().endsWith('.pdf');
+        const docType = isPdf ? 'PDF' : 'PowerPoint';
+        
+        // Extract text from document
+        const result = await documentProcessor.processDocument(file, backendUrl, (percent) => {
+            progressBar.style.width = `${percent}%`;
+            progressText.textContent = `Przetwarzanie ${docType}... ${percent}%`;
+        });
+        
+        // Format and display extracted text
+        const formattedText = documentProcessor.formatExtractedText(result.text);
+        textarea.value = formattedText;
+        
+        // Update progress text
+        progressText.textContent = 'Generowanie tytułu z AI...';
+        progressBar.style.width = '90%';
+        
+        // Generate title from extracted content
+        const generatedTitle = await generateLectureTitle(formattedText);
+        titleInput.value = generatedTitle;
+        titleSection.style.display = 'block';
+        
+        // Hide progress
+        progress.style.display = 'none';
+        statusDiv.style.display = 'none';
+        
+        showToast('✅ Treść dokumentu wyekstrahowana i tytuł wygenerowany!');
+        
+    } catch (error) {
+        console.error('Document extraction error:', error);
+        progress.style.display = 'none';
+        statusDiv.style.display = 'none';
+        
+        // Show error dialog
+        const errorDialog = document.createElement('div');
+        errorDialog.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--bg-card);
+            border: 2px solid var(--accent);
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 500px;
+            z-index: 10000;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        `;
+        
+        errorDialog.innerHTML = `
+            <h3 style="color: var(--accent); margin-bottom: 20px; font-size: 22px;">
+                ❌ Błąd przetwarzania dokumentu
+            </h3>
+            <div style="margin-bottom: 20px; line-height: 1.8;">
+                ${error.message}
             </div>
             <button onclick="this.parentElement.remove()" 
                     class="btn btn-primary" style="width: 100%;">

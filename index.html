@@ -13,6 +13,15 @@
     <script src="https://cdn.jsdelivr.net/npm/idb@8.0.0/build/umd.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
+    
+    <!-- PDF.js Library for PDF extraction -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // Configure PDF.js worker
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+    </script>
 </head>
 <body>
     <div class="background-gradient"></div>
@@ -275,40 +284,104 @@
                         </p>
                     </div>
 
+                    <!-- Wybór źródła materiału -->
                     <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Nagranie audio (opcjonalne)</label>
-                        <div style="display: flex; gap: 10px;">
-                            <button type="button" class="btn btn-primary" id="btn-start-recording">
-                                🎤 Rozpocznij nagrywanie
+                        <label style="display: block; margin-bottom: 12px; font-weight: 600;">📚 Źródło materiału</label>
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <button type="button" class="btn source-selector active" data-source="audio" 
+                                    style="flex: 1; background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2)); 
+                                           border: 2px solid var(--primary); color: var(--primary);">
+                                🎤 Nagranie audio
                             </button>
-                            <button type="button" class="btn" id="btn-upload-audio" 
-                                    style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1)); 
-                                           border: 1px solid rgba(99, 102, 241, 0.3); 
-                                           color: var(--primary);">
-                                📁 Wgraj plik
+                            <button type="button" class="btn source-selector" data-source="document"
+                                    style="flex: 1; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1)); 
+                                           border: 1px solid rgba(99, 102, 241, 0.3); color: var(--primary);">
+                                📄 Dokument (PDF/PPT)
                             </button>
-                            <input type="file" id="audio-file-input" accept="audio/*" style="display: none;">
                         </div>
-                        <div id="recording-status" style="margin-top: 10px; display: none;">
-                            <span style="color: var(--accent);">● Nagrywanie...</span>
-                            <button type="button" class="btn" id="btn-stop-recording" style="background: var(--accent); color: white;">
-                                ⏹ Zatrzymaj
-                            </button>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 15px;">
+                            💡 <strong>Wskazówka:</strong> Kliknij przycisk powyżej, aby wybrać źródło materiału wykładu
+                        </p>
+                        
+                        <!-- Audio Section -->
+                        <div id="audio-source-section" class="source-section">
+                            <div style="display: flex; gap: 10px;">
+                                <button type="button" class="btn btn-primary" id="btn-start-recording">
+                                    🎤 Rozpocznij nagrywanie
+                                </button>
+                                <button type="button" class="btn" id="btn-upload-audio" 
+                                        style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1)); 
+                                               border: 1px solid rgba(99, 102, 241, 0.3); 
+                                               color: var(--primary);">
+                                    📁 Wgraj plik audio
+                                </button>
+                                <input type="file" id="audio-file-input" accept="audio/*" style="display: none;">
+                            </div>
+                            <div id="recording-status" style="margin-top: 10px; display: none;">
+                                <span style="color: var(--accent);">● Nagrywanie...</span>
+                                <button type="button" class="btn" id="btn-stop-recording" style="background: var(--accent); color: white;">
+                                    ⏹ Zatrzymaj
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Document Section -->
+                        <div id="document-source-section" class="source-section" style="display: none;">
+                            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+                                📄 Wybierz plik PDF lub PowerPoint, aby wyekstrahować treść
+                            </p>
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <!-- Firefox-compatible file upload using labels -->
+                                <label for="pdf-file-input" class="btn btn-primary" id="btn-upload-pdf-label"
+                                       style="background: linear-gradient(135deg, #e74c3c, #c0392b); cursor: pointer; margin: 0;">
+                                    📕 Wgraj PDF
+                                </label>
+                                <input type="file" id="pdf-file-input" accept=".pdf" style="display: none;">
+                                
+                                <label for="ppt-file-input" class="btn btn-primary" id="btn-upload-ppt-label"
+                                       style="background: linear-gradient(135deg, #d35400, #e67e22); cursor: pointer; margin: 0;">
+                                    📊 Wgraj PowerPoint
+                                </label>
+                                <input type="file" id="ppt-file-input" accept=".ppt,.pptx" style="display: none;">
+                                
+                                <!-- Legacy button approach (hidden, kept for compatibility) -->
+                                <button type="button" class="btn btn-primary" id="btn-upload-pdf" 
+                                        style="display: none; background: linear-gradient(135deg, #e74c3c, #c0392b);">
+                                    📕 Wgraj PDF
+                                </button>
+                                <button type="button" class="btn btn-primary" id="btn-upload-ppt" 
+                                        style="display: none; background: linear-gradient(135deg, #d35400, #e67e22);">
+                                    📊 Wgraj PowerPoint
+                                </button>
+                                <input type="file" id="document-file-input" accept=".pdf,.ppt,.pptx" style="display: none;">
+                            </div>
+                            <div id="document-status" style="margin-top: 10px; display: none;">
+                                <div style="padding: 12px; background: var(--bg-hover); border-radius: 8px; border-left: 4px solid var(--primary);">
+                                    <p style="margin: 0; color: var(--primary); font-weight: 600;">
+                                        <span id="document-file-name">📄 Plik wgrany</span>
+                                    </p>
+                                    <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--text-secondary);">
+                                        Przetwarzanie...
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <div style="margin-bottom: 20px;" id="transcription-section" style="display: none;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Transkrypcja</label>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">
+                            <span id="content-label">Transkrypcja</span>
+                        </label>
                         <div id="transcription-progress" style="margin-bottom: 10px; display: none;">
                             <div class="progress-bar">
                                 <div class="progress-fill" id="transcription-progress-bar" style="width: 0%"></div>
                             </div>
-                            <p style="text-align: center; margin-top: 8px; color: var(--text-secondary);">
-                                Transkrybowanie...
+                            <p style="text-align: center; margin-top: 8px; color: var(--text-secondary);" id="progress-text">
+                                Przetwarzanie...
                             </p>
                         </div>
                         <textarea id="lecture-transcription" class="search-box" rows="10" 
-                                  placeholder="Transkrypcja pojawi się tutaj..." 
+                                  placeholder="Treść pojawi się tutaj..." 
                                   style="width: 100%; font-family: monospace;"></textarea>
                     </div>
 
