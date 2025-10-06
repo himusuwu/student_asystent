@@ -426,7 +426,28 @@
 
             <h2 style="margin-bottom: 20px; font-size: 22px;">📅 Plan zajęć</h2>
             
-            <div id="schedule-view" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+            <!-- Current time display -->
+            <div id="current-time-display" style="
+                background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+                border: 1px solid rgba(99, 102, 241, 0.3);
+                border-radius: 12px;
+                padding: 12px 20px;
+                margin-bottom: 20px;
+                text-align: center;
+                font-weight: 600;
+                color: var(--primary);
+            ">
+                <span id="current-date-time">Ładowanie...</span>
+            </div>
+            
+            <div id="schedule-view" style="
+                display: flex; 
+                gap: 16px; 
+                padding-bottom: 10px;
+                min-height: 350px;
+                justify-content: space-between;
+                flex-wrap: nowrap;
+            ">
                 <!-- Dynamic schedule will be loaded here -->
             </div>
         </div>
@@ -584,12 +605,29 @@
                 <div style="margin-bottom: 20px;">
                     <label style="display: block; margin-bottom: 8px; font-weight: 600;">Kolor</label>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button type="button" class="color-btn" data-color="#6366f1" style="background: #6366f1;"></button>
-                        <button type="button" class="color-btn" data-color="#8b5cf6" style="background: #8b5cf6;"></button>
-                        <button type="button" class="color-btn" data-color="#ec4899" style="background: #ec4899;"></button>
-                        <button type="button" class="color-btn" data-color="#10b981" style="background: #10b981;"></button>
-                        <button type="button" class="color-btn" data-color="#f59e0b" style="background: #f59e0b;"></button>
-                        <button type="button" class="color-btn active" data-color="#ef4444" style="background: #ef4444;"></button>
+                        <!-- Pierwsza linia kolorów -->
+                        <button type="button" class="color-btn" data-color="#6366f1" style="background: #6366f1;" title="Indygo"></button>
+                        <button type="button" class="color-btn" data-color="#8b5cf6" style="background: #8b5cf6;" title="Fioletowy"></button>
+                        <button type="button" class="color-btn" data-color="#ec4899" style="background: #ec4899;" title="Różowy"></button>
+                        <button type="button" class="color-btn" data-color="#10b981" style="background: #10b981;" title="Zielony"></button>
+                        <button type="button" class="color-btn" data-color="#f59e0b" style="background: #f59e0b;" title="Żółty"></button>
+                        <button type="button" class="color-btn active" data-color="#ef4444" style="background: #ef4444;" title="Czerwony"></button>
+                        
+                        <!-- Druga linia kolorów -->
+                        <button type="button" class="color-btn" data-color="#3b82f6" style="background: #3b82f6;" title="Niebieski"></button>
+                        <button type="button" class="color-btn" data-color="#06b6d4" style="background: #06b6d4;" title="Turkusowy"></button>
+                        <button type="button" class="color-btn" data-color="#84cc16" style="background: #84cc16;" title="Limonkowy"></button>
+                        <button type="button" class="color-btn" data-color="#f97316" style="background: #f97316;" title="Pomarańczowy"></button>
+                        <button type="button" class="color-btn" data-color="#a855f7" style="background: #a855f7;" title="Purpurowy"></button>
+                        <button type="button" class="color-btn" data-color="#6b7280" style="background: #6b7280;" title="Szary"></button>
+                        
+                        <!-- Trzecia linia kolorów -->
+                        <button type="button" class="color-btn" data-color="#0ea5e9" style="background: #0ea5e9;" title="Jasny niebieski"></button>
+                        <button type="button" class="color-btn" data-color="#14b8a6" style="background: #14b8a6;" title="Morski"></button>
+                        <button type="button" class="color-btn" data-color="#65a30d" style="background: #65a30d;" title="Oliwkowy"></button>
+                        <button type="button" class="color-btn" data-color="#dc2626" style="background: #dc2626;" title="Ciemny czerwony"></button>
+                        <button type="button" class="color-btn" data-color="#7c3aed" style="background: #7c3aed;" title="Ciemny fioletowy"></button>
+                        <button type="button" class="color-btn" data-color="#374151" style="background: #374151;" title="Ciemny szary"></button>
                     </div>
                     <input type="hidden" id="input-subject-color" value="#ef4444">
                 </div>
@@ -730,6 +768,6 @@
     </div>
 
     <!-- Main App Script -->
-    <script type="module" src="./frontend/js/app.js"></script>
+    <script type="module" src="./frontend/js/app.js?v=20251006-2002"></script>
 </body>
 </html>

@@ -912,6 +912,12 @@ async function callOllamaAPI(prompt, model = 'qwen2.5:14b', maxTokens = 2048) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s timeout
   
+  // Systemowy prompt kontrolujący język
+  const systemPrompt = "Jesteś polskim asystentem AI. Odpowiadaj WYŁĄCZNIE w języku polskim. NIE używaj żadnych słów w innych językach, szczególnie chińskim lub angielskim. Jeśli nie znasz polskiego odpowiednika jakiegoś terminu, użyj opisowego wyjaśnienia w języku polskim.";
+  
+  // Kombinuj system prompt z user prompt
+  const fullPrompt = `System: ${systemPrompt}\n\nUser: ${prompt}`;
+  
   try {
     const response = await fetch(`${ollamaUrl}/api/generate`, {
       method: 'POST',
@@ -919,13 +925,17 @@ async function callOllamaAPI(prompt, model = 'qwen2.5:14b', maxTokens = 2048) {
       signal: controller.signal,
       body: JSON.stringify({
         model,
-        prompt,
+        prompt: fullPrompt,
         stream: false,
         options: {
           temperature: 0.3,
           top_p: 0.9,
           top_k: 40,
-          num_predict: maxTokens
+          num_predict: maxTokens,
+          // Dodatkowe parametry dla kontroli języka
+          repeat_penalty: 1.1,
+          presence_penalty: 0.1,
+          frequency_penalty: 0.1
         }
       })
     });
@@ -964,7 +974,7 @@ app.post('/generate-notes', express.json(), async (req, res) => {
     const prompt = `Jestem studentem i potrzebuję profesjonalnych notatek z tego wykładu.
 
 TRANSKRYPCJA:
-"${transcription.substring(0, 8000)}"${transcription.length > 8000 ? `\n\n[... i ${transcription.length - 8000} znaków więcej]` : ''}
+"${transcription}"
 
 Wygeneruj KOMPLETNE notatki w formacie JSON:
 
@@ -1018,7 +1028,7 @@ app.post('/generate-flashcards', express.json(), async (req, res) => {
     const prompt = `Stwórz fiszki edukacyjne z tego materiału:
 
 MATERIAŁ:
-"${transcription.substring(0, 8000)}"${transcription.length > 8000 ? `\n\n[...]` : ''}
+"${transcription}"
 
 Format JSON (TYLKO array, bez innych tekstów):
 [
@@ -1032,12 +1042,16 @@ Format JSON (TYLKO array, bez innych tekstów):
 
 ZASADY:
 - Różne poziomy: easy, medium, hard
-- Kategorie: definicja, zastosowanie, przykład, wzór
-- Wygeneruj tyle fiszek ile potrzeba, aby dogłębnie pokryć temat
-- Każdy ważny koncept powinien mieć własną fiszkę`;
+- Kategorie: definicja, zastosowanie, przykład, wzór, analiza, porównanie
+- Wygeneruj JAK NAJWIĘCEJ fiszek - każdy ważny koncept powinien mieć własną fiszkę
+- Stwórz minimum 20-30 fiszek jeśli materiał na to pozwala
+- Uwzględnij wszystkie szczegóły, fakty, definicje, przykłady
+- Każdy termin, proces, koncepcja = osobna fiszka
+- Nie pomijaj żadnych ważnych informacji
+- Fiszki powinny pokrywać cały zakres tematu dogłębnie`;
 
     const startTime = Date.now();
-    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 4096);
+    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 8192);
     const duration = Date.now() - startTime;
     
     // Parsuj JSON array
@@ -1073,10 +1087,12 @@ app.post('/generate-detailed-note', express.json(), async (req, res) => {
     
     console.log(`[GenerateDetailedNote] Otrzymano: ${transcription.length} znaków`);
     
-    const prompt = `Stwórz SZCZEGÓŁOWĄ notatkę akademicką z tego materiału w formacie Markdown.
+    const prompt = `JĘZYK ODPOWIEDZI: TYLKO JĘZYK POLSKI. Nie używaj ŻADNYCH słów w innych językach (chińskim, angielskim itp.).
+
+Stwórz SZCZEGÓŁOWĄ notatkę akademicką z tego materiału w formacie Markdown.
 
 MATERIAŁ:
-"${transcription.substring(0, 10000)}"${transcription.length > 10000 ? `\n\n[... i więcej]` : ''}
+"${transcription}"
 
 STRUKTURA:
 # Tytuł tematu
@@ -1102,14 +1118,20 @@ Kontekst i znaczenie tematu (2-3 zdania)
 Syntetyczne zestawienie najważniejszych punktów
 
 ZASADY:
+- UŻYWAJ WYŁĄCZNIE JĘZYKA POLSKIEGO - nie mieszaj języków!
 - Używaj struktury Markdown (nagłówki ##, listy, pogrubienia **)
 - Pisz językiem akademickim ale zrozumiałym
-- Uwzględnij WSZYSTKIE ważne informacje z materiału
-- Notatka powinna być tak szczegółowa i obszerna jak to konieczne do dogłębnego zrozumienia tematu
-- Nie skracaj treści - celem jest kompleksowe opracowanie zagadnienia`;
+- Uwzględnij WSZYSTKIE ważne informacje z materiału - nic nie pomijaj
+- Notatka powinna być maksymalnie szczegółowa i obszerna
+- Analizuj każdy aspekt tematu dogłębnie
+- Dodawaj przykłady, kontekst i powiązania między zagadnieniami
+- Rozwijaj każdy punkt obszernie - nie skracaj treści
+- Celem jest stworzenie kompletnego, wyczerpującego opracowania tematu
+- Im więcej szczegółów, tym lepiej - nie ma limitów długości
+- PAMIĘTAJ: Odpowiadaj TYLKO po polsku, bez żadnych słów w innych językach!`;
 
     const startTime = Date.now();
-    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 8192);
+    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 16384);
     const duration = Date.now() - startTime;
     
     console.log(`[GenerateDetailedNote] Wygenerowano notatkę w ${duration}ms`);
@@ -1137,10 +1159,12 @@ app.post('/generate-short-note', express.json(), async (req, res) => {
     
     console.log(`[GenerateShortNote] Otrzymano: ${transcription.length} znaków`);
     
-    const prompt = `Stwórz KRÓTKĄ notatkę z tego materiału w formacie Markdown.
+    const prompt = `JĘZYK ODPOWIEDZI: TYLKO JĘZYK POLSKI. Nie używaj ŻADNYCH słów w innych językach (chińskim, angielskim itp.).
+
+Stwórz SZCZEGÓŁOWĄ notatkę z tego materiału w formacie Markdown.
 
 MATERIAŁ:
-"${transcription.substring(0, 8000)}"${transcription.length > 8000 ? `\n\n[...]` : ''}
+"${transcription}"
 
 STRUKTURA:
 # Tytuł
@@ -1157,13 +1181,17 @@ STRUKTURA:
 Zwięzłe podsumowanie (2-3 zdania)
 
 ZASADY:
-- Maksymalnie 300 słów
-- Tylko najważniejsze informacje
-- Format Markdown
-- Emoji dla czytelności`;
+- UŻYWAJ WYŁĄCZNIE JĘZYKA POLSKIEGO - nie mieszaj języków!
+- Szczegółowa ale przystępna forma
+- Uwzględnij wszystkie ważne informacje - nie skracaj
+- Format Markdown z emoji dla czytelności
+- Notatka może być długa jeśli materiał tego wymaga
+- Lepiej szczegółowo niż powierzchownie
+- Nie pomijaj żadnych istotnych treści
+- PAMIĘTAJ: Odpowiadaj TYLKO po polsku, bez żadnych słów w innych językach!`;
 
     const startTime = Date.now();
-    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 1024);
+    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 4096);
     const duration = Date.now() - startTime;
     
     console.log(`[GenerateShortNote] Wygenerowano krótką notatkę w ${duration}ms`);
@@ -1194,7 +1222,7 @@ app.post('/generate-key-points', express.json(), async (req, res) => {
     const prompt = `Wyodrębnij KLUCZOWE PUNKTY z tego materiału w formacie Markdown.
 
 MATERIAŁ:
-"${transcription.substring(0, 8000)}"${transcription.length > 8000 ? `\n\n[...]` : ''}
+"${transcription}"
 
 FORMAT:
 # 🎯 Kluczowe punkty
@@ -1216,13 +1244,15 @@ FORMAT:
 Najważniejsze zastrzeżenia lub wyjątki
 
 ZASADY:
-- Maksymalnie 8-12 punktów
-- Każdy punkt zwięzły (1 linia)
-- Tylko informacje istotne do zapamiętania
-- Format Markdown z emoji`;
+- ILOŚĆ punktów dostosowana do treści - minimum 15-25 punktów
+- Każdy punkt zwięzły ale kompletny
+- Uwzględnij wszystkie informacje istotne do zapamiętania
+- Format Markdown z emoji
+- Lepiej więcej punktów niż pominięte ważne treści
+- Pokryj cały zakres tematu systematycznie`;
 
     const startTime = Date.now();
-    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 1024);
+    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 2048);
     const duration = Date.now() - startTime;
     
     console.log(`[GenerateKeyPoints] Wygenerowano kluczowe punkty w ${duration}ms`);
@@ -1253,7 +1283,7 @@ app.post('/generate-quiz', express.json(), async (req, res) => {
     const prompt = `Stwórz quiz wielokrotnego wyboru z tego materiału:
 
 MATERIAŁ:
-"${transcription.substring(0, 8000)}"${transcription.length > 8000 ? `\n\n[...]` : ''}
+"${transcription}"
 
 Format JSON (TYLKO array, bez innych tekstów):
 [
@@ -1266,15 +1296,17 @@ Format JSON (TYLKO array, bez innych tekstów):
 ]
 
 ZASADY:
-- 8-12 pytań różnej trudności
+- 15-25 pytań różnej trudności (wcześniej 8-12)
 - Każde pytanie ma 4 opcje
 - correctIndex to indeks prawidłowej odpowiedzi (0-3)
-- Kategorie: definicje, zastosowania, analiza, fakty
+- Kategorie: definicje, zastosowania, analiza, fakty, porównania
 - Dystraktory (złe odpowiedzi) muszą być wiarygodne
-- Poprawna odpowiedź nie może być oczywista`;
+- Poprawna odpowiedź nie może być oczywista
+- Pokryj cały zakres tematu systematycznie
+- Uwzględnij wszystkie ważne zagadnienia z materiału`;
 
     const startTime = Date.now();
-    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 2048);
+    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 4096);
     const duration = Date.now() - startTime;
     
     // Parsuj JSON array

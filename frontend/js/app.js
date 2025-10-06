@@ -1,5 +1,6 @@
 // Student Assistant - Main Application
 // Version 2.0 - Modular Architecture
+// CACHE BUSTER: 2025-10-06-20:00 - Fixed currentLectureId issue
 
 import * as db from './modules/database.js';
 import * as settings from './modules/settings.js';
@@ -16,6 +17,15 @@ let currentTab = 'dashboard';
 let currentAudioFile = null;
 let currentDocumentFile = null;
 let currentContentSource = 'audio'; // 'audio' or 'document'
+
+// Initialize currentLectureId on window object explicitly
+if (typeof window !== 'undefined') {
+    window.currentLectureId = null;
+    console.log('Initialized window.currentLectureId');
+} else {
+    console.error('window object not available!');
+}
+
 let quizState = {
     selectedAnswers: new Map(),
     isChecked: false
@@ -1642,7 +1652,19 @@ async function saveSettings() {
 
 async function openLectureView(lectureId) {
     console.log('openLectureView called with ID:', lectureId);
-    currentLectureId = lectureId;
+    console.log('Type of lectureId:', typeof lectureId);
+    console.log('window object exists:', typeof window !== 'undefined');
+    
+    // Set the current lecture ID directly to avoid any scope issues
+    try {
+        window.currentLectureId = lectureId;
+        console.log('Current lecture ID set to:', lectureId);
+        console.log('Verification - window.currentLectureId:', window.currentLectureId);
+    } catch (error) {
+        console.error('Error setting currentLectureId:', error);
+        alert('❌ Błąd ustawiania ID wykładu: ' + error.message);
+        return;
+    }
     
     try {
         // Get lecture data
@@ -1736,10 +1758,14 @@ async function openLectureView(lectureId) {
     }
 }
 
+// Make function available globally for event handlers
+window.openLectureView = openLectureView;
+
 function setupLectureViewListeners() {
     // Back button
     document.getElementById('btn-back-to-lectures').addEventListener('click', () => {
-        currentLectureId = null;
+        window.currentLectureId = null;
+        console.log('Current lecture ID reset to null');
         switchTab('lectures');
     });
     
@@ -1761,9 +1787,9 @@ function setupLectureViewListeners() {
     
     // Generate notes
     document.getElementById('btn-generate-notes').addEventListener('click', async () => {
-        if (!currentLectureId) return;
+        if (!window.currentLectureId) return;
         
-        const lecture = await db.getLecture(currentLectureId);
+        const lecture = await db.getLecture(window.currentLectureId);
         if (!lecture.transcription) {
             alert('❌ Brak transkrypcji do przetworzenia');
             return;
@@ -1779,7 +1805,7 @@ function setupLectureViewListeners() {
             });
             
             // Save to database
-            await db.updateLecture(currentLectureId, {
+            await db.updateLecture(window.currentLectureId, {
                 notes: notes.formatted,
                 aiNotes: notes
             });
@@ -1811,9 +1837,9 @@ function setupLectureViewListeners() {
     
     // Generate detailed note
     document.getElementById('btn-generate-detailed').addEventListener('click', async () => {
-        if (!currentLectureId) return;
+        if (!window.currentLectureId) return;
         
-        const lecture = await db.getLecture(currentLectureId);
+        const lecture = await db.getLecture(window.currentLectureId);
         if (!lecture.transcription) {
             alert('❌ Brak transkrypcji do przetworzenia');
             return;
@@ -1828,7 +1854,7 @@ function setupLectureViewListeners() {
                 btn.textContent = `⏳ ${message}`;
             });
             
-            await db.updateLecture(currentLectureId, { detailedNote });
+            await db.updateLecture(window.currentLectureId, { detailedNote });
             
             const renderMarkdown = (text) => {
                 try {
@@ -1855,9 +1881,9 @@ function setupLectureViewListeners() {
     
     // Generate short note
     document.getElementById('btn-generate-short').addEventListener('click', async () => {
-        if (!currentLectureId) return;
+        if (!window.currentLectureId) return;
         
-        const lecture = await db.getLecture(currentLectureId);
+        const lecture = await db.getLecture(window.currentLectureId);
         if (!lecture.transcription) {
             alert('❌ Brak transkrypcji do przetworzenia');
             return;
@@ -1872,7 +1898,7 @@ function setupLectureViewListeners() {
                 btn.textContent = `⏳ ${message}`;
             });
             
-            await db.updateLecture(currentLectureId, { shortNote });
+            await db.updateLecture(window.currentLectureId, { shortNote });
             
             const renderMarkdown = (text) => {
                 try {
@@ -1899,9 +1925,9 @@ function setupLectureViewListeners() {
     
     // Generate key points
     document.getElementById('btn-generate-keypoints').addEventListener('click', async () => {
-        if (!currentLectureId) return;
+        if (!window.currentLectureId) return;
         
-        const lecture = await db.getLecture(currentLectureId);
+        const lecture = await db.getLecture(window.currentLectureId);
         if (!lecture.transcription) {
             alert('❌ Brak transkrypcji do przetworzenia');
             return;
@@ -1916,7 +1942,7 @@ function setupLectureViewListeners() {
                 btn.textContent = `⏳ ${message}`;
             });
             
-            await db.updateLecture(currentLectureId, { keyPoints });
+            await db.updateLecture(window.currentLectureId, { keyPoints });
             
             const renderMarkdown = (text) => {
                 try {
@@ -1943,9 +1969,9 @@ function setupLectureViewListeners() {
     
     // Generate flashcards
     document.getElementById('btn-generate-flashcards').addEventListener('click', async () => {
-        if (!currentLectureId) return;
+        if (!window.currentLectureId) return;
         
-        const lecture = await db.getLecture(currentLectureId);
+        const lecture = await db.getLecture(window.currentLectureId);
         if (!lecture.transcription) {
             alert('❌ Brak transkrypcji do przetworzenia');
             return;
@@ -1965,12 +1991,12 @@ function setupLectureViewListeners() {
                 await db.addFlashcard({
                     ...card,
                     subjectId: lecture.subjectId,
-                    lectureId: currentLectureId
+                    lectureId: window.currentLectureId
                 });
             }
             
             // Reload flashcards
-            const allFlashcards = await db.getFlashcardsByLecture(currentLectureId);
+            const allFlashcards = await db.getFlashcardsByLecture(window.currentLectureId);
             document.getElementById('lecture-flashcards-content').innerHTML = `
                 <div class="grid">
                     ${allFlashcards.map(card => `
@@ -1998,9 +2024,9 @@ function setupLectureViewListeners() {
     
     // Generate quiz
     document.getElementById('btn-generate-quiz').addEventListener('click', async () => {
-        if (!currentLectureId) return;
+        if (!window.currentLectureId) return;
         
-        const lecture = await db.getLecture(currentLectureId);
+        const lecture = await db.getLecture(window.currentLectureId);
         if (!lecture.transcription) {
             alert('❌ Brak transkrypcji do przetworzenia');
             return;
@@ -2016,7 +2042,7 @@ function setupLectureViewListeners() {
             });
             
             // Save to database
-            await db.updateLecture(currentLectureId, { quiz });
+            await db.updateLecture(window.currentLectureId, { quiz });
             
             // Render quiz
             renderQuiz(quiz);
@@ -2192,7 +2218,7 @@ function checkQuizAnswers(questions) {
     
     // Reset button
     document.getElementById('btn-reset-quiz').addEventListener('click', async () => {
-        const lecture = await db.getLecture(currentLectureId);
+        const lecture = await db.getLecture(window.currentLectureId);
         if (lecture.quiz) {
             renderQuiz(lecture.quiz);
         }
@@ -2209,9 +2235,12 @@ async function loadSchedule() {
     
     const container = document.getElementById('schedule-view');
     
+    // Update current time display
+    updateCurrentTimeDisplay();
+    
     if (events.length === 0) {
         container.innerHTML = `
-            <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 60px;">
+            <div class="card" style="width: 100%; text-align: center; padding: 60px; margin: 0;">
                 <p style="color: var(--text-secondary); font-size: 18px; margin-bottom: 20px;">
                     📅 Brak zajęć w planie
                 </p>
@@ -2237,108 +2266,211 @@ async function loadSchedule() {
         eventsByDay[event.dayOfWeek].push(event);
     });
     
-    // Generuj HTML dla każdego dnia
-    let html = '';
-    for (let day = 1; day <= 6; day++) { // Pon-Sob
-        const dayEvents = eventsByDay[day] || [];
-        if (dayEvents.length > 0) {
-            html += `
-                <div class="card" style="padding: 0; overflow: hidden;">
-                    <div style="background: var(--primary); color: white; padding: 15px 20px; font-weight: 700; font-size: 18px;">
-                        ${dayNames[day]}
-                    </div>
-                    <div style="padding: 15px;">
-                        ${dayEvents.map(event => {
-                            const subject = subjects.find(s => s.id === event.subjectId);
-                            const typeEmoji = {
-                                'lecture': '📖',
-                                'exercise': '✏️',
-                                'lab': '🔬',
-                                'seminar': '💬',
-                                'exam': '📝',
-                                'other': '📌'
-                            };
-                            
-                            return `
-                                <div style="margin-bottom: 12px; padding: 12px; background: var(--bg-dark); border-radius: 8px; border-left: 4px solid ${subject?.color || 'var(--primary)'};">
-                                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
-                                        <div style="flex: 1;">
-                                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                                                <span style="font-size: 18px;">${typeEmoji[event.type] || '📌'}</span>
-                                                <span style="font-weight: 600; font-size: 16px; color: ${subject?.color || 'var(--primary)'};">
-                                                    ${event.title || subject?.name || 'Zajęcia'}
-                                                </span>
-                                            </div>
-                                            <div style="display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--text-secondary);">
-                                                <span>🕐 ${event.startTime} - ${event.endTime}</span>
-                                                ${event.location ? `<span>📍 ${event.location}</span>` : ''}
-                                            </div>
-                                            ${event.notes ? `<div style="margin-top: 8px; font-size: 13px; color: var(--text-secondary); font-style: italic;">${event.notes}</div>` : ''}
-                                        </div>
-                                        <button class="btn" onclick="deleteScheduleEvent('${event.id}')" 
-                                                style="background: var(--accent)22; color: var(--accent); padding: 6px 12px; font-size: 12px;">
-                                            🗑️
-                                        </button>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                </div>
-            `;
-        }
-    }
+    // Sort events within each day by start time
+    Object.keys(eventsByDay).forEach(day => {
+        eventsByDay[day].sort((a, b) => a.startTime.localeCompare(b.startTime));
+    });
     
-    // Niedziela na końcu (jeśli są zajęcia)
-    if (eventsByDay[0] && eventsByDay[0].length > 0) {
-        const dayEvents = eventsByDay[0];
+    // Get current day of week (0 = Sunday, 1 = Monday, etc.)
+    const currentDay = new Date().getDay();
+    
+    // Generate HTML for each day in one row (Mon-Fri only)
+    let html = '';
+    for (let day = 1; day <= 5; day++) { // Mon-Fri only
+        const dayEvents = eventsByDay[day] || [];
+        const isToday = day === currentDay;
+        
         html += `
-            <div class="card" style="padding: 0; overflow: hidden;">
-                <div style="background: var(--text-secondary); color: white; padding: 15px 20px; font-weight: 700; font-size: 18px;">
-                    ${dayNames[0]}
+            <div class="card schedule-day ${isToday ? 'today' : ''}" style="
+                width: calc(20% - 16px); 
+                min-width: 180px;
+                max-width: 240px;
+                padding: 0; 
+                overflow: hidden;
+                flex-shrink: 0;
+                ${isToday ? 'box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); border: 2px solid var(--primary);' : ''}
+            ">
+                <div style="
+                    background: ${isToday ? 'var(--primary)' : 'var(--text-secondary)'}; 
+                    color: white; 
+                    padding: 12px 15px; 
+                    font-weight: 700; 
+                    font-size: 16px;
+                    position: relative;
+                ">
+                    ${dayNames[day]}
+                    ${isToday ? '<span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%);">●</span>' : ''}
                 </div>
-                <div style="padding: 15px;">
-                    ${dayEvents.map(event => {
-                        const subject = subjects.find(s => s.id === event.subjectId);
-                        const typeEmoji = {
-                            'lecture': '📖',
-                            'exercise': '✏️',
-                            'lab': '🔬',
-                            'seminar': '💬',
-                            'exam': '📝',
-                            'other': '📌'
-                        };
-                        
-                        return `
-                            <div style="margin-bottom: 12px; padding: 12px; background: var(--bg-dark); border-radius: 8px; border-left: 4px solid ${subject?.color || 'var(--primary)'};">
-                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
-                                    <div style="flex: 1;">
-                                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                                            <span style="font-size: 18px;">${typeEmoji[event.type] || '📌'}</span>
-                                            <span style="font-weight: 600; font-size: 16px; color: ${subject?.color || 'var(--primary)'};">
-                                                ${event.title || subject?.name || 'Zajęcia'}
-                                            </span>
-                                        </div>
-                                        <div style="display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--text-secondary);">
-                                            <span>🕐 ${event.startTime} - ${event.endTime}</span>
-                                            ${event.location ? `<span>📍 ${event.location}</span>` : ''}
-                                        </div>
-                                        ${event.notes ? `<div style="margin-top: 8px; font-size: 13px; color: var(--text-secondary); font-style: italic;">${event.notes}</div>` : ''}
-                                    </div>
-                                    <button class="btn" onclick="deleteScheduleEvent('${event.id}')" 
-                                            style="background: var(--accent)22; color: var(--accent); padding: 6px 12px; font-size: 12px;">
-                                        🗑️
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
+                <div style="padding: 12px; position: relative; min-height: 180px;">
+                    ${dayEvents.length === 0 ? 
+                        '<div style="color: var(--text-secondary); text-align: center; padding: 30px 0; font-size: 13px;">Brak zajęć</div>' :
+                        generateDayScheduleWithBreaks(dayEvents, subjects, isToday)
+                    }
                 </div>
             </div>
         `;
     }
     
     container.innerHTML = html;
+}
+
+function generateDayScheduleWithBreaks(dayEvents, subjects, isToday) {
+    let html = '';
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    
+    for (let i = 0; i < dayEvents.length; i++) {
+        const event = dayEvents[i];
+        const subject = subjects.find(s => s.id === event.subjectId);
+        const typeEmoji = {
+            'lecture': '📖',
+            'exercise': '✏️',
+            'lab': '🔬',
+            'seminar': '💬',
+            'exam': '📝',
+            'other': '📌'
+        };
+        
+        // Calculate time positions for timeline
+        const startMinutes = parseTimeToMinutes(event.startTime);
+        const endMinutes = parseTimeToMinutes(event.endTime);
+        const duration = endMinutes - startMinutes;
+        
+        // Add break time if there's a gap between events
+        if (i > 0) {
+            const prevEvent = dayEvents[i - 1];
+            const prevEndMinutes = parseTimeToMinutes(prevEvent.endTime);
+            const breakDuration = startMinutes - prevEndMinutes;
+            
+            if (breakDuration > 0) {
+                html += `
+                    <div style="
+                        margin: 8px 0; 
+                        padding: 8px 12px; 
+                        background: rgba(255, 193, 7, 0.1); 
+                        border-radius: 6px; 
+                        text-align: center;
+                        font-size: 13px;
+                        color: var(--text-secondary);
+                        border-left: 3px solid #ffc107;
+                    ">
+                        ⏰ Przerwa ${formatMinutesToTime(breakDuration)}
+                    </div>
+                `;
+            }
+        }
+        
+        // Check if event is currently active
+        const isActive = isToday && currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+        
+        html += `
+            <div style="
+                margin-bottom: 12px; 
+                padding: 12px; 
+                background: ${isActive ? 'rgba(34, 197, 94, 0.1)' : 'var(--bg-dark)'}; 
+                border-radius: 8px; 
+                border-left: 4px solid ${subject?.color || 'var(--primary)'};
+                position: relative;
+                ${isActive ? 'border: 2px solid #22c55e;' : ''}
+            ">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                            <span style="font-size: 18px;">${typeEmoji[event.type] || '📌'}</span>
+                            <span style="font-weight: 600; font-size: 16px; color: ${subject?.color || 'var(--primary)'};">
+                                ${event.title || subject?.name || 'Zajęcia'}
+                            </span>
+                            ${isActive ? '<span style="color: #22c55e; font-weight: bold; font-size: 12px;">● NA ŻYWO</span>' : ''}
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--text-secondary);">
+                            <span>🕐 ${event.startTime} - ${event.endTime}</span>
+                            ${event.location ? `<span>📍 ${event.location}</span>` : ''}
+                        </div>
+                        ${event.notes ? `<div style="margin-top: 8px; font-size: 13px; color: var(--text-secondary); font-style: italic;">${event.notes}</div>` : ''}
+                    </div>
+                    <button class="btn" onclick="deleteScheduleEvent('${event.id}')" 
+                            style="background: var(--accent)22; color: var(--accent); padding: 6px 12px; font-size: 12px;">
+                        🗑️
+                    </button>
+                </div>
+                ${isToday ? generateTimelineBar(startMinutes, endMinutes, currentMinutes) : ''}
+            </div>
+        `;
+    }
+    
+    return html;
+}
+
+function generateTimelineBar(startMinutes, endMinutes, currentMinutes) {
+    const duration = endMinutes - startMinutes;
+    const elapsed = Math.max(0, Math.min(duration, currentMinutes - startMinutes));
+    const progress = duration > 0 ? (elapsed / duration) * 100 : 0;
+    
+    return `
+        <div style="
+            margin-top: 12px; 
+            height: 4px; 
+            background: rgba(99, 102, 241, 0.2); 
+            border-radius: 2px; 
+            position: relative;
+            overflow: hidden;
+        ">
+            <div style="
+                height: 100%; 
+                background: var(--primary); 
+                width: ${progress}%; 
+                transition: width 0.3s ease;
+                border-radius: 2px;
+            "></div>
+            <div style="
+                position: absolute; 
+                top: -2px; 
+                left: ${progress}%; 
+                width: 8px; 
+                height: 8px; 
+                background: var(--primary); 
+                border-radius: 50%; 
+                transform: translateX(-50%);
+                box-shadow: 0 0 6px rgba(99, 102, 241, 0.5);
+            "></div>
+        </div>
+    `;
+}
+
+function parseTimeToMinutes(timeString) {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    return hours * 60 + minutes;
+}
+
+function formatMinutesToTime(minutes) {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0) {
+        return `${hours}h ${mins}min`;
+    }
+    return `${mins}min`;
+}
+
+function updateCurrentTimeDisplay() {
+    const now = new Date();
+    const options = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    };
+    
+    const timeString = now.toLocaleDateString('pl-PL', options);
+    const display = document.getElementById('current-date-time');
+    if (display) {
+        display.textContent = timeString;
+    }
+    
+    // Update every second
+    setTimeout(updateCurrentTimeDisplay, 1000);
 }
 
 async function addScheduleEvent() {

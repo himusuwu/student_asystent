@@ -890,3 +890,129 @@ label.btn:active {
     transform: translateY(0px);
 }
 
+/* Schedule Layout Styles */
+.schedule-day {
+    transition: all 0.3s ease;
+}
+
+.schedule-day:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.schedule-day.today {
+    animation: todayPulse 2s infinite;
+}
+
+@keyframes todayPulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+    }
+}
+
+/* Scrollbar for horizontal schedule */
+#schedule-view::-webkit-scrollbar {
+    height: 8px;
+}
+
+#schedule-view::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+    border-radius: 4px;
+}
+
+#schedule-view::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 4px;
+}
+
+#schedule-view::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-dark);
+}
+
+/* Responsive schedule layout */
+@media (max-width: 768px) {
+    #schedule-view {
+        flex-direction: column;
+        overflow-x: visible;
+    }
+    
+    .schedule-day {
+        min-width: 100%;
+    }
+}
+
+/* Timeline progress animation */
+.timeline-progress {
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    animation: timelineGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes timelineGlow {
+    0% {
+        box-shadow: 0 0 5px rgba(99, 102, 241, 0.3);
+    }
+    100% {
+        box-shadow: 0 0 15px rgba(99, 102, 241, 0.6);
+    }
+}
+
+/* Schedule Responsive Styles */
+#schedule-view {
+    width: 100%;
+}
+
+.schedule-day {
+    flex: 1;
+    min-width: 0; /* Allow shrinking */
+}
+
+@media (max-width: 1200px) {
+    .schedule-day {
+        min-width: 160px;
+        max-width: 200px;
+    }
+    
+    #schedule-view {
+        gap: 12px !important;
+    }
+}
+
+@media (max-width: 900px) {
+    .schedule-day {
+        min-width: 140px;
+        max-width: 180px;
+    }
+    
+    #schedule-view {
+        gap: 8px !important;
+        overflow-x: auto;
+        padding-bottom: 15px;
+    }
+    
+    .schedule-day > div:first-child {
+        font-size: 14px !important;
+        padding: 10px 12px !important;
+    }
+    
+    .schedule-day > div:last-child {
+        padding: 10px !important;
+        min-height: 160px !important;
+    }
+}
+
+@media (max-width: 600px) {
+    #schedule-view {
+        flex-direction: column;
+        gap: 12px !important;
+    }
+    
+    .schedule-day {
+        width: 100%;
+        min-width: unset;
+        max-width: unset;
+    }
+}
+
