@@ -16,7 +16,6 @@ let currentTab = 'dashboard';
 let currentAudioFile = null;
 let currentDocumentFile = null;
 let currentContentSource = 'audio'; // 'audio' or 'document'
-let currentLectureId = null;
 let quizState = {
     selectedAnswers: new Map(),
     isChecked: false
