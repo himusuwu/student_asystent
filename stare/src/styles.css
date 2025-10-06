@@ -716,7 +716,7 @@ html {
 /* Print styles */
 @media print {
   .markdown-viewer {
-    color: black;
+    color: #2d3748;
   }
   
   .markdown-viewer pre {
@@ -903,7 +903,8 @@ html {
   }
   
   body {
-    background: white !important;
+    background: #f7fafc !important;
+    color: #2d3748 !important;
   }
   
   .card-enhanced {

@@ -381,6 +381,10 @@ function setupEventListeners() {
     document.getElementById('btn-collapse-all').addEventListener('click', collapseAllFlashcards);
     document.getElementById('btn-expand-all').addEventListener('click', expandAllFlashcards);
     
+    // Study Mode
+    document.getElementById('btn-study-flashcards').addEventListener('click', openStudyMode);
+    document.getElementById('btn-back-to-flashcards').addEventListener('click', () => switchTab('flashcards'));
+    
     // Schedule
     const btnAddSchedule = document.getElementById('btn-add-schedule');
     if (btnAddSchedule) {
@@ -1835,6 +1839,64 @@ function setupLectureViewListeners() {
         }
     });
     
+    // Generate notes with fact-checking
+    document.getElementById('btn-generate-notes-with-fact-check').addEventListener('click', async () => {
+        if (!window.currentLectureId) return;
+        
+        const lecture = await db.getLecture(window.currentLectureId);
+        if (!lecture.transcription) {
+            alert('❌ Brak transkrypcji do przetworzenia');
+            return;
+        }
+        
+        const btn = document.getElementById('btn-generate-notes-with-fact-check');
+        btn.disabled = true;
+        btn.textContent = '🔍 Sprawdzanie faktów...';
+        
+        try {
+            const result = await ai.generateNotesWithFactCheck(lecture.transcription, (percent, message) => {
+                btn.textContent = `🔍 ${message}`;
+            });
+            
+            // Save to database with fact-check info
+            await db.updateLecture(window.currentLectureId, {
+                notes: result.formatted,
+                aiNotes: {
+                    formatted: result.formatted,
+                    structured: result.structured,
+                    summary: result.summary,
+                    keyPoints: result.keyPoints,
+                    questions: result.questions
+                },
+                factCheck: result.factCheck
+            });
+            
+            // Update UI
+            const renderMarkdown = (text) => {
+                try {
+                    const rawHtml = marked.parse(text);
+                    return DOMPurify.sanitize(rawHtml);
+                } catch (e) {
+                    return `<div style="white-space: pre-wrap;">${text}</div>`;
+                }
+            };
+            
+            document.getElementById('lecture-notes-content').innerHTML = renderMarkdown(result.formatted);
+            
+            btn.textContent = '🔍✨ Z weryfikacją faktów';
+            btn.disabled = false;
+            
+            // Show fact-check results
+            showFactCheckResults(result.factCheck);
+            
+        } catch (error) {
+            console.error('Error generating notes with fact-check:', error);
+            alert(`❌ Błąd: ${error.message}`);
+            btn.textContent = '🔍✨ Z weryfikacją faktów';
+            btn.disabled = false;
+        }
+    });
+    
     // Generate detailed note
     document.getElementById('btn-generate-detailed').addEventListener('click', async () => {
         if (!window.currentLectureId) return;
@@ -2616,6 +2678,886 @@ async function clearAllData() {
 }
 
 // ============================================
+// STUDY MODE FUNCTIONALITY
+// ============================================
+
+let currentStudySession = {
+    cards: [],
+    currentIndex: 0,
+    mode: '',
+    correct: 0,
+    incorrect: 0,
+    incorrectCards: [], // Fiszki które były błędne i wymagają powtórki
+    totalCards: 0, // Całkowita liczba fiszek w sesji (dla statystyk)
+    round: 1, // Numer rundy (1, 2, 3...)
+    subjectId: '',
+    lectureId: '',
+    startTime: null
+};
+
+// Open study mode and initialize selection
+async function openStudyMode() {
+    switchTab('study-mode');
+    
+    // Reset study session for a fresh start
+    currentStudySession = {
+        cards: [],
+        currentIndex: 0,
+        correct: 0,
+        incorrect: 0,
+        incorrectCards: [],
+        totalCards: 0,
+        round: 1,
+        startTime: null,
+        mode: '',
+        subjectId: '',
+        lectureId: ''
+    };
+    
+    // Wait a bit for tab to load, then initialize study selection
+    setTimeout(async () => {
+        await initializeStudySelection();
+    }, 100);
+}
+
+// Initialize study selection interface
+async function initializeStudySelection() {
+    const subjects = await db.listSubjects();
+    const subjectSelect = document.getElementById('study-subject-select');
+    const lectureSelect = document.getElementById('study-lecture-select');
+    const startBtn = document.getElementById('btn-start-study');
+    
+    // Check if all required elements exist
+    if (!subjectSelect || !lectureSelect || !startBtn) {
+        console.error('Study mode elements not found:', {
+            subjectSelect: !!subjectSelect,
+            lectureSelect: !!lectureSelect, 
+            startBtn: !!startBtn
+        });
+        return;
+    }
+    
+    // Reset interface
+    showStudyStep('study-selection');
+    
+    // Populate subjects
+    subjectSelect.innerHTML = '<option value="">Wybierz przedmiot...</option>';
+    subjects.forEach(subject => {
+        const option = document.createElement('option');
+        option.value = subject.id;
+        option.textContent = subject.name;
+        subjectSelect.appendChild(option);
+    });
+    
+    // Handle subject change
+    subjectSelect.onchange = async () => {
+        const subjectId = subjectSelect.value;
+        lectureSelect.innerHTML = '<option value="">Wybierz wykład...</option>';
+        lectureSelect.disabled = !subjectId;
+        
+        if (subjectId) {
+            const lectures = await db.listLectures();
+            const subjectLectures = lectures.filter(l => l.subjectId === subjectId);
+            
+            // Add "All lectures" option
+            const allOption = document.createElement('option');
+            allOption.value = 'all';
+            allOption.textContent = 'Wszystkie wykłady z tego przedmiotu';
+            lectureSelect.appendChild(allOption);
+            
+            subjectLectures.forEach(lecture => {
+                const option = document.createElement('option');
+                option.value = lecture.id;
+                option.textContent = lecture.title;
+                lectureSelect.appendChild(option);
+            });
+            
+            lectureSelect.disabled = false;
+        }
+        
+        checkStartButton();
+    };
+    
+    // Handle lecture change
+    lectureSelect.onchange = checkStartButton;
+    
+    // Handle study mode selection
+    document.querySelectorAll('.study-mode-btn').forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll('.study-mode-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            checkStartButton();
+        };
+    });
+    
+    // Handle start study
+    if (startBtn) {
+        startBtn.onclick = startStudySession;
+    }
+    
+    function checkStartButton() {
+        const hasSubject = subjectSelect.value;
+        const hasLecture = lectureSelect.value;
+        const hasMode = document.querySelector('.study-mode-btn.selected');
+        
+        startBtn.disabled = !(hasSubject && hasLecture && hasMode);
+    }
+}
+
+// Start study session
+async function startStudySession() {
+    const subjectId = document.getElementById('study-subject-select').value;
+    const lectureId = document.getElementById('study-lecture-select').value;
+    const mode = document.querySelector('.study-mode-btn.selected').dataset.mode;
+    
+    // Get flashcards for selected subject/lecture
+    const allFlashcards = await db.listFlashcards();
+    let studyCards = [];
+    
+    if (lectureId === 'all') {
+        studyCards = allFlashcards.filter(card => card.subjectId === subjectId);
+    } else {
+        studyCards = allFlashcards.filter(card => 
+            card.subjectId === subjectId && card.lectureId === lectureId
+        );
+    }
+    
+    if (studyCards.length === 0) {
+        alert('Brak fiszek do nauki dla wybranego materiału!');
+        return;
+    }
+    
+    console.log('Starting study session with', studyCards.length, 'cards');
+    console.log('First card structure:', studyCards[0]);
+    
+    // Shuffle cards
+    studyCards = shuffleArray(studyCards);
+    
+    // Initialize session
+    currentStudySession = {
+        cards: studyCards,
+        currentIndex: 0,
+        mode: mode,
+        correct: 0,
+        incorrect: 0,
+        incorrectCards: [],
+        totalCards: studyCards.length, // Zapisz oryginalną liczbę fiszek
+        round: 1,
+        subjectId: subjectId,
+        lectureId: lectureId,
+        startTime: Date.now()
+    };
+    
+    // Start study session based on mode
+    showStudyStep('study-session');
+    
+    switch (mode) {
+        case 'flashcards':
+            startFlashcardMode();
+            break;
+        case 'quiz':
+            startQuizMode();
+            break;
+        case 'memory':
+            startMemoryMode();
+            break;
+        case 'typing':
+            startTypingMode();
+            break;
+    }
+}
+
+// Show specific study step
+function showStudyStep(stepId) {
+    document.querySelectorAll('.study-step').forEach(step => {
+        step.classList.remove('active');
+    });
+    
+    const targetStep = document.getElementById(stepId);
+    if (targetStep) {
+        targetStep.classList.add('active');
+    } else {
+        console.error('Study step not found:', stepId);
+    }
+}
+
+// Flashcard mode implementation
+function startFlashcardMode() {
+    const sessionContainer = document.getElementById('study-session');
+    const session = currentStudySession;
+    const currentCard = session.cards[session.currentIndex];
+    
+    console.log('startFlashcardMode - sessionContainer:', sessionContainer);
+    console.log('startFlashcardMode - cards:', session.cards.length, 'index:', session.currentIndex, 'currentCard:', currentCard);
+    
+    // Sprawdź czy kontener istnieje
+    if (!sessionContainer) {
+        console.error('study-session container not found');
+        return;
+    }
+    
+    // Sprawdź czy karta istnieje
+    if (!currentCard) {
+        console.error('No current card available at index', session.currentIndex);
+        showStudyResults();
+        return;
+    }
+    
+    sessionContainer.innerHTML = `
+        <div class="study-progress">
+            <div class="study-progress-bar">
+                <div class="study-progress-fill" style="width: ${(session.currentIndex / session.cards.length) * 100}%"></div>
+            </div>
+            <div class="study-stats">
+                <span>Fiszka ${session.currentIndex + 1} z ${session.cards.length}</span>
+                <span>Poprawne: ${session.correct} | Błędne: ${session.incorrect}</span>
+            </div>
+        </div>
+        
+        <div class="study-flashcard" id="study-card" onclick="flipStudyCard()">
+            <div class="study-flashcard-inner">
+                <div class="study-flashcard-front">
+                    <div class="study-flashcard-content">
+                        ${currentCard.front || currentCard.question || 'Brak pytania'}
+                    </div>
+                </div>
+                <div class="study-flashcard-back">
+                    <div class="study-flashcard-content">
+                        ${currentCard.back || currentCard.answer || 'Brak odpowiedzi'}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="study-controls">
+            <button class="study-btn incorrect" onclick="markCard(false)">
+                ❌ Nie umiem
+            </button>
+            <button class="study-btn" onclick="flipStudyCard()">
+                🔄 Przewróć
+            </button>
+            <button class="study-btn correct" onclick="markCard(true)">
+                ✅ Umiem
+            </button>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="study-btn" onclick="endStudySession()">
+                🏁 Zakończ sesję
+            </button>
+        </div>
+    `;
+}
+
+// Quiz mode implementation
+function startQuizMode() {
+    const sessionContainer = document.getElementById('study-session');
+    const session = currentStudySession;
+    const currentCard = session.cards[session.currentIndex];
+    
+    // Sprawdź czy karta istnieje
+    if (!currentCard) {
+        console.error('No current card available for quiz at index', session.currentIndex);
+        showStudyResults();
+        return;
+    }
+    
+    // Generate wrong answers from other cards
+    const otherCards = session.cards.filter((_, index) => index !== session.currentIndex);
+    const wrongAnswers = shuffleArray(otherCards).slice(0, 3).map(card => card.back || card.answer);
+    const correctAnswer = currentCard.back || currentCard.answer;
+    
+    // Mix answers
+    const allAnswers = shuffleArray([correctAnswer, ...wrongAnswers]);
+    
+    sessionContainer.innerHTML = `
+        <div class="study-progress">
+            <div class="study-progress-bar">
+                <div class="study-progress-fill" style="width: ${(session.currentIndex / session.cards.length) * 100}%"></div>
+            </div>
+            <div class="study-stats">
+                <span>Pytanie ${session.currentIndex + 1} z ${session.cards.length}</span>
+                <span>Poprawne: ${session.correct} | Błędne: ${session.incorrect}</span>
+            </div>
+        </div>
+        
+        <div class="study-quiz-question">
+            <h3>${currentCard.front || currentCard.question || 'Brak pytania'}</h3>
+            <div class="study-quiz-answers">
+                ${allAnswers.map((answer, index) => `
+                    <button class="study-quiz-answer" onclick="selectQuizAnswer(this, '${answer}', '${correctAnswer}')">
+                        ${answer}
+                    </button>
+                `).join('')}
+            </div>
+        </div>
+        
+        <div class="study-controls">
+            <button class="study-btn" onclick="endStudySession()">
+                🏁 Zakończ sesję
+            </button>
+        </div>
+    `;
+}
+
+// Memory mode implementation
+function startMemoryMode() {
+    const sessionContainer = document.getElementById('study-session');
+    const session = currentStudySession;
+    const currentCard = session.cards[session.currentIndex];
+    
+    // Sprawdź czy karta istnieje
+    if (!currentCard) {
+        console.error('No current card available for memory mode at index', session.currentIndex);
+        showStudyResults();
+        return;
+    }
+    
+    sessionContainer.innerHTML = `
+        <div class="study-progress">
+            <div class="study-progress-bar">
+                <div class="study-progress-fill" style="width: ${(session.currentIndex / session.cards.length) * 100}%"></div>
+            </div>
+            <div class="study-stats">
+                <span>Fiszka ${session.currentIndex + 1} z ${session.cards.length}</span>
+                <span>Poprawne: ${session.correct} | Błędne: ${session.incorrect}</span>
+            </div>
+        </div>
+        
+        <div class="study-quiz-question">
+            <h3>${currentCard.front || currentCard.question || 'Brak pytania'}</h3>
+            <input type="text" class="study-memory-input" id="memory-input" placeholder="Wpisz swoją odpowiedź...">
+        </div>
+        
+        <div class="study-controls">
+            <button class="study-btn primary" onclick="checkMemoryAnswer()">
+                ✓ Sprawdź odpowiedź
+            </button>
+            <button class="study-btn" onclick="endStudySession()">
+                🏁 Zakończ sesję
+            </button>
+        </div>
+    `;
+    
+    // Focus on input
+    setTimeout(() => {
+        document.getElementById('memory-input').focus();
+    }, 100);
+}
+
+// Typing mode (similar to memory but stricter checking)
+function startTypingMode() {
+    startMemoryMode(); // Same interface, different checking logic
+}
+
+// Global functions for study interactions
+window.flipStudyCard = function() {
+    const card = document.getElementById('study-card');
+    card.classList.toggle('flipped');
+};
+
+window.markCard = function(isCorrect) {
+    const session = currentStudySession;
+    const currentCard = session.cards[session.currentIndex];
+    
+    console.log('markCard called:', isCorrect ? 'correct' : 'incorrect', 'card:', currentCard);
+    
+    if (isCorrect) {
+        session.correct++;
+    } else {
+        session.incorrect++;
+        // Dodaj fiszkę do listy błędnych (sprawdzaj po content zamiast ID)
+        const cardExists = session.incorrectCards.find(card => 
+            (card.front === currentCard.front && card.back === currentCard.back) ||
+            (card.question === currentCard.question && card.answer === currentCard.answer)
+        );
+        
+        if (!cardExists) {
+            session.incorrectCards.push(currentCard);
+            console.log('Added card to incorrect list. Total incorrect cards:', session.incorrectCards.length);
+            console.log('Current incorrect cards:', session.incorrectCards);
+        } else {
+            console.log('Card already in incorrect list');
+        }
+    }
+    
+    nextCard();
+};
+
+window.selectQuizAnswer = function(button, selectedAnswer, correctAnswer) {
+    // Disable all buttons
+    document.querySelectorAll('.study-quiz-answer').forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent.trim() === correctAnswer) {
+            btn.classList.add('correct');
+        } else if (btn === button && selectedAnswer !== correctAnswer) {
+            btn.classList.add('incorrect');
+        }
+    });
+    
+    // Mark as correct or incorrect
+    const isCorrect = selectedAnswer === correctAnswer;
+    const currentCard = currentStudySession.cards[currentStudySession.currentIndex];
+    
+    if (isCorrect) {
+        currentStudySession.correct++;
+    } else {
+        currentStudySession.incorrect++;
+        // Dodaj fiszkę do listy błędnych
+        if (!currentStudySession.incorrectCards.find(card => card.id === currentCard.id)) {
+            currentStudySession.incorrectCards.push(currentCard);
+        }
+    }
+    
+    // Show next card after delay
+    setTimeout(nextCard, 1500);
+};
+
+window.checkMemoryAnswer = function() {
+    const input = document.getElementById('memory-input');
+    const userAnswer = input.value.trim().toLowerCase();
+    const correctAnswer = (currentStudySession.cards[currentStudySession.currentIndex].back || 
+                          currentStudySession.cards[currentStudySession.currentIndex].answer || '').toLowerCase();
+    
+    // Simple similarity check (you can make this more sophisticated)
+    const isCorrect = currentStudySession.mode === 'typing' ? 
+        userAnswer === correctAnswer : 
+        correctAnswer.includes(userAnswer) || userAnswer.includes(correctAnswer);
+    
+    const currentCard = currentStudySession.cards[currentStudySession.currentIndex];
+    
+    if (isCorrect) {
+        currentStudySession.correct++;
+        input.style.borderColor = '#10b981';
+        input.style.background = 'rgba(16, 185, 129, 0.1)';
+    } else {
+        currentStudySession.incorrect++;
+        input.style.borderColor = '#ef4444';
+        input.style.background = 'rgba(239, 68, 68, 0.1)';
+        // Dodaj fiszkę do listy błędnych
+        if (!currentStudySession.incorrectCards.find(card => card.id === currentCard.id)) {
+            currentStudySession.incorrectCards.push(currentCard);
+        }
+    }
+    
+    // Show correct answer
+    input.value = currentStudySession.cards[currentStudySession.currentIndex].back || 
+                  currentStudySession.cards[currentStudySession.currentIndex].answer;
+    input.disabled = true;
+    
+    setTimeout(nextCard, 2000);
+};
+
+window.endStudySession = function() {
+    showStudyResults();
+};
+
+// Move to next card
+function nextCard() {
+    const session = currentStudySession;
+    session.currentIndex++;
+    
+    if (session.currentIndex >= session.cards.length) {
+        // Sprawdź czy są błędne fiszki do powtórki
+        if (session.incorrectCards.length > 0) {
+            showRetryResults();
+        } else {
+            showStudyResults();
+        }
+    } else {
+        // Continue with current mode
+        switch (session.mode) {
+            case 'flashcards':
+                startFlashcardMode();
+                break;
+            case 'quiz':
+                startQuizMode();
+                break;
+            case 'memory':
+            case 'typing':
+                startMemoryMode();
+                break;
+        }
+    }
+}
+
+// Show retry results when there are incorrect cards
+function showRetryResults() {
+    const session = currentStudySession;
+    const accuracy = Math.round((session.correct / (session.correct + session.incorrect)) * 100) || 0;
+    const incorrectCount = session.incorrectCards.length;
+    
+    showStudyStep('study-results');
+    
+    const resultsContainer = document.getElementById('study-results');
+    resultsContainer.innerHTML = `
+        <div class="study-results-summary">
+            <h2 style="margin-bottom: 20px;">🔄 Runda ${session.round} zakończona</h2>
+            <div class="study-results-score">${accuracy}%</div>
+            <p style="font-size: 18px; color: var(--text-secondary);">
+                Ukończyłeś rundę ${session.round}! Masz ${incorrectCount} ${incorrectCount === 1 ? 'fiszkę' : incorrectCount < 5 ? 'fiszki' : 'fiszek'} do powtórki.
+            </p>
+            
+            <div class="study-results-details">
+                <div class="study-result-stat">
+                    <div class="study-result-stat-value" style="color: var(--success);">${session.correct}</div>
+                    <div class="study-result-stat-label">Poprawne</div>
+                </div>
+                <div class="study-result-stat">
+                    <div class="study-result-stat-value" style="color: #ef4444;">${session.incorrect}</div>
+                    <div class="study-result-stat-label">Błędne</div>
+                </div>
+                <div class="study-result-stat">
+                    <div class="study-result-stat-value" style="color: var(--accent);">${incorrectCount}</div>
+                    <div class="study-result-stat-label">Do powtórki</div>
+                </div>
+                <div class="study-result-stat">
+                    <div class="study-result-stat-value" style="color: var(--primary);">${session.round}</div>
+                    <div class="study-result-stat-label">Runda</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="study-controls">
+            <button class="study-btn primary" id="btn-retry-incorrect">
+                🎯 Powtórz błędne fiszki
+            </button>
+            <button class="study-btn" id="btn-finish-session">
+                ✅ Zakończ sesję
+            </button>
+            <button class="study-btn" id="btn-back-to-flashcards-retry">
+                📚 Powrót do fiszek
+            </button>
+        </div>
+    `;
+    
+    // Add event listeners for the buttons
+    document.getElementById('btn-retry-incorrect').addEventListener('click', function() {
+        // Dezaktywuj przycisk żeby zapobiec wielokrotnemu klikaniu
+        this.disabled = true;
+        this.textContent = '🔄 Przygotowuję...';
+        startRetryRound();
+    });
+    document.getElementById('btn-finish-session').addEventListener('click', showStudyResults);
+    document.getElementById('btn-back-to-flashcards-retry').addEventListener('click', () => switchTab('flashcards'));
+}
+
+// Start a new round with only incorrect cards
+function startRetryRound() {
+    const session = currentStudySession;
+    
+    console.log('Starting retry round with', session.incorrectCards.length, 'cards');
+    
+    // Sprawdź czy są fiszki do powtórki
+    if (session.incorrectCards.length === 0) {
+        console.error('No incorrect cards to retry');
+        showStudyResults();
+        return;
+    }
+    
+    // Przygotuj nową rundę z błędnymi fiszkami
+    session.cards = [...session.incorrectCards]; // Kopiuj błędne fiszki
+    
+    // Dodatkowe sprawdzenie czy kopia się udała
+    if (session.cards.length === 0) {
+        console.error('Failed to copy incorrect cards');
+        showStudyResults();
+        return;
+    }
+    
+    session.currentIndex = 0;
+    session.correct = 0; // Reset statystyk dla nowej rundy
+    session.incorrect = 0;
+    session.round++;
+    
+    // Pomieszaj fiszki
+    session.cards = shuffleArray(session.cards);
+    
+    console.log('Retry round prepared with', session.cards.length, 'cards, current index:', session.currentIndex);
+    
+    // Wyczyść listę błędnych DOPIERO po przygotowaniu nowej rundy
+    session.incorrectCards = [];
+    
+    console.log('About to start retry round with mode:', session.mode);
+    
+    // Przełącz na study-session step
+    showStudyStep('study-session');
+    
+    // Rozpocznij nową rundę w tym samym trybie
+    switch (session.mode) {
+        case 'flashcards':
+            console.log('Starting flashcard mode for retry');
+            startFlashcardMode();
+            break;
+        case 'quiz':
+            console.log('Starting quiz mode for retry');
+            startQuizMode();
+            break;
+        case 'memory':
+        case 'typing':
+            console.log('Starting memory mode for retry');
+            startMemoryMode();
+            break;
+        default:
+            console.error('Unknown study mode:', session.mode);
+            showStudyResults();
+            break;
+    }
+    
+    console.log('startRetryRound completed successfully');
+}
+
+// Show study results
+function showStudyResults() {
+    const session = currentStudySession;
+    const totalCorrect = session.correct;
+    const totalIncorrect = session.incorrect;
+    const accuracy = Math.round((totalCorrect / (totalCorrect + totalIncorrect)) * 100) || 0;
+    const duration = Math.round((Date.now() - session.startTime) / 1000);
+    const masteredCards = session.totalCards - session.incorrectCards.length;
+    const roundsCompleted = session.round;
+    
+    showStudyStep('study-results');
+    
+    const resultsContainer = document.getElementById('study-results');
+    resultsContainer.innerHTML = `
+        <div class="study-results-summary">
+            <h2 style="margin-bottom: 20px;">🎉 Sesja nauki zakończona!</h2>
+            <div class="study-results-score">${accuracy}%</div>
+            <p style="font-size: 18px; color: var(--text-secondary);">
+                Gratulacje! Opanowałeś ${masteredCards} z ${session.totalCards} fiszek${roundsCompleted > 1 ? ` w ${roundsCompleted} rundach` : ''}!
+            </p>
+            
+            <div class="study-results-details">
+                <div class="study-result-stat">
+                    <div class="study-result-stat-value" style="color: var(--success);">${masteredCards}</div>
+                    <div class="study-result-stat-label">Opanowane</div>
+                </div>
+                <div class="study-result-stat">
+                    <div class="study-result-stat-value" style="color: var(--primary);">${session.totalCards}</div>
+                    <div class="study-result-stat-label">Łącznie</div>
+                </div>
+                <div class="study-result-stat">
+                    <div class="study-result-stat-value" style="color: var(--accent);">${roundsCompleted}</div>
+                    <div class="study-result-stat-label">${roundsCompleted === 1 ? 'Runda' : 'Rundy'}</div>
+                </div>
+                <div class="study-result-stat">
+                    <div class="study-result-stat-value" style="color: var(--primary);">${session.cards.length}</div>
+                    <div class="study-result-stat-label">Łącznie</div>
+                </div>
+                <div class="study-result-stat">
+                    <div class="study-result-stat-value" style="color: var(--secondary);">${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')}</div>
+                    <div class="study-result-stat-label">Czas</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="study-controls">
+            <button class="study-btn primary" id="btn-study-again">
+                🔄 Ucz się ponownie
+            </button>
+            <button class="study-btn" id="btn-back-to-flashcards-results">
+                📚 Powrót do fiszek
+            </button>
+        </div>
+    `;
+    
+    // Add event listeners for the buttons
+    document.getElementById('btn-study-again').addEventListener('click', openStudyMode);
+    document.getElementById('btn-back-to-flashcards-results').addEventListener('click', () => switchTab('flashcards'));
+}
+
+// Utility function to shuffle array
+function shuffleArray(array) {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
+
+// Show fact-check results modal
+function showFactCheckResults(factCheck) {
+    const stats = factCheck.stats;
+    const results = factCheck.results;
+    const corrections = factCheck.corrections;
+    
+    let modalHtml = `
+        <div class="modal" id="fact-check-modal" style="display: flex;">
+            <div class="modal-content" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
+                <div class="modal-header">
+                    <h2>🔍 Wyniki weryfikacji faktów</h2>
+                    <button onclick="closeModal('fact-check-modal')" class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="fact-check-summary" style="background: var(--bg-secondary); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                        <h3>📊 Podsumowanie</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
+                            <div class="stat-item">
+                                <div class="stat-value">${stats.verified}/${stats.total}</div>
+                                <div class="stat-label">Zweryfikowane fakty</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">${(stats.confidence * 100).toFixed(1)}%</div>
+                                <div class="stat-label">Pewność weryfikacji</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">${stats.changes}</div>
+                                <div class="stat-label">Dokonane poprawki</div>
+                            </div>
+                        </div>
+                    </div>`;
+    
+    // Show corrections if any
+    if (corrections.hasChanges && corrections.changes.length > 0) {
+        modalHtml += `
+                    <div class="fact-check-corrections" style="margin-bottom: 20px;">
+                        <h3>✏️ Dokonane poprawki</h3>
+                        <div style="background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px;">
+                            ${corrections.changes.map(change => `
+                                <div style="margin-bottom: 10px; padding: 10px; background: #f8f9fa; color: #2d3748; border-radius: 5px;">
+                                    <strong>${change.type === 'name' ? 'Nazwa' : change.type === 'date' ? 'Data' : 'Miejsce'}:</strong><br>
+                                    <span style="color: #d63031; text-decoration: line-through;">"${change.original}"</span> → 
+                                    <span style="color: #00b894; font-weight: bold;">"${change.corrected}"</span><br>
+                                    <small style="color: #636e72;">Pewność: ${(change.confidence * 100).toFixed(0)}% | Źródło: ${change.source}</small>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`;
+    }
+    
+    // Show verified names
+    if (results.names && results.names.length > 0) {
+        modalHtml += `
+                    <div class="fact-check-names" style="margin-bottom: 20px;">
+                        <h3>👤 Weryfikowane imiona i nazwiska</h3>
+                        <div style="display: grid; gap: 10px;">
+                            ${results.names.map(name => `
+                                <div class="fact-item ${name.verified ? 'verified' : 'unverified'}" style="
+                                    display: flex; justify-content: space-between; align-items: center;
+                                    padding: 10px; border-radius: 5px; border: 1px solid;
+                                    ${name.verified ? 'background: #d4edda; border-color: #c3e6cb;' : 'background: #f8d7da; border-color: #f5c6cb;'}
+                                ">
+                                    <span><strong>${name.name}</strong></span>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <span style="font-size: 12px; color: #6c757d;">
+                                            ${(name.confidence * 100).toFixed(0)}% pewności
+                                        </span>
+                                        <span style="font-size: 18px;">
+                                            ${name.verified ? '✅' : '❓'}
+                                        </span>
+                                    </div>
+                                </div>
+                                ${name.info && name.info.definition ? `
+                                    <div style="padding: 10px; background: #f8f9fa; border-radius: 5px; margin-bottom: 10px; font-size: 14px;">
+                                        ${name.info.definition}
+                                    </div>
+                                ` : ''}
+                            `).join('')}
+                        </div>
+                    </div>`;
+    }
+    
+    // Show verified dates
+    if (results.dates && results.dates.length > 0) {
+        modalHtml += `
+                    <div class="fact-check-dates" style="margin-bottom: 20px;">
+                        <h3>📅 Weryfikowane daty</h3>
+                        <div style="display: grid; gap: 10px;">
+                            ${results.dates.map(date => `
+                                <div class="fact-item ${date.verified ? 'verified' : 'unverified'}" style="
+                                    display: flex; justify-content: space-between; align-items: center;
+                                    padding: 10px; border-radius: 5px; border: 1px solid;
+                                    ${date.verified ? 'background: #d4edda; border-color: #c3e6cb;' : 'background: #f8d7da; border-color: #f5c6cb;'}
+                                ">
+                                    <span><strong>${date.date}</strong></span>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <span style="font-size: 12px; color: #6c757d;">
+                                            ${(date.confidence * 100).toFixed(0)}% pewności
+                                        </span>
+                                        <span style="font-size: 18px;">
+                                            ${date.verified ? '✅' : '❓'}
+                                        </span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`;
+    }
+    
+    // Show verified places
+    if (results.places && results.places.length > 0) {
+        modalHtml += `
+                    <div class="fact-check-places" style="margin-bottom: 20px;">
+                        <h3>🏙️ Weryfikowane miejsca</h3>
+                        <div style="display: grid; gap: 10px;">
+                            ${results.places.map(place => `
+                                <div class="fact-item ${place.verified ? 'verified' : 'unverified'}" style="
+                                    display: flex; justify-content: space-between; align-items: center;
+                                    padding: 10px; border-radius: 5px; border: 1px solid;
+                                    ${place.verified ? 'background: #d4edda; border-color: #c3e6cb;' : 'background: #f8d7da; border-color: #f5c6cb;'}
+                                ">
+                                    <span><strong>${place.place}</strong></span>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <span style="font-size: 12px; color: #6c757d;">
+                                            ${(place.confidence * 100).toFixed(0)}% pewności
+                                        </span>
+                                        <span style="font-size: 18px;">
+                                            ${place.verified ? '✅' : '❓'}
+                                        </span>
+                                    </div>
+                                </div>
+                                ${place.info && place.info.abstract ? `
+                                    <div style="padding: 10px; background: #f8f9fa; border-radius: 5px; margin-bottom: 10px; font-size: 14px;">
+                                        ${place.info.abstract.substring(0, 200)}${place.info.abstract.length > 200 ? '...' : ''}
+                                    </div>
+                                ` : ''}
+                            `).join('')}
+                        </div>
+                    </div>`;
+    }
+    
+    modalHtml += `
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button class="btn btn-primary" onclick="closeModal('fact-check-modal')">
+                            Zamknij
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('fact-check-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Add CSS for stat items
+    const style = document.createElement('style');
+    style.textContent = `
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// ============================================
 // EXPORT TO WINDOW (for inline event handlers)
 // ============================================
 
@@ -2625,5 +3567,11 @@ window.deleteSubject = async (id) => {
     await loadSubjects();
     await loadDashboard();
 };
+
+// Make functions globally accessible for inline onclick handlers
+window.openStudyMode = openStudyMode;
+window.switchTab = switchTab;
+window.startRetryRound = startRetryRound;
+// Note: Other functions (deleteSubject, toggleFlashcardSection, etc.) are already defined as window.function above
 
 console.log('✅ App.js loaded');

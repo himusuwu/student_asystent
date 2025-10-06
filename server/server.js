@@ -5,6 +5,7 @@ import { pipeline, env } from '@xenova/transformers'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import fs from 'fs/promises'
+import FactChecker from './fact-checker.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -46,8 +47,59 @@ const upload = multer({
 let transcriberCache = {}
 let summarizerCache = null
 
+// Function: Fix Ukrainian false detection in Polish transcription
+function fixUkrainianDetection(text) {
+  // Sprawdź czy tekst zawiera oznaki błędnego wykrycia ukraińskiego
+  const ukrainianMarkers = [
+    '[tłumaczenie na język ukraińskim]',
+    '[tłumaczenie ukraińsk]',
+    '[tłumaczenie ukraińskim]'
+  ];
+  
+  let hasUkrainianMarkers = false;
+  for (const marker of ukrainianMarkers) {
+    if (text.includes(marker)) {
+      hasUkrainianMarkers = true;
+      break;
+    }
+  }
+  
+  if (!hasUkrainianMarkers) {
+    return { fixed: text, wasFixed: false };
+  }
+  
+  console.log(`[FixUkrainian] Wykryto błędne oznaczenia ukraińskie, naprawiam...`);
+  
+  // Usuń wszystkie oznaczenia ukraińskie
+  let fixedText = text;
+  for (const marker of ukrainianMarkers) {
+    fixedText = fixedText.split(marker).join(' ');
+  }
+  
+  // Oczyść nadmiarowe spacje
+  fixedText = fixedText.replace(/\s+/g, ' ').trim();
+  
+  // Jeśli po usunięciu znaczników został tylko whitespace, zwróć błąd
+  if (fixedText.length < 10) {
+    console.error(`[FixUkrainian] BŁĄD: Po usunięciu znaczników została tylko pusta treść!`);
+    return { 
+      fixed: text, 
+      wasFixed: false, 
+      error: 'Transkrypcja zawiera tylko oznaczenia błędnego wykrywania języka' 
+    };
+  }
+  
+  console.log(`[FixUkrainian] ✅ Naprawiono: ${text.length} → ${fixedText.length} znaków`);
+  return { fixed: fixedText, wasFixed: true };
+}
+
+
+// Initialize fact checker
+const factChecker = new FactChecker()
+
 console.log('[Server] Starting Student Asystent Backend...')
 console.log(`[Server] Model path: ${env.localModelPath}`)
+console.log('[Server] Fact-checker initialized')
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -70,6 +122,37 @@ app.get('/health', (req, res) => {
   })
 })
 
+// Endpoint do czyszczenia cache modeli
+app.post('/clear-cache', (req, res) => {
+  console.log('[ClearCache] Czyszczenie cache modeli...')
+  
+  // Wyczyść cache w pamięci
+  transcriberCache = {}
+  summarizerCache = null
+  
+  // Wyczyść cache transformers.js na dysku
+  import('fs').then(fs => {
+    const cacheDir = join(__dirname, '.cache')
+    if (fs.existsSync(cacheDir)) {
+      fs.rmSync(cacheDir, { recursive: true, force: true })
+      console.log('[ClearCache] Usunięto katalog cache z dysku')
+    }
+  }).catch(err => {
+    console.warn('[ClearCache] Błąd przy usuwaniu cache z dysku:', err.message)
+  })
+  
+  console.log('[ClearCache] Cache wyczyszczony pomyślnie')
+  
+  res.json({
+    success: true,
+    message: 'Cache modeli został wyczyszczony',
+    cleared: {
+      memoryCache: 'transcriberCache i summarizerCache zresetowane',
+      diskCache: 'Katalog .cache usunięty'
+    }
+  })
+})
+
 // Endpoint do transkrypcji
 app.post('/transcribe', upload.single('audio'), async (req, res) => {
   try {
@@ -77,11 +160,14 @@ app.post('/transcribe', upload.single('audio'), async (req, res) => {
       return res.status(400).json({ error: 'Brak pliku audio' })
     }
 
-    const { language = 'auto', model = 'base' } = req.body
+    const { language = 'pl', model = 'base' } = req.body  // Domyślnie polski zamiast auto
     const audioBuffer = req.file.buffer
 
+    // WYMUSZENIE polskiego języka dla wszystkich nagrań (fix błędnego wykrywania ukraińskiego)
+    const forcePolish = language === 'auto' ? 'pl' : language
+
     console.log(`[Transcribe] Otrzymano plik: ${req.file.originalname}, rozmiar: ${(audioBuffer.length / 1024 / 1024).toFixed(2)}MB`)
-    console.log(`[Transcribe] Model: ${model}, język: ${language}`)
+    console.log(`[Transcribe] Model: ${model}, język: ${language} -> wymuszony: ${forcePolish}`)
 
     // Wybór modelu
     const modelId = model === 'tiny' ? 'Xenova/whisper-tiny' 
@@ -124,20 +210,42 @@ app.post('/transcribe', upload.single('audio'), async (req, res) => {
       chunk_length_s: 30, // ZMNIEJSZONE z 60 -> 30s (2x szybsze!)
       stride_length_s: 5,  // Overlap między chunkami
       return_timestamps: false,
-      language: language === 'auto' ? undefined : language,
+      language: 'polish', // FORCED polish - bez zmiennej, zawsze "polish"
+      forced_decoder_ids: [[50259, 50270]], // FORCE Polski: task=transcribe, lang=polish
       condition_on_previous_text: false, // Wyłączone = szybsze
       temperature: 0, // Greedy = szybkie
       compression_ratio_threshold: 2.4, // Default, ale jawnie
       logprob_threshold: -1.0, // Default
-      no_speech_threshold: 0.6 // Default
+      no_speech_threshold: 0.6, // Default
+      // DODATKOWE WYMUSZENIE POLSKIEGO:
+      suppress_tokens: [-1], // Nie tłum żadnych tokenów
+      initial_prompt: "To jest wykład w języku polskim. " // Hint dla modelu
     })
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(1)
     console.log(`[Transcribe] Zakończono w ${duration}s`)
 
+    let text = result.text || ''
+
+    // NAPRAWA: Sprawdź i napraw błędne wykrycie ukraińskiego
+    const fixResult = fixUkrainianDetection(text);
+    text = fixResult.fixed;
+    
+    if (fixResult.wasFixed) {
+      console.log(`[Transcribe] ✅ Naprawiono błędne wykrycie ukraińskiego`);
+    } else if (fixResult.error) {
+      console.error(`[Transcribe] BŁĄD: ${fixResult.error}`);
+      return res.status(500).json({ 
+        error: `Błąd transkrypcji: ${fixResult.error}`,
+        details: 'Model błędnie wykrył język ukraiński zamiast polskiego'
+      });
+    } else {
+      console.log(`[Transcribe] ✅ Transkrypcja wydaje się poprawna (${text.length} znaków)`);
+    }
+
     res.json({
       success: true,
-      text: result.text || '',
+      text: text,
       duration: parseFloat(duration),
       audioLength: (pcm.length / 16000).toFixed(1),
       model: modelId
@@ -159,11 +267,14 @@ app.post('/transcribe-cpp', upload.single('audio'), async (req, res) => {
       return res.status(400).json({ error: 'Brak pliku audio' })
     }
 
-    const { language = 'auto', model = 'tiny' } = req.body
+    const { language = 'pl', model = 'tiny' } = req.body  // Domyślnie polski zamiast auto
     const audioBuffer = req.file.buffer
 
+    // WYMUSZENIE polskiego języka dla wszystkich nagrań (fix błędnego wykrywania ukraińskiego)
+    const forcePolish = language === 'auto' ? 'pl' : language
+
     console.log(`[TranscribeCPP] Otrzymano plik: ${req.file.originalname}, rozmiar: ${(audioBuffer.length / 1024 / 1024).toFixed(2)}MB`)
-    console.log(`[TranscribeCPP] Model: ${model}, język: ${language}`)
+    console.log(`[TranscribeCPP] Model: ${model}, język: ${language} -> wymuszony: ${forcePolish}`)
 
     // Wybór modelu whisper.cpp (GGML)
     const modelPath = model === 'tiny' ? 'models/whisper-cpp/ggml-tiny.bin'
@@ -217,13 +328,11 @@ app.post('/transcribe-cpp', upload.single('audio'), async (req, res) => {
         '-np',             // no progress prints
         '-oj',             // output JSON
         '--temperature', '0', // greedy = szybsze
-        '--no-timestamps'      // bez timestampów = szybsze
+        '--no-timestamps',     // bez timestampów = szybsze
+        '-l', 'pl'         // WYMUSZENIE języka polskiego dla wszystkich nagrań
       ]
 
-      // Dodaj język jeśli nie auto
-      if (language !== 'auto') {
-        whisperArgs.push('-l', language)
-      }
+      // UWAGA: Usunięto auto-detekcję języka - zawsze używamy polskiego
 
       const whisperResult = await execFile('/opt/homebrew/bin/whisper-cli', whisperArgs)
       
@@ -287,8 +396,13 @@ app.post('/transcribe-stream', upload.single('audio'), async (req, res) => {
       res.write(`data: ${JSON.stringify({ type: 'progress', progress, phase })}\n\n`)
     }
 
-    const { language = 'auto', model = 'base' } = req.body
+    const { language = 'pl', model = 'base' } = req.body  // Domyślnie polski zamiast auto
     const audioBuffer = req.file.buffer
+
+    // WYMUSZENIE polskiego języka dla wszystkich nagrań (fix błędnego wykrywania ukraińskiego)
+    const forcePolish = language === 'auto' ? 'pl' : language
+
+    console.log(`[Transcribe-Stream] Model: ${model}, język: ${language} -> wymuszony: ${forcePolish}`)
 
     sendProgress(10, 'ładowanie modelu')
 
@@ -334,19 +448,40 @@ app.post('/transcribe-stream', upload.single('audio'), async (req, res) => {
       chunk_length_s: 30, // ZOPTYMALIZOWANE dla M4 Pro (z 60 -> 30)
       stride_length_s: 5,
       return_timestamps: false,
-      language: language === 'auto' ? undefined : language,
+      language: 'polish', // FORCED polish - bez zmiennej, zawsze "polish"
+      forced_decoder_ids: [[50259, 50270]], // FORCE Polski: task=transcribe, lang=polish
       condition_on_previous_text: false,
       temperature: 0,
       compression_ratio_threshold: 2.4,
       logprob_threshold: -1.0,
-      no_speech_threshold: 0.6
+      no_speech_threshold: 0.6,
+      // DODATKOWE WYMUSZENIE POLSKIEGO:
+      suppress_tokens: [-1], // Nie tłum żadnych tokenów
+      initial_prompt: "To jest wykład w języku polskim. " // Hint dla modelu
     })
 
     clearInterval(progressInterval)
 
+    // NAPRAWA: Sprawdź i napraw błędne wykrycie ukraińskiego
+    let text = result.text || '';
+    const fixResult = fixUkrainianDetection(text);
+    text = fixResult.fixed;
+    
+    if (fixResult.wasFixed) {
+      console.log(`[Transcribe-Stream] ✅ Naprawiono błędne wykrycie ukraińskiego`);
+    } else if (fixResult.error) {
+      console.error(`[Transcribe-Stream] BŁĄD: ${fixResult.error}`);
+      res.write(`data: ${JSON.stringify({ 
+        type: 'error', 
+        error: `Błąd transkrypcji: ${fixResult.error}`
+      })}\n\n`);
+      res.end();
+      return;
+    }
+
     res.write(`data: ${JSON.stringify({ 
       type: 'complete', 
-      text: result.text || '',
+      text: text,
       model: modelId
     })}\n\n`)
     res.end()
@@ -377,8 +512,13 @@ app.post('/transcribe-stream-cpp', upload.single('audio'), async (req, res) => {
       res.write(`data: ${JSON.stringify({ type: 'progress', progress, phase })}\n\n`)
     }
 
-    const { language = 'auto', model = 'tiny' } = req.body
+    const { language = 'pl', model = 'tiny' } = req.body  // Domyślnie polski zamiast auto
     const audioBuffer = req.file.buffer
+
+    // WYMUSZENIE polskiego języka dla wszystkich nagrań (fix błędnego wykrywania ukraińskiego)
+    const forcePolish = language === 'auto' ? 'pl' : language
+
+    console.log(`[TranscribeStreamCPP] Model: ${model}, język: ${language} -> wymuszony: ${forcePolish}`)
 
     sendProgress(10, 'przygotowanie whisper.cpp')
 
@@ -440,13 +580,11 @@ app.post('/transcribe-stream-cpp', upload.single('audio'), async (req, res) => {
         '-pp',             // print progress
         '-oj',             // output JSON
         '--temperature', '0', // greedy = szybsze
-        '--no-timestamps'      // bez timestampów = szybsze
+        '--no-timestamps',     // bez timestampów = szybsze
+        '-l', 'pl'         // WYMUSZENIE języka polskiego dla wszystkich nagrań
       ]
 
-      // Dodaj język jeśli nie auto
-      if (language !== 'auto') {
-        whisperArgs.push('-l', language)
-      }
+      // UWAGA: Usunięto auto-detekcję języka - zawsze używamy polskiego
 
       sendProgress(60, 'przetwarzanie audio')
 
@@ -567,7 +705,7 @@ async function audioBufferToPCM(buffer) {
 // Endpoint do generowania tytułu wykładu z transkrypcji
 app.post('/generate-title', express.json(), async (req, res) => {
   try {
-    const { transcription } = req.body;
+    let { transcription } = req.body;
     
     if (!transcription || transcription.trim().length === 0) {
       return res.status(400).json({ error: 'Brak transkrypcji' });
@@ -575,11 +713,13 @@ app.post('/generate-title', express.json(), async (req, res) => {
     
     console.log(`[GenerateTitle] Otrzymano transkrypcję: ${transcription.length} znaków`);
     
+
+    
     // === OLLAMA LLM - Ten sam model co do generowania notatek ===
     const ollamaUrl = 'http://localhost:11434';
     const model = 'qwen2.5:14b'; // Lub phi3.5:3.8b jeśli qwen nie działa
     
-    // Prompt dla LLM
+    // Prompt dla LLM - prosty i jasny
     const prompt = `Przeanalizuj poniższą transkrypcję wykładu i wygeneruj ZWIĘZŁY tytuł (maksymalnie 60 znaków).
 
 TRANSKRYPCJA:
@@ -589,7 +729,7 @@ ZASADY:
 - Tytuł musi być KRÓTKI (max 60 znaków)
 - Opisuj GŁÓWNY TEMAT wykładu
 - Pomiń wprowadzenia ("dzisiaj będziemy", "chwilkę poczekamy")
-- Użyj formy rzeczownikowej (np. "Algorytmy sortowania" zamiast "Omawiać algorytmy")
+- Użyj formy rzeczownikowej (np. "Algorytmy sortowania")
 - TYLKO tytuł, bez dodatkowego tekstu
 
 TYTUŁ:`;
@@ -1148,6 +1288,107 @@ ZASADY:
   }
 });
 
+// Endpoint: Generowanie szczegółowej notatki z fact-checking
+app.post('/generate-detailed-note-with-fact-check', express.json(), async (req, res) => {
+  try {
+    const { transcription } = req.body;
+    
+    if (!transcription || transcription.trim().length === 0) {
+      return res.status(400).json({ error: 'Brak transkrypcji' });
+    }
+    
+    console.log(`[GenerateDetailedNoteWithFactCheck] Otrzymano: ${transcription.length} znaków`);
+    
+    const startTime = Date.now();
+    
+    // Krok 1: Fact-checking
+    console.log(`[GenerateDetailedNoteWithFactCheck] Sprawdzanie faktów...`);
+    const factCheckResults = await factChecker.factCheck(transcription);
+    
+    // Krok 2: Zastosuj poprawki (jeśli są)
+    const correctionResults = factChecker.applyCorrections(transcription, factCheckResults);
+    const finalTranscription = correctionResults.correctedText;
+    
+    console.log(`[GenerateDetailedNoteWithFactCheck] Zastosowano ${correctionResults.changes.length} poprawek`);
+    
+    // Krok 3: Generuj szczegółową notatkę z poprawionej transkrypcji
+    const prompt = `JĘZYK ODPOWIEDZI: TYLKO JĘZYK POLSKI. Nie używaj ŻADNYCH słów w innych językach (chińskim, angielskim itp.).
+
+Stwórz SZCZEGÓŁOWĄ notatkę akademicką z tego materiału w formacie Markdown.
+
+MATERIAŁ (zweryfikowany pod kątem faktów):
+"${finalTranscription}"
+
+${correctionResults.hasChanges ? `\nWERYFIKACJA FAKTÓW:
+Podczas sprawdzania faktów dokonano następujących poprawek:
+${correctionResults.changes.map(change => 
+  `- ${change.type}: "${change.original}" → "${change.corrected}" (pewność: ${(change.confidence * 100).toFixed(0)}%, źródło: ${change.source})`
+).join('\n')}
+
+UWAGA: Upewnij się, że używasz poprawionych informacji w notatce.` : ''}
+
+STRUKTURA:
+# Tytuł tematu
+
+## Wprowadzenie
+Kontekst i znaczenie tematu (2-3 zdania)
+
+## Główne zagadnienia
+
+### 1. [Pierwsze zagadnienie]
+- Definicja i wyjaśnienie
+- Szczegóły i przykłady
+- Powiązania z innymi tematami
+
+### 2. [Drugie zagadnienie]
+- Analogicznie
+
+## Kluczowe terminy
+- **Termin 1**: definicja
+- **Termin 2**: definicja
+
+## Podsumowanie
+Syntetyczne zestawienie najważniejszych punktów
+
+${correctionResults.hasChanges ? `\n## Weryfikacja faktów
+Podczas przygotowywania notatki zweryfikowano i poprawiono ${correctionResults.changes.length} informacji(e) pod kątem faktyczności.` : ''}
+
+ZASADY:
+- UŻYWAJ WYŁĄCZNIE JĘZYKA POLSKIEGO - nie mieszaj języków!
+- Używaj struktury Markdown (nagłówki ##, listy, pogrubienia **)
+- Pisz językiem akademickim ale zrozumiałym
+- Uwzględnij WSZYSTKIE ważne informacje z materiału - nic nie pomijaj
+- Notatka powinna być maksymalnie szczegółowa i obszerna
+- Analizuj każdy aspekt tematu dogłębnie
+- Dodawaj przykłady, kontekst i powiązania między zagadnieniami
+- Rozwijaj każdy punkt obszernie - nie skracaj treści
+- Celem jest stworzenie kompletnego, wyczerpującego opracowania tematu
+- Im więcej szczegółów, tym lepiej - nie ma limitów długości
+- UŻYWAJ TYLKO poprawionych imion, nazwisk, nazw, dat i miejsc z weryfikacji faktów
+- PAMIĘTAJ: Odpowiadaj TYLKO po polsku, bez żadnych słów w innych językach!`;
+
+    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 16384);
+    const duration = Date.now() - startTime;
+    
+    console.log(`[GenerateDetailedNoteWithFactCheck] Wygenerowano notatkę w ${duration}ms`);
+    
+    res.json({
+      success: true,
+      note: response,
+      factCheck: {
+        hasChanges: correctionResults.hasChanges,
+        changesCount: correctionResults.changes.length,
+        changes: correctionResults.changes
+      },
+      duration
+    });
+    
+  } catch (error) {
+    console.error('[GenerateDetailedNoteWithFactCheck] Błąd:', error);
+    res.status(500).json({ error: error.message || 'Błąd generowania szczegółowej notatki z weryfikacją faktów' });
+  }
+});
+
 // Endpoint: Generowanie krótkiej notatki
 app.post('/generate-short-note', express.json(), async (req, res) => {
   try {
@@ -1412,6 +1653,130 @@ app.post('/api/extract-ppt', upload.single('file'), async (req, res) => {
   }
 });
 
+// Endpoint: Fact-checking transkrypcji
+app.post('/fact-check', express.json(), async (req, res) => {
+  try {
+    const { transcription } = req.body;
+    
+    if (!transcription || transcription.trim().length === 0) {
+      return res.status(400).json({ error: 'Brak transkrypcji do sprawdzenia' });
+    }
+    
+    console.log(`[FactCheck] Sprawdzanie faktów w ${transcription.length} znakach...`);
+    
+    const startTime = Date.now();
+    const factCheckResults = await factChecker.factCheck(transcription);
+    const duration = Date.now() - startTime;
+    
+    console.log(`[FactCheck] Zakończono w ${duration}ms: ${factCheckResults.summary.totalVerified}/${factCheckResults.summary.totalChecked} zweryfikowane`);
+    
+    res.json({
+      success: true,
+      results: factCheckResults,
+      duration,
+      stats: {
+        names: factCheckResults.names.length,
+        dates: factCheckResults.dates.length,
+        places: factCheckResults.places.length,
+        verified: factCheckResults.summary.totalVerified,
+        total: factCheckResults.summary.totalChecked,
+        confidence: factCheckResults.summary.confidence
+      }
+    });
+    
+  } catch (error) {
+    console.error('[FactCheck] Błąd:', error);
+    res.status(500).json({ error: error.message || 'Błąd sprawdzania faktów' });
+  }
+});
+
+// Endpoint: Generowanie notatek z fact-checking
+app.post('/generate-notes-with-fact-check', express.json(), async (req, res) => {
+  try {
+    const { transcription } = req.body;
+    
+    if (!transcription || transcription.trim().length === 0) {
+      return res.status(400).json({ error: 'Brak transkrypcji' });
+    }
+    
+    console.log(`[GenerateNotesWithFactCheck] Otrzymano: ${transcription.length} znaków`);
+    
+    const startTime = Date.now();
+    
+    // Krok 1: Fact-checking
+    console.log(`[GenerateNotesWithFactCheck] Sprawdzanie faktów...`);
+    const factCheckResults = await factChecker.factCheck(transcription);
+    
+    // Krok 2: Zastosuj poprawki (jeśli są)
+    const correctionResults = factChecker.applyCorrections(transcription, factCheckResults);
+    const finalTranscription = correctionResults.correctedText;
+    
+    console.log(`[GenerateNotesWithFactCheck] Zastosowano ${correctionResults.changes.length} poprawek`);
+    
+    // Krok 3: Generuj notatki z poprawionej transkrypcji
+    const prompt = `Jestem studentem i potrzebuję profesjonalnych notatek z tego wykładu.
+
+TRANSKRYPCJA (zweryfikowana pod kątem faktów):
+"${finalTranscription}"
+
+${correctionResults.hasChanges ? `\nWERYFIKACJA FAKTÓW:
+Podczas sprawdzania faktów dokonano następujących poprawek:
+${correctionResults.changes.map(change => 
+  `- ${change.type}: "${change.original}" → "${change.corrected}" (pewność: ${(change.confidence * 100).toFixed(0)}%, źródło: ${change.source})`
+).join('\n')}
+
+Uwzględnij te poprawione informacje w notatkach.` : ''}
+
+Wygeneruj KOMPLETNE notatki w formacie JSON:
+
+{
+  "formatted": "# Tytuł\\n\\n## Sekcja 1\\n\\nTreść...\\n\\n## Sekcja 2",
+  "structured": "1. **Pojęcie**\\n   - Punkt 1\\n   - Punkt 2",
+  "summary": "Podsumowanie w 2-3 zdaniach",
+  "keyPoints": "• Punkt kluczowy 1\\n• Punkt kluczowy 2",
+  "questions": "1. Pytanie 1\\n2. Pytanie 2"
+}
+
+WAŻNE: 
+- Używaj poprawionych imion, nazwisk, nazw, dat i miejsc z weryfikacji
+- Odpowiedź TYLKO w JSON, bez dodatkowego tekstu!
+- Jeśli były poprawki faktów, upewnij się że używasz poprawnych informacji`;
+
+    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 2048);
+    const duration = Date.now() - startTime;
+    
+    // Parsuj JSON
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('Brak JSON w odpowiedzi');
+    }
+    
+    const result = JSON.parse(jsonMatch[0]);
+    
+    console.log(`[GenerateNotesWithFactCheck] Wygenerowano w ${duration}ms`);
+    
+    res.json({
+      success: true,
+      ...result,
+      factCheck: {
+        results: factCheckResults,
+        corrections: correctionResults,
+        stats: {
+          verified: factCheckResults.summary.totalVerified,
+          total: factCheckResults.summary.totalChecked,
+          confidence: factCheckResults.summary.confidence,
+          changes: correctionResults.changes.length
+        }
+      },
+      duration
+    });
+    
+  } catch (error) {
+    console.error('[GenerateNotesWithFactCheck] Błąd:', error);
+    res.status(500).json({ error: error.message || 'Błąd generowania notatek z weryfikacją faktów' });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`\n✅ Server uruchomiony na http://localhost:${PORT}`)
@@ -1431,10 +1796,14 @@ app.listen(PORT, () => {
   console.log(`   POST /generate-title - generuj tytuł z transkrypcji`)
   console.log(`   POST /generate-notes - generuj notatki z transkrypcji`)
   console.log(`   POST /generate-detailed-note - generuj szczegółową notatkę`)
+  console.log(`   POST /generate-detailed-note-with-fact-check - generuj szczegółową notatkę z weryfikacją faktów`)
   console.log(`   POST /generate-short-note - generuj krótką notatkę`)
   console.log(`   POST /generate-key-points - generuj kluczowe punkty`)
   console.log(`   POST /generate-flashcards - generuj fiszki z transkrypcji`)
   console.log(`   POST /generate-quiz - generuj quiz z transkrypcji`)
+  console.log(`\n   🔍 Fact-checking:`)
+  console.log(`   POST /fact-check - weryfikuj fakty w transkrypcji`)
+  console.log(`   POST /generate-notes-with-fact-check - generuj notatki z weryfikacją faktów`)
   console.log(`\n   📄 Dokumenty:`)
   console.log(`   POST /api/extract-ppt - wyekstrahuj tekst z PowerPoint (PPTX)`)
   console.log(`\n💡 Ollama musi działać: ollama serve`)

@@ -368,3 +368,108 @@ export async function generateQuiz(transcription, onProgress = null) {
         throw error;
     }
 }
+
+/**
+ * Perform fact-checking on transcription text
+ * @param {string} transcription - The transcription text to fact-check
+ * @param {Function} onProgress - Progress callback (percent, message)
+ * @returns {Promise<Object>} Fact-checking results
+ */
+export async function factCheckTranscription(transcription, onProgress = null) {
+    if (!transcription || transcription.trim().length === 0) {
+        throw new Error('Brak transkrypcji do sprawdzenia');
+    }
+    
+    const settings = getSettings();
+    const backendUrl = settings.backendUrl || 'http://localhost:3001';
+    
+    try {
+        console.log(`🔍 Sprawdzanie faktów w transkrypcji...`);
+        if (onProgress) onProgress(10, 'Weryfikacja faktów...');
+        
+        const response = await fetch(`${backendUrl}/fact-check`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ transcription })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Backend error: ${response.status} - ${errorText}`);
+        }
+        
+        if (onProgress) onProgress(90, 'Przetwarzanie wyników...');
+        
+        const result = await response.json();
+        
+        if (onProgress) onProgress(100, 'Weryfikacja zakończona!');
+        
+        console.log(`✅ Fact-checking zakończony: ${result.stats.verified}/${result.stats.total} zweryfikowane`);
+        
+        return result;
+        
+    } catch (error) {
+        console.error('❌ Błąd fact-checkingu:', error);
+        throw error;
+    }
+}
+
+/**
+ * Generate notes with fact-checking integrated
+ * @param {string} transcription - The lecture transcription text
+ * @param {Function} onProgress - Progress callback (percent, message)
+ * @returns {Promise<Object>} Generated notes with fact-check results
+ */
+export async function generateNotesWithFactCheck(transcription, onProgress = null) {
+    if (!transcription || transcription.trim().length === 0) {
+        throw new Error('Brak transkrypcji do przetworzenia');
+    }
+    
+    const settings = getSettings();
+    const backendUrl = settings.backendUrl || 'http://localhost:3001';
+    
+    try {
+        console.log(`🤖🔍 Generowanie notatek z weryfikacją faktów...`);
+        if (onProgress) onProgress(10, 'Sprawdzanie faktów...');
+        
+        const response = await fetch(`${backendUrl}/generate-notes-with-fact-check`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ transcription })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Backend error: ${response.status} - ${errorText}`);
+        }
+        
+        if (onProgress) onProgress(50, 'Generowanie notatek...');
+        
+        const result = await response.json();
+        
+        if (onProgress) onProgress(100, 'Gotowe z weryfikacją!');
+        
+        const factCheckStats = result.factCheck.stats;
+        console.log(`✅ Notatki z fact-checkiem wygenerowane:`);
+        console.log(`   📊 Zweryfikowano: ${factCheckStats.verified}/${factCheckStats.total} faktów`);
+        console.log(`   ✏️ Poprawki: ${factCheckStats.changes}`);
+        console.log(`   🎯 Pewność: ${(factCheckStats.confidence * 100).toFixed(1)}%`);
+        
+        return {
+            formatted: result.formatted || '',
+            structured: result.structured || '',
+            summary: result.summary || '',
+            keyPoints: result.keyPoints || '',
+            questions: result.questions || '',
+            factCheck: result.factCheck
+        };
+        
+    } catch (error) {
+        console.error('❌ Błąd generowania notatek z fact-checkiem:', error);
+        throw error;
+    }
+}

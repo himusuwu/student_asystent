@@ -572,6 +572,7 @@
         <div class="content" id="flashcards">
             <div class="action-bar">
                 <input type="text" class="search-box" placeholder="🔍 Szukaj fiszek...">
+                <button class="btn btn-secondary" onclick="openStudyMode()">🎯 Ucz się</button>
                 <button class="btn btn-primary">+ Dodaj fiszkę</button>
             </div>
 
@@ -619,6 +620,52 @@
                             <div>Proces to niezależna instancja programu z własną pamięcią. Wątek to jednostka wykonywalna w procesie, współdzieląca pamięć</div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Study Mode Interface -->
+            <div id="study-mode-container" style="display: none; margin-top: 30px;">
+                <!-- Study Selection Step -->
+                <div class="study-step active" id="study-selection">
+                    <h3>Rozpocznij sesję nauki</h3>
+                    <div class="study-form">
+                        <label>Wybierz przedmiot:</label>
+                        <select id="study-subject-select" class="form-control">
+                            <option value="">Wybierz przedmiot...</option>
+                        </select>
+                        
+                        <label>Wybierz wykład:</label>
+                        <select id="study-lecture-select" class="form-control">
+                            <option value="">Najpierw wybierz przedmiot</option>
+                        </select>
+                        
+                        <label>Tryb nauki:</label>
+                        <div class="study-mode-buttons">
+                            <button class="study-mode-btn" data-mode="flashcards">
+                                🎴 Fiszki
+                            </button>
+                            <button class="study-mode-btn" data-mode="quiz">
+                                📝 Quiz
+                            </button>
+                            <button class="study-mode-btn" data-mode="memory">
+                                🧠 Pamięć
+                            </button>
+                        </div>
+                        
+                        <button id="btn-start-study" class="btn btn-primary" disabled>
+                            🚀 Rozpocznij naukę
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Study Session Step -->
+                <div class="study-step" id="study-session" style="display: none;">
+                    <!-- Content will be dynamically generated -->
+                </div>
+
+                <!-- Study Results Step -->
+                <div class="study-step" id="study-results" style="display: none;">
+                    <!-- Content will be dynamically generated -->
                 </div>
             </div>
         </div>

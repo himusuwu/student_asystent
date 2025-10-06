@@ -96,6 +96,16 @@
                             title="Rozwiń wszystkie sekcje">
                         ▼ Rozwiń wszystko
                     </button>
+                    <button class="btn" id="btn-study-flashcards" 
+                            style="background: linear-gradient(135deg, #10b981, #059669); 
+                                   border: 1px solid #10b981; 
+                                   color: white; 
+                                   padding: 10px 20px;
+                                   font-weight: 600;
+                                   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);" 
+                            title="Rozpocznij sesję nauki fiszek">
+                        🎯 Ucz się
+                    </button>
                     <button class="btn btn-primary" id="btn-add-flashcard">+ Dodaj fiszkę</button>
                 </div>
             </div>
@@ -103,6 +113,80 @@
             <h2 style="margin-bottom: 20px; font-size: 22px;">Twoje fiszki</h2>
             <div id="flashcards-grid">
                 <!-- Dynamic flashcards -->
+            </div>
+        </div>
+
+        <!-- Study Mode -->
+        <div class="content" id="study-mode">
+            <div style="margin-bottom: 20px;">
+                <button class="btn" id="btn-back-to-flashcards" style="background: var(--bg-card);">
+                    ← Powrót do fiszek
+                </button>
+            </div>
+
+            <div class="study-container">
+                <!-- Subject/Lecture Selection -->
+                <div id="study-selection" class="study-step active">
+                    <div class="card" style="max-width: 600px; margin: 0 auto; text-align: center;">
+                        <h2 style="margin-bottom: 30px; font-size: 28px; color: var(--primary);">
+                            🎯 Wybierz materiał do nauki
+                        </h2>
+                        
+                        <div style="margin-bottom: 30px;">
+                            <label style="display: block; margin-bottom: 10px; font-weight: 600;">Przedmiot:</label>
+                            <select id="study-subject-select" class="form-input" style="width: 100%; padding: 12px;">
+                                <option value="">Wybierz przedmiot...</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom: 30px;">
+                            <label style="display: block; margin-bottom: 10px; font-weight: 600;">Wykład:</label>
+                            <select id="study-lecture-select" class="form-input" style="width: 100%; padding: 12px;" disabled>
+                                <option value="">Najpierw wybierz przedmiot</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom: 30px;">
+                            <label style="display: block; margin-bottom: 10px; font-weight: 600;">Tryb nauki:</label>
+                            <div class="study-mode-options" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <button class="study-mode-btn" data-mode="flashcards">
+                                    <div style="font-size: 24px; margin-bottom: 8px;">🎴</div>
+                                    <div style="font-weight: 600;">Fiszki</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">Klasyczne przewracanie kart</div>
+                                </button>
+                                <button class="study-mode-btn" data-mode="quiz">
+                                    <div style="font-size: 24px; margin-bottom: 8px;">❓</div>
+                                    <div style="font-weight: 600;">Quiz</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">Pytania z wieloma odpowiedziami</div>
+                                </button>
+                                <button class="study-mode-btn" data-mode="memory">
+                                    <div style="font-size: 24px; margin-bottom: 8px;">🧠</div>
+                                    <div style="font-weight: 600;">Pamięć</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">Sprawdź co pamiętasz</div>
+                                </button>
+                                <button class="study-mode-btn" data-mode="typing">
+                                    <div style="font-size: 24px; margin-bottom: 8px;">⌨️</div>
+                                    <div style="font-weight: 600;">Pisanie</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">Wpisz odpowiedź</div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" id="btn-start-study" style="font-size: 16px; padding: 15px 30px;" disabled>
+                            Rozpocznij naukę
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Study Session -->
+                <div id="study-session" class="study-step">
+                    <!-- Dynamic study content will be loaded here -->
+                </div>
+
+                <!-- Study Results -->
+                <div id="study-results" class="study-step">
+                    <!-- Results will be shown here -->
+                </div>
             </div>
         </div>
 
@@ -149,9 +233,14 @@
                     <div class="card">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                             <h3>Notatki z wykładu</h3>
-                            <button class="btn btn-primary" id="btn-generate-notes">
-                                ✨ Generuj z AI
-                            </button>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn btn-primary" id="btn-generate-notes">
+                                    ✨ Generuj z AI
+                                </button>
+                                <button class="btn btn-secondary" id="btn-generate-notes-with-fact-check" title="Generuj notatki z weryfikacją faktów">
+                                    🔍✨ Z weryfikacją faktów
+                                </button>
+                            </div>
                         </div>
                         <div id="lecture-notes-content" style="min-height: 200px;">
                             <p style="color: var(--text-secondary); text-align: center; padding: 40px;">
