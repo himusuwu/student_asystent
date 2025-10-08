@@ -163,6 +163,7 @@ function switchTab(tabName) {
     if (tabName === 'lectures') loadLectures();
     if (tabName === 'flashcards') loadFlashcards();
     if (tabName === 'schedule') loadSchedule();
+    if (tabName === 'settings') loadDataStatistics();
 }
 
 // ============================================
@@ -401,6 +402,11 @@ function setupEventListeners() {
     
     // Settings
     document.getElementById('btn-save-settings').addEventListener('click', saveSettings);
+    
+    // Data export/import
+    document.getElementById('btn-export-data').addEventListener('click', exportAllData);
+    document.getElementById('btn-import-data').addEventListener('click', openImportDialog);
+    document.getElementById('import-data-file').addEventListener('change', handleImportFile);
     
     // Clear data buttons
     document.getElementById('btn-clear-lectures').addEventListener('click', clearAllLectures);
@@ -1928,6 +1934,154 @@ async function saveSettings() {
     document.getElementById('username').textContent = newSettings.username || 'Student';
     
     alert('✅ Ustawienia zapisane!');
+}
+
+// ============================================
+// DATA EXPORT/IMPORT
+// ============================================
+
+async function loadDataStatistics() {
+    try {
+        const stats = await db.getDataStatistics();
+        
+        document.getElementById('stat-subjects').textContent = stats.subjects || 0;
+        document.getElementById('stat-lectures').textContent = stats.lectures || 0;
+        document.getElementById('stat-flashcards').textContent = stats.flashcards || 0;
+        document.getElementById('stat-notes').textContent = stats.notes || 0;
+    } catch (error) {
+        console.error('Error loading statistics:', error);
+    }
+}
+
+async function exportAllData() {
+    try {
+        console.log('🔄 Starting data export...');
+        const exportBtn = document.getElementById('btn-export-data');
+        const originalText = exportBtn.textContent;
+        exportBtn.textContent = '⏳ Eksportowanie...';
+        exportBtn.disabled = true;
+        
+        // Export all data
+        const exportData = await db.exportAllData();
+        
+        // Create filename with date
+        const date = new Date().toISOString().split('T')[0];
+        const filename = `student-asystent-backup-${date}.json`;
+        
+        // Create blob and download
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        exportBtn.textContent = '✅ Eksport ukończony!';
+        setTimeout(() => {
+            exportBtn.textContent = originalText;
+            exportBtn.disabled = false;
+        }, 2000);
+        
+        console.log('✅ Export completed:', filename);
+        alert(`✅ Dane wyeksportowane!\n\nPlik: ${filename}\n\nPrzedsięczanych rekordów:\n• Przedmioty: ${exportData.statistics.totalSubjects}\n• Wykłady: ${exportData.statistics.totalLectures}\n• Fiszki: ${exportData.statistics.totalFlashcards}\n• Notatki: ${exportData.statistics.totalNotes}`);
+        
+    } catch (error) {
+        console.error('❌ Export error:', error);
+        alert('❌ Błąd podczas eksportu danych: ' + error.message);
+        
+        const exportBtn = document.getElementById('btn-export-data');
+        exportBtn.textContent = '📤 Eksportuj wszystkie dane';
+        exportBtn.disabled = false;
+    }
+}
+
+function openImportDialog() {
+    const fileInput = document.getElementById('import-data-file');
+    fileInput.click();
+}
+
+async function handleImportFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Reset file input
+    event.target.value = '';
+    
+    try {
+        console.log('🔄 Starting data import...');
+        const importBtn = document.getElementById('btn-import-data');
+        const originalText = importBtn.textContent;
+        importBtn.textContent = '⏳ Importowanie...';
+        importBtn.disabled = true;
+        
+        // Read file
+        const text = await file.text();
+        const importData = JSON.parse(text);
+        
+        // Validate
+        if (!importData.data || !importData.version) {
+            throw new Error('Nieprawidłowy format pliku');
+        }
+        
+        // Ask user about import options
+        const clearExisting = confirm(
+            '❓ Czy usunąć istniejące dane przed importem?\n\n' +
+            '• TAK - usuń wszystkie obecne dane i zastąp je importowanymi\n' +
+            '• NIE - dodaj importowane dane do istniejących (pominie duplikaty)'
+        );
+        
+        // Import data
+        const results = await db.importAllData(importData, {
+            clearExisting: clearExisting,
+            skipDuplicates: true
+        });
+        
+        // Show results
+        const totalImported = Object.values(results.imported).reduce((a, b) => a + b, 0);
+        const totalSkipped = Object.values(results.skipped).reduce((a, b) => a + b, 0);
+        
+        let message = `✅ Import ukończony!\n\n`;
+        message += `📥 Zaimportowano: ${totalImported} rekordów\n`;
+        if (totalSkipped > 0) {
+            message += `⏭️ Pominięto (duplikaty): ${totalSkipped} rekordów\n`;
+        }
+        if (results.errors.length > 0) {
+            message += `⚠️ Błędy: ${results.errors.length}\n`;
+        }
+        
+        message += `\nSzczegóły:\n`;
+        message += `• Przedmioty: ${results.imported.subjects || 0}\n`;
+        message += `• Wykłady: ${results.imported.lectures || 0}\n`;
+        message += `• Fiszki: ${results.imported.flashcards || 0}\n`;
+        message += `• Notatki: ${results.imported.notes || 0}`;
+        
+        alert(message);
+        
+        importBtn.textContent = '✅ Import ukończony!';
+        setTimeout(() => {
+            importBtn.textContent = originalText;
+            importBtn.disabled = false;
+        }, 2000);
+        
+        // Reload current view
+        await loadDataStatistics();
+        if (currentTab === 'dashboard') await loadDashboard();
+        if (currentTab === 'lectures') await loadLectures();
+        if (currentTab === 'flashcards') await loadFlashcards();
+        
+        console.log('✅ Import completed:', results);
+        
+    } catch (error) {
+        console.error('❌ Import error:', error);
+        alert('❌ Błąd podczas importu danych: ' + error.message);
+        
+        const importBtn = document.getElementById('btn-import-data');
+        importBtn.textContent = '📥 Importuj dane z pliku';
+        importBtn.disabled = false;
+    }
 }
 
 // ============================================

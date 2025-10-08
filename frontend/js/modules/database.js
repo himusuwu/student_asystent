@@ -352,3 +352,253 @@ export async function clearAllData() {
         }
     }
 }
+
+// ============================================
+// DATA EXPORT/IMPORT
+// ============================================
+
+/**
+ * Export all data from IndexedDB to a JSON object
+ * Includes: subjects, lectures, lectureTabs, quizQuestions, chatMessages, 
+ * flashcards, notes, sessions, and localStorage settings
+ */
+export async function exportAllData() {
+    const db = await openDatabase();
+    const exportData = {
+        version: 1,
+        exportDate: new Date().toISOString(),
+        appVersion: '2.0',
+        data: {}
+    };
+    
+    // Define all stores to export
+    const stores = [
+        'subjects',
+        'lectures', 
+        'lectureTabs',
+        'quizQuestions',
+        'chatMessages',
+        'flashcards',
+        'notes',
+        'sessions',
+        'tempFiles'
+    ];
+    
+    // Export each store
+    for (const storeName of stores) {
+        try {
+            const tx = db.transaction(storeName, 'readonly');
+            const store = tx.objectStore(storeName);
+            const items = [];
+            let cursor = await store.openCursor();
+            
+            while (cursor) {
+                items.push({
+                    key: cursor.key,
+                    value: cursor.value
+                });
+                cursor = await cursor.continue();
+            }
+            
+            exportData.data[storeName] = items;
+            console.log(`✅ Exported ${items.length} items from ${storeName}`);
+        } catch (error) {
+            console.warn(`⚠️ Could not export ${storeName}:`, error);
+            exportData.data[storeName] = [];
+        }
+    }
+    
+    // Export localStorage settings
+    try {
+        const settings = localStorage.getItem('student-asystent-settings');
+        if (settings) {
+            exportData.localStorage = {
+                'student-asystent-settings': settings
+            };
+        }
+        
+        // Export collapsed sections state
+        const collapsedSections = {};
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key.startsWith('lecture-section-') || key.startsWith('flashcard-section-'))) {
+                collapsedSections[key] = localStorage.getItem(key);
+            }
+        }
+        if (Object.keys(collapsedSections).length > 0) {
+            exportData.localStorage = {
+                ...exportData.localStorage,
+                ...collapsedSections
+            };
+        }
+    } catch (error) {
+        console.warn('⚠️ Could not export localStorage:', error);
+    }
+    
+    // Calculate statistics
+    exportData.statistics = {
+        totalSubjects: exportData.data.subjects?.length || 0,
+        totalLectures: exportData.data.lectures?.length || 0,
+        totalTabs: exportData.data.lectureTabs?.length || 0,
+        totalQuizQuestions: exportData.data.quizQuestions?.length || 0,
+        totalChatMessages: exportData.data.chatMessages?.length || 0,
+        totalFlashcards: exportData.data.flashcards?.length || 0,
+        totalNotes: exportData.data.notes?.length || 0,
+        totalSessions: exportData.data.sessions?.length || 0
+    };
+    
+    console.log('📊 Export statistics:', exportData.statistics);
+    
+    return exportData;
+}
+
+/**
+ * Import data from a JSON export file
+ * @param {Object} importData - The exported data object
+ * @param {Object} options - Import options
+ * @param {boolean} options.clearExisting - Whether to clear existing data before import (default: false)
+ * @param {boolean} options.skipDuplicates - Whether to skip items with existing IDs (default: true)
+ */
+export async function importAllData(importData, options = {}) {
+    const {
+        clearExisting = false,
+        skipDuplicates = true
+    } = options;
+    
+    // Validate import data
+    if (!importData || !importData.data) {
+        throw new Error('Invalid import data format');
+    }
+    
+    console.log('📥 Starting data import...');
+    console.log('Import date:', importData.exportDate);
+    console.log('Import statistics:', importData.statistics);
+    
+    const db = await openDatabase();
+    const results = {
+        imported: {},
+        skipped: {},
+        errors: []
+    };
+    
+    // Clear existing data if requested
+    if (clearExisting) {
+        console.log('🗑️ Clearing existing data...');
+        await clearAllData();
+    }
+    
+    // Import each store
+    const stores = [
+        'subjects',
+        'lectures',
+        'lectureTabs',
+        'quizQuestions',
+        'chatMessages',
+        'flashcards',
+        'notes',
+        'sessions',
+        'tempFiles'
+    ];
+    
+    for (const storeName of stores) {
+        if (!importData.data[storeName]) {
+            console.log(`⏭️ Skipping ${storeName} (no data)`);
+            continue;
+        }
+        
+        results.imported[storeName] = 0;
+        results.skipped[storeName] = 0;
+        
+        try {
+            const items = importData.data[storeName];
+            
+            for (const item of items) {
+                try {
+                    // Check if item already exists
+                    if (skipDuplicates) {
+                        const existing = await db.get(storeName, item.key);
+                        if (existing) {
+                            results.skipped[storeName]++;
+                            continue;
+                        }
+                    }
+                    
+                    // Import the item
+                    await db.put(storeName, item.value, item.key);
+                    results.imported[storeName]++;
+                } catch (error) {
+                    console.warn(`⚠️ Error importing item to ${storeName}:`, error);
+                    results.errors.push({
+                        store: storeName,
+                        key: item.key,
+                        error: error.message
+                    });
+                }
+            }
+            
+            console.log(`✅ ${storeName}: imported ${results.imported[storeName]}, skipped ${results.skipped[storeName]}`);
+        } catch (error) {
+            console.error(`❌ Error importing ${storeName}:`, error);
+            results.errors.push({
+                store: storeName,
+                error: error.message
+            });
+        }
+    }
+    
+    // Import localStorage
+    if (importData.localStorage) {
+        try {
+            for (const [key, value] of Object.entries(importData.localStorage)) {
+                // Only import if doesn't exist or clearExisting is true
+                if (clearExisting || !localStorage.getItem(key)) {
+                    localStorage.setItem(key, value);
+                }
+            }
+            console.log('✅ localStorage settings imported');
+        } catch (error) {
+            console.warn('⚠️ Could not import localStorage:', error);
+            results.errors.push({
+                store: 'localStorage',
+                error: error.message
+            });
+        }
+    }
+    
+    console.log('📊 Import completed!');
+    console.log('Results:', results);
+    
+    return results;
+}
+
+/**
+ * Get statistics about current data in the database
+ */
+export async function getDataStatistics() {
+    const db = await openDatabase();
+    const stats = {};
+    
+    const stores = [
+        'subjects',
+        'lectures',
+        'lectureTabs',
+        'quizQuestions',
+        'chatMessages',
+        'flashcards',
+        'notes',
+        'sessions'
+    ];
+    
+    for (const storeName of stores) {
+        try {
+            const tx = db.transaction(storeName, 'readonly');
+            const store = tx.objectStore(storeName);
+            const count = await store.count();
+            stats[storeName] = count;
+        } catch (error) {
+            stats[storeName] = 0;
+        }
+    }
+    
+    return stats;
+}

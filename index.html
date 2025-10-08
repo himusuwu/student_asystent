@@ -646,6 +646,54 @@
                     </div>
                 </div>
 
+                <!-- Data Management -->
+                <div class="card" style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 20px;">💾 Zarządzanie danymi</h3>
+                    
+                    <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">
+                        Eksportuj wszystkie dane (wykłady, notatki, fiszki, przedmioty) do pliku JSON lub zaimportuj dane z kopii zapasowej.
+                    </p>
+
+                    <!-- Statistics -->
+                    <div id="data-statistics" style="margin-bottom: 20px; padding: 15px; background: var(--bg-hover); border-radius: 8px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                            <div>
+                                <div style="font-size: 24px; font-weight: 700; color: var(--primary);" id="stat-subjects">-</div>
+                                <div style="font-size: 12px; color: var(--text-secondary);">Przedmioty</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 24px; font-weight: 700; color: var(--primary);" id="stat-lectures">-</div>
+                                <div style="font-size: 12px; color: var(--text-secondary);">Wykłady</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 24px; font-weight: 700; color: var(--primary);" id="stat-flashcards">-</div>
+                                <div style="font-size: 12px; color: var(--text-secondary);">Fiszki</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 24px; font-weight: 700; color: var(--primary);" id="stat-notes">-</div>
+                                <div style="font-size: 12px; color: var(--text-secondary);">Notatki</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <button type="button" class="btn" id="btn-export-data" 
+                                style="background: var(--primary); color: white; width: 100%; justify-content: center;">
+                            📤 Eksportuj wszystkie dane
+                        </button>
+                        
+                        <button type="button" class="btn" id="btn-import-data" 
+                                style="background: var(--bg-hover); color: var(--text); width: 100%; justify-content: center;">
+                            📥 Importuj dane z pliku
+                        </button>
+                        <input type="file" id="import-data-file" accept=".json" style="display: none;">
+                        
+                        <p style="color: var(--text-secondary); margin-top: 5px; font-size: 12px;">
+                            💡 Dane są przechowywane lokalnie w przeglądarce. Eksportuj regularnie kopie zapasowe!
+                        </p>
+                    </div>
+                </div>
+
                 <!-- Danger Zone -->
                 <div class="card" style="margin-bottom: 20px; border: 2px solid var(--accent);">
                     <h3 style="margin-bottom: 15px; color: var(--accent);">⚠️ Strefa niebezpieczna</h3>
