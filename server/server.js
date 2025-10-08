@@ -1041,16 +1041,107 @@ function truncateAtBoundary(text, maxLength) {
   return truncated + '...';
 }
 
+// Helper: Dzielenie długiego tekstu na mniejsze fragmenty
+function chunkText(text, maxChunkLength = 25000, overlapLength = 2000) {
+  if (text.length <= maxChunkLength) {
+    return [text];
+  }
+  
+  const chunks = [];
+  let start = 0;
+  
+  while (start < text.length) {
+    let end = Math.min(start + maxChunkLength, text.length);
+    
+    // Znajdź najbliższy separator (kropka, wykrzyknik, pytajnik) aby nie dzielić zdań
+    if (end < text.length) {
+      const lastSentenceEnd = text.lastIndexOf('.', end);
+      const lastExclamation = text.lastIndexOf('!', end);
+      const lastQuestion = text.lastIndexOf('?', end);
+      
+      const lastSeparator = Math.max(lastSentenceEnd, lastExclamation, lastQuestion);
+      
+      if (lastSeparator > start + maxChunkLength * 0.7) {
+        end = lastSeparator + 1;
+      }
+    }
+    
+    chunks.push(text.slice(start, end));
+    
+    // Następny fragment zaczyna się z pewnym nakładaniem
+    start = Math.max(start + maxChunkLength - overlapLength, end);
+  }
+  
+  return chunks;
+}
+
 // ============================================
 // OLLAMA AI - GENEROWANIE NOTATEK I FISZEK
 // ============================================
+
+// Helper: Czyszczenie i parsowanie JSON z odpowiedzi AI
+function cleanAndParseJSON(response, context = 'unknown') {
+  try {
+    // Znajdź JSON array w odpowiedzi
+    const jsonMatch = response.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      throw new Error('Brak JSON array w odpowiedzi');
+    }
+    
+    let jsonString = jsonMatch[0];
+    
+    // Zaawansowane czyszczenie JSON
+    jsonString = jsonString
+      // Usuń znaki kontrolne i niewidoczne
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+      // Usuń trailing commas
+      .replace(/,(\s*[}\]])/g, '$1')
+      // Napraw niekwotowane klucze
+      .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":')
+      // Zamień single quotes na double quotes dla wartości
+      .replace(/:\s*'([^']*)'/g, ': "$1"')
+      // Usuń komentarze
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*$/gm, '')
+      // Normalizuj whitespace
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    console.log(`[${context}] Próbuję sparsować JSON (${jsonString.length} znaków)`);
+    
+    // Parsuj JSON
+    const result = JSON.parse(jsonString);
+    
+    if (!Array.isArray(result)) {
+      throw new Error('Odpowiedź nie jest tablicą');
+    }
+    
+    return result;
+    
+  } catch (error) {
+    console.error(`[${context}] Błąd parsowania JSON:`, error.message);
+    console.error(`[${context}] Raw response (pierwsze 500 znaków):`, response.substring(0, 500));
+    throw new Error(`Błąd parsowania JSON: ${error.message}`);
+  }
+}
 
 // Helper: Wywołanie Ollama API
 async function callOllamaAPI(prompt, model = 'qwen2.5:14b', maxTokens = 2048) {
   const ollamaUrl = 'http://localhost:11434';
   
+  console.log(`[CallOllamaAPI] Wywołuję model: ${model}... (prompt: ${prompt.length} znaków)`);
+  
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s timeout
+  // Zwiększamy timeout do 4 minut dla dużych tekstów
+  const timeoutId = setTimeout(() => controller.abort(), 240000); // 240s timeout
+  
+  const startTime = Date.now();
+  
+  // Logowanie progressu co 30 sekund
+  const progressInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    console.log(`[CallOllamaAPI] Model ${model} nadal przetwarza... (upłynęło ${elapsed}s)`);
+  }, 30000);
   
   // Systemowy prompt kontrolujący język
   const systemPrompt = "Jesteś polskim asystentem AI. Odpowiadaj WYŁĄCZNIE w języku polskim. NIE używaj żadnych słów w innych językach, szczególnie chińskim lub angielskim. Jeśli nie znasz polskiego odpowiednika jakiegoś terminu, użyj opisowego wyjaśnienia w języku polskim.";
@@ -1081,19 +1172,25 @@ async function callOllamaAPI(prompt, model = 'qwen2.5:14b', maxTokens = 2048) {
     });
     
     clearTimeout(timeoutId);
+    clearInterval(progressInterval);
     
     if (!response.ok) {
       throw new Error(`Ollama error: ${response.status}`);
     }
     
     const data = await response.json();
+    const duration = Date.now() - startTime;
+    console.log(`[CallOllamaAPI] Model ${model} odpowiedział pomyślnie w ${duration}ms`);
     return data.response.trim();
     
   } catch (error) {
     clearTimeout(timeoutId);
+    clearInterval(progressInterval);
+    
+    console.error(`[CallOllamaAPI] Błąd wywołania ${model}:`, error.message);
     
     if (error.name === 'AbortError') {
-      throw new Error('Timeout - model nie odpowiedział w 120s');
+      throw new Error('Timeout - model nie odpowiedział w 240s');
     }
     
     throw error;
@@ -1165,6 +1262,10 @@ app.post('/generate-flashcards', express.json(), async (req, res) => {
     
     console.log(`[GenerateFlashcards] Otrzymano: ${transcription.length} znaków`);
     
+    const startTime = Date.now();
+    let allFlashcards = [];
+    
+    // Przetwarzaj całą notatkę na raz (bez dzielenia na fragmenty)
     const prompt = `Stwórz fiszki edukacyjne z tego materiału:
 
 MATERIAŁ:
@@ -1190,9 +1291,7 @@ ZASADY:
 - Nie pomijaj żadnych ważnych informacji
 - Fiszki powinny pokrywać cały zakres tematu dogłębnie`;
 
-    const startTime = Date.now();
     const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 8192);
-    const duration = Date.now() - startTime;
     
     // Parsuj JSON array
     const jsonMatch = response.match(/\[[\s\S]*\]/);
@@ -1200,14 +1299,28 @@ ZASADY:
       throw new Error('Brak JSON array w odpowiedzi');
     }
     
-    const flashcards = JSON.parse(jsonMatch[0]);
+    allFlashcards = JSON.parse(jsonMatch[0]);
     
-    console.log(`[GenerateFlashcards] Wygenerowano ${flashcards.length} fiszek w ${duration}ms`);
+    const duration = Date.now() - startTime;
+    
+    // Usuń duplikaty bazując na podobieństwie pytań
+    const uniqueFlashcards = [];
+    for (const card of allFlashcards) {
+      const isDuplicate = uniqueFlashcards.some(existing => 
+        existing.question.toLowerCase().trim() === card.question.toLowerCase().trim()
+      );
+      if (!isDuplicate) {
+        uniqueFlashcards.push(card);
+      }
+    }
+    
+    console.log(`[GenerateFlashcards] Wygenerowano ${uniqueFlashcards.length} unikalnych fiszek w ${duration}ms`);
     
     res.json({
       success: true,
-      flashcards,
-      duration
+      flashcards: uniqueFlashcards,
+      duration,
+      chunksProcessed: 1  // Zawsze 1 - nie dzielimy już na fragmenty
     });
     
   } catch (error) {
@@ -1526,7 +1639,9 @@ app.post('/generate-quiz', express.json(), async (req, res) => {
 MATERIAŁ:
 "${transcription}"
 
-Format JSON (TYLKO array, bez innych tekstów):
+BARDZO WAŻNE - Odpowiedz TYLKO poprawnym JSON array bez żadnych dodatkowych tekstów, komentarzy czy wyjaśnień!
+
+Format JSON:
 [
   {
     "question": "Pytanie?",
@@ -1537,26 +1652,57 @@ Format JSON (TYLKO array, bez innych tekstów):
 ]
 
 ZASADY:
-- 15-25 pytań różnej trudności (wcześniej 8-12)
-- Każde pytanie ma 4 opcje
+- 15-25 pytań różnej trudności
+- Każde pytanie ma dokładnie 4 opcje
 - correctIndex to indeks prawidłowej odpowiedzi (0-3)
-- Kategorie: definicje, zastosowania, analiza, fakty, porównania
+- Kategorie: "definicje", "zastosowania", "analiza", "fakty", "porównania"
 - Dystraktory (złe odpowiedzi) muszą być wiarygodne
 - Poprawna odpowiedź nie może być oczywista
 - Pokryj cały zakres tematu systematycznie
-- Uwzględnij wszystkie ważne zagadnienia z materiału`;
+- Uwzględnij wszystkie ważne zagadnienia z materiału
+- NIE dodawaj żadnych komentarzy poza JSON
+- Używaj TYLKO podwójnych cudzysłowów w JSON
+- NIE używaj trailing comma
+
+Rozpocznij odpowiedź od [ i zakończ na ]`;
 
     const startTime = Date.now();
     const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 4096);
     const duration = Date.now() - startTime;
     
-    // Parsuj JSON array
-    const jsonMatch = response.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      throw new Error('Brak JSON array w odpowiedzi');
+    // Czyszczenie i parsowanie JSON
+    let questions;
+    try {
+      questions = cleanAndParseJSON(response, 'GenerateQuiz');
+      
+      // Walidacja każdego pytania
+      questions = questions.filter(q => {
+        if (!q || typeof q !== 'object') return false;
+        if (typeof q.question !== 'string' || q.question.trim().length === 0) return false;
+        if (!Array.isArray(q.options) || q.options.length !== 4) return false;
+        if (typeof q.correctIndex !== 'number' || q.correctIndex < 0 || q.correctIndex > 3) return false;
+        if (!q.options.every(opt => typeof opt === 'string' && opt.trim().length > 0)) return false;
+        return true;
+      });
+      
+      if (questions.length === 0) {
+        throw new Error('Brak poprawnych pytań w odpowiedzi');
+      }
+      
+    } catch (parseError) {
+      // Zapisz pełną odpowiedź do pliku dla debugowania
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const debugFile = `debug-quiz-response-${timestamp}.txt`;
+      
+      try {
+        await fs.writeFile(debugFile, `TIMESTAMP: ${timestamp}\nERROR: ${parseError.message}\n\nRAW RESPONSE:\n${response}`, 'utf8');
+        console.log(`[GenerateQuiz] Zapisano debug do: ${debugFile}`);
+      } catch (writeError) {
+        console.error('[GenerateQuiz] Nie udało się zapisać debug file:', writeError.message);
+      }
+      
+      throw new Error(`Nie udało się sparsować odpowiedzi modelu: ${parseError.message}`);
     }
-    
-    const questions = JSON.parse(jsonMatch[0]);
     
     console.log(`[GenerateQuiz] Wygenerowano ${questions.length} pytań quizowych w ${duration}ms`);
     

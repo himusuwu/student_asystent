@@ -381,6 +381,11 @@ function setupEventListeners() {
     document.getElementById('btn-collapse-all').addEventListener('click', collapseAllFlashcards);
     document.getElementById('btn-expand-all').addEventListener('click', expandAllFlashcards);
     
+    // Lectures
+    document.getElementById('lecture-search').addEventListener('input', filterLectures);
+    document.getElementById('btn-collapse-all-lectures').addEventListener('click', collapseAllLectures);
+    document.getElementById('btn-expand-all-lectures').addEventListener('click', expandAllLectures);
+    
     // Study Mode
     document.getElementById('btn-study-flashcards').addEventListener('click', openStudyMode);
     document.getElementById('btn-back-to-flashcards').addEventListener('click', () => switchTab('flashcards'));
@@ -540,13 +545,21 @@ async function loadLectures() {
     subjects.forEach(subject => {
         const subjectLectures = lecturesBySubject[subject.id];
         if (subjectLectures && subjectLectures.length > 0) {
+            const subjectCollapseId = `subject-lectures-${subject.id}`;
+            const isCollapsed = localStorage.getItem(`lecture-section-${subjectCollapseId}`) === 'collapsed';
+            
             html += `
                 <div style="margin-bottom: 30px;">
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid ${subject.color}22;">
+                    <div class="collapsible-header" onclick="toggleLectureSection('${subjectCollapseId}')" 
+                         style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px; padding: 15px; 
+                                background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; 
+                                cursor: pointer; transition: all 0.3s;"
+                         onmouseover="this.style.borderColor='${subject.color}'" 
+                         onmouseout="this.style.borderColor='var(--border)'">
                         <div style="width: 40px; height: 40px; border-radius: 12px; background: ${subject.color}; display: flex; align-items: center; justify-content: center; font-size: 20px;">
                             📚
                         </div>
-                        <div>
+                        <div style="flex: 1;">
                             <h3 style="font-size: 20px; font-weight: 700; margin: 0; color: ${subject.color};">
                                 ${subject.name}
                             </h3>
@@ -554,20 +567,39 @@ async function loadLectures() {
                                 ${subjectLectures.length} ${subjectLectures.length === 1 ? 'wykład' : 'wykładów'}
                             </p>
                         </div>
+                        <div class="collapse-icon" style="font-size: 18px; color: ${subject.color}; transition: transform 0.3s; transform: rotate(${isCollapsed ? '-90deg' : '0deg'});">
+                            ▼
+                        </div>
                     </div>
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
-                        ${subjectLectures.map(lecture => `
-                            <div class="lecture-item" data-lecture-id="${lecture.id}">
-                                <div class="lecture-icon" style="background: ${subject.color}22; color: ${subject.color};">📖</div>
-                                <div class="lecture-info">
-                                    <div class="lecture-title">${lecture.title}</div>
-                                    <div class="lecture-date">${new Date(lecture.createdAt).toLocaleString('pl-PL')}</div>
+                    <div id="${subjectCollapseId}" class="collapsible-content" style="overflow: hidden; transition: max-height 0.3s ease, opacity 0.3s ease; ${isCollapsed ? 'max-height: 0px; opacity: 0; margin-bottom: 0;' : ''}">
+                        <div style="display: flex; flex-direction: column; gap: 10px; padding-left: 20px;">
+                            ${subjectLectures.map(lecture => `
+                                <div class="lecture-item" data-lecture-id="${lecture.id}">
+                                    <div class="lecture-icon" style="background: ${subject.color}22; color: ${subject.color};">📖</div>
+                                    <div class="lecture-info">
+                                        <div class="lecture-title">${lecture.title}</div>
+                                        <div class="lecture-date">${new Date(lecture.createdAt).toLocaleString('pl-PL')}</div>
+                                    </div>
+                                    <div class="lecture-actions" style="display: flex; gap: 8px; align-items: center;">
+                                        <button class="btn btn-secondary btn-edit-lecture" data-lecture-id="${lecture.id}" 
+                                                style="padding: 6px 12px; font-size: 12px; background: rgba(59, 130, 246, 0.1); 
+                                                       border: 1px solid rgba(59, 130, 246, 0.3); color: #3b82f6;" 
+                                                title="Edytuj wykład">
+                                            ✏️
+                                        </button>
+                                        <button class="btn btn-secondary btn-delete-lecture" data-lecture-id="${lecture.id}" 
+                                                style="padding: 6px 12px; font-size: 12px; background: rgba(239, 68, 68, 0.1); 
+                                                       border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444;" 
+                                                title="Usuń wykład">
+                                            🗑️
+                                        </button>
+                                        <button class="btn btn-primary btn-open-lecture" data-lecture-id="${lecture.id}" style="padding: 8px 16px; background: ${subject.color};">
+                                            Otwórz
+                                        </button>
+                                    </div>
                                 </div>
-                                <button class="btn btn-primary btn-open-lecture" data-lecture-id="${lecture.id}" style="padding: 8px 16px; background: ${subject.color};">
-                                    Otwórz
-                                </button>
-                            </div>
-                        `).join('')}
+                            `).join('')}
+                        </div>
                     </div>
                 </div>
             `;
@@ -576,13 +608,21 @@ async function loadLectures() {
     
     // Wykłady bez przedmiotu
     if (lecturesWithoutSubject.length > 0) {
+        const noSubjectCollapseId = 'no-subject-lectures';
+        const isCollapsed = localStorage.getItem(`lecture-section-${noSubjectCollapseId}`) === 'collapsed';
+        
         html += `
             <div style="margin-bottom: 30px;">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--text-secondary)22;">
-                    <div style="width: 40px; height: 40px; border-radius: 12px; background: var(--bg-card); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                <div class="collapsible-header" onclick="toggleLectureSection('${noSubjectCollapseId}')" 
+                     style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px; padding: 15px; 
+                            background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; 
+                            cursor: pointer; transition: all 0.3s;"
+                     onmouseover="this.style.borderColor='var(--text-secondary)'" 
+                     onmouseout="this.style.borderColor='var(--border)'">
+                    <div style="width: 40px; height: 40px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 20px;">
                         📝
                     </div>
-                    <div>
+                    <div style="flex: 1;">
                         <h3 style="font-size: 20px; font-weight: 700; margin: 0; color: var(--text-secondary);">
                             Bez przypisania
                         </h3>
@@ -590,20 +630,38 @@ async function loadLectures() {
                             ${lecturesWithoutSubject.length} ${lecturesWithoutSubject.length === 1 ? 'wykład' : 'wykładów'}
                         </p>
                     </div>
+                    <div class="collapse-icon" style="font-size: 18px; color: var(--text-secondary); transition: transform 0.3s; transform: rotate(${isCollapsed ? '-90deg' : '0deg'});">
+                        ▼
+                    </div>
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    ${lecturesWithoutSubject.map(lecture => `
+                <div id="${noSubjectCollapseId}" class="collapsible-content" style="overflow: hidden; transition: max-height 0.3s ease, opacity 0.3s ease; ${isCollapsed ? 'max-height: 0px; opacity: 0; margin-bottom: 0;' : ''}">
+                    <div style="display: flex; flex-direction: column; gap: 10px; padding-left: 20px;">${lecturesWithoutSubject.map(lecture => `
                         <div class="lecture-item" data-lecture-id="${lecture.id}">
                             <div class="lecture-icon">📖</div>
                             <div class="lecture-info">
                                 <div class="lecture-title">${lecture.title}</div>
                                 <div class="lecture-date">${new Date(lecture.createdAt).toLocaleString('pl-PL')}</div>
                             </div>
-                            <button class="btn btn-primary btn-open-lecture" data-lecture-id="${lecture.id}" style="padding: 8px 16px;">
-                                Otwórz
-                            </button>
+                            <div class="lecture-actions" style="display: flex; gap: 8px; align-items: center;">
+                                <button class="btn btn-secondary btn-edit-lecture" data-lecture-id="${lecture.id}" 
+                                        style="padding: 6px 12px; font-size: 12px; background: rgba(59, 130, 246, 0.1); 
+                                               border: 1px solid rgba(59, 130, 246, 0.3); color: #3b82f6;" 
+                                        title="Edytuj wykład">
+                                    ✏️
+                                </button>
+                                <button class="btn btn-secondary btn-delete-lecture" data-lecture-id="${lecture.id}" 
+                                        style="padding: 6px 12px; font-size: 12px; background: rgba(239, 68, 68, 0.1); 
+                                               border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444;" 
+                                        title="Usuń wykład">
+                                    🗑️
+                                </button>
+                                <button class="btn btn-primary btn-open-lecture" data-lecture-id="${lecture.id}" style="padding: 8px 16px;">
+                                    Otwórz
+                                </button>
+                            </div>
                         </div>
                     `).join('')}
+                    </div>
                 </div>
             </div>
         `;
@@ -620,6 +678,40 @@ async function loadLectures() {
             openLectureView(lectureId);
         });
     });
+
+    // Add event listeners to edit buttons
+    document.querySelectorAll('.btn-edit-lecture').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const lectureId = btn.dataset.lectureId;
+            console.log('Editing lecture:', lectureId);
+            openEditLectureModal(lectureId);
+        });
+    });
+
+    // Add event listeners to delete buttons
+    document.querySelectorAll('.btn-delete-lecture').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const lectureId = btn.dataset.lectureId;
+            console.log('Deleting lecture:', lectureId);
+            openDeleteLectureModal(lectureId);
+        });
+    });
+
+    // Initialize collapsible sections
+    const allCollapsible = document.querySelectorAll('#lectures-list .collapsible-content');
+    allCollapsible.forEach(section => {
+        const sectionId = section.id;
+        const isCollapsed = localStorage.getItem(`lecture-section-${sectionId}`) === 'collapsed';
+        
+        if (!isCollapsed) {
+            // Set initial max-height for expanded sections
+            setTimeout(() => {
+                section.style.maxHeight = 'none';
+            }, 100);
+        }
+    });
 }
 
 function filterLectures() {
@@ -631,6 +723,182 @@ function filterLectures() {
         item.style.display = title.includes(query) ? '' : 'none';
     });
 }
+
+// Toggle lecture section collapse/expand
+window.toggleLectureSection = function(sectionId) {
+    const section = document.getElementById(sectionId);
+    const header = section.previousElementSibling;
+    const icon = header.querySelector('.collapse-icon');
+    
+    if (section.style.maxHeight && section.style.maxHeight !== '0px') {
+        // Collapse
+        section.style.maxHeight = '0px';
+        section.style.opacity = '0';
+        section.style.marginBottom = '0';
+        icon.style.transform = 'rotate(-90deg)';
+        localStorage.setItem(`lecture-section-${sectionId}`, 'collapsed');
+    } else {
+        // Expand
+        section.style.maxHeight = section.scrollHeight + 'px';
+        section.style.opacity = '1';
+        section.style.marginBottom = '';
+        icon.style.transform = 'rotate(0deg)';
+        localStorage.setItem(`lecture-section-${sectionId}`, 'expanded');
+        
+        // Auto-adjust after animations complete
+        setTimeout(() => {
+            if (section.style.maxHeight !== '0px') {
+                section.style.maxHeight = 'none';
+            }
+        }, 300);
+    }
+};
+
+// Collapse all lecture sections
+function collapseAllLectures() {
+    const container = document.getElementById('lectures-list');
+    const allSections = container.querySelectorAll('.collapsible-content');
+    
+    allSections.forEach(section => {
+        const header = section.previousElementSibling;
+        const icon = header.querySelector('.collapse-icon');
+        
+        section.style.maxHeight = '0px';
+        section.style.opacity = '0';
+        section.style.marginBottom = '0';
+        icon.style.transform = 'rotate(-90deg)';
+        localStorage.setItem(`lecture-section-${section.id}`, 'collapsed');
+    });
+}
+
+// Expand all lecture sections
+function expandAllLectures() {
+    const container = document.getElementById('lectures-list');
+    const allSections = container.querySelectorAll('.collapsible-content');
+    
+    allSections.forEach(section => {
+        const header = section.previousElementSibling;
+        const icon = header.querySelector('.collapse-icon');
+        
+        section.style.maxHeight = section.scrollHeight + 'px';
+        section.style.opacity = '1';
+        section.style.marginBottom = '';
+        icon.style.transform = 'rotate(0deg)';
+        localStorage.setItem(`lecture-section-${section.id}`, 'expanded');
+        
+        // Auto-adjust after animations complete
+        setTimeout(() => {
+            if (section.style.maxHeight !== '0px') {
+                section.style.maxHeight = 'none';
+            }
+        }, 300);
+    });
+}
+
+// ============================================
+// LECTURE MANAGEMENT
+// ============================================
+
+let currentEditingLectureId = null;
+
+async function openEditLectureModal(lectureId) {
+    try {
+        const lecture = await db.getLecture(lectureId);
+        if (!lecture) {
+            console.error('Lecture not found:', lectureId);
+            return;
+        }
+
+        currentEditingLectureId = lectureId;
+        document.getElementById('input-edit-lecture-title').value = lecture.title;
+        openModal('modal-edit-lecture');
+    } catch (error) {
+        console.error('Error opening edit modal:', error);
+    }
+}
+
+async function handleEditLectureSubmit(e) {
+    e.preventDefault();
+    
+    if (!currentEditingLectureId) {
+        console.error('No lecture selected for editing');
+        return;
+    }
+
+    try {
+        const newTitle = document.getElementById('input-edit-lecture-title').value.trim();
+        
+        if (!newTitle) {
+            alert('Tytuł wykładu nie może być pusty');
+            return;
+        }
+
+        await db.updateLecture(currentEditingLectureId, { title: newTitle });
+        
+        // Close modal and refresh lectures list
+        window.closeModal('modal-edit-lecture');
+        currentEditingLectureId = null;
+        
+        // Refresh the lectures list
+        if (currentTab === 'lectures') {
+            await loadLectures();
+        }
+        
+        console.log('Lecture updated successfully');
+    } catch (error) {
+        console.error('Error updating lecture:', error);
+        alert('Wystąpił błąd podczas zapisywania zmian');
+    }
+}
+
+let currentDeletingLectureId = null;
+
+async function openDeleteLectureModal(lectureId) {
+    try {
+        const lecture = await db.getLecture(lectureId);
+        if (!lecture) {
+            console.error('Lecture not found:', lectureId);
+            return;
+        }
+
+        currentDeletingLectureId = lectureId;
+        document.getElementById('delete-lecture-title').textContent = lecture.title;
+        openModal('modal-delete-lecture');
+    } catch (error) {
+        console.error('Error opening delete modal:', error);
+    }
+}
+
+async function handleDeleteLecture() {
+    if (!currentDeletingLectureId) {
+        console.error('No lecture selected for deletion');
+        return;
+    }
+
+    try {
+        await db.deleteLecture(currentDeletingLectureId);
+        
+        // Close modal
+        window.closeModal('modal-delete-lecture');
+        currentDeletingLectureId = null;
+        
+        // Refresh the lectures list
+        if (currentTab === 'lectures') {
+            await loadLectures();
+        }
+        
+        console.log('Lecture deleted successfully');
+    } catch (error) {
+        console.error('Error deleting lecture:', error);
+        alert('Wystąpił błąd podczas usuwania wykładu');
+    }
+}
+
+// Make functions available globally for debugging
+window.openEditLectureModal = openEditLectureModal;
+window.openDeleteLectureModal = openDeleteLectureModal;
+window.handleEditLectureSubmit = handleEditLectureSubmit;
+window.handleDeleteLecture = handleDeleteLecture;
 
 // ============================================
 // NEW LECTURE
@@ -1565,6 +1833,18 @@ function setupModalForms() {
             // Show success message
             showToast('✅ Zajęcia dodane do planu!');
         });
+    }
+
+    // Edit lecture form
+    const editLectureForm = document.getElementById('form-edit-lecture');
+    if (editLectureForm) {
+        editLectureForm.addEventListener('submit', handleEditLectureSubmit);
+    }
+
+    // Delete lecture confirmation
+    const confirmDeleteBtn = document.getElementById('btn-confirm-delete-lecture');
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', handleDeleteLecture);
     }
 }
 

@@ -194,7 +194,25 @@
         <div class="content" id="lectures">
             <div class="action-bar">
                 <input type="text" class="search-box" id="lecture-search" placeholder="🔍 Szukaj wykładów...">
-                <button class="btn btn-primary" id="btn-add-lecture">+ Dodaj wykład</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn" id="btn-collapse-all-lectures" 
+                            style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1)); 
+                                   border: 1px solid rgba(99, 102, 241, 0.3); 
+                                   color: var(--primary); 
+                                   padding: 10px 16px;" 
+                            title="Zwiń wszystkie przedmioty">
+                        ▲ Zwiń wszystko
+                    </button>
+                    <button class="btn" id="btn-expand-all-lectures" 
+                            style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1)); 
+                                   border: 1px solid rgba(99, 102, 241, 0.3); 
+                                   color: var(--primary); 
+                                   padding: 10px 16px;" 
+                            title="Rozwiń wszystkie przedmioty">
+                        ▼ Rozwiń wszystko
+                    </button>
+                    <button class="btn btn-primary" id="btn-add-lecture">+ Dodaj wykład</button>
+                </div>
             </div>
 
             <h2 style="margin-bottom: 20px; font-size: 22px;">Twoje wykłady</h2>
@@ -853,6 +871,57 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Edit Lecture Modal -->
+    <div id="modal-edit-lecture" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px; color: var(--primary);">✏️ Edytuj wykład</h2>
+            <form id="form-edit-lecture">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Tytuł wykładu</label>
+                    <input type="text" id="input-edit-lecture-title" class="search-box" 
+                           placeholder="Wpisz nowy tytuł wykładu..." 
+                           style="width: 100%; padding: 12px;" required>
+                </div>
+
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="btn" onclick="closeModal('modal-edit-lecture')" 
+                            style="background: var(--bg-card);">
+                        Anuluj
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        💾 Zapisz zmiany
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Lecture Modal -->
+    <div id="modal-delete-lecture" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px; color: #ef4444;">🗑️ Usuń wykład</h2>
+            <div style="margin-bottom: 20px;">
+                <p style="margin-bottom: 15px; font-size: 16px;">
+                    Czy na pewno chcesz usunąć wykład <strong id="delete-lecture-title"></strong>?
+                </p>
+                <p style="color: var(--text-secondary); font-size: 14px;">
+                    ⚠️ Ta operacja jest nieodwracalna. Zostaną usunięte wszystkie notatki, fiszki i inne dane związane z tym wykładem.
+                </p>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" class="btn" onclick="closeModal('modal-delete-lecture')" 
+                        style="background: var(--bg-card);">
+                    Anuluj
+                </button>
+                <button type="button" class="btn" id="btn-confirm-delete-lecture"
+                        style="background: #ef4444; color: white;">
+                    🗑️ Usuń wykład
+                </button>
+            </div>
         </div>
     </div>
 
