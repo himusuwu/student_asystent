@@ -734,6 +734,36 @@
                     </p>
                 </div>
 
+                <!-- Database Management -->
+                <div class="card">
+                    <h3>🗃️ Zarządzanie bazą danych</h3>
+                    
+                    <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">
+                        Narzędzia do diagnozy i naprawy problemów z bazą danych.
+                    </p>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <button type="button" class="btn" id="btn-check-database-health" 
+                                style="background: var(--secondary)22; color: var(--secondary); width: 100%; justify-content: center;">
+                            📊 Sprawdź stan bazy danych
+                        </button>
+                        
+                        <button type="button" class="btn" id="btn-cleanup-orphaned-flashcards" 
+                                style="background: var(--accent)22; color: var(--accent); width: 100%; justify-content: center;">
+                            🧹 Wyczyść osierocone fiszki
+                        </button>
+                    </div>
+                    
+                    <div id="database-status-display" style="margin-top: 15px; padding: 15px; background: var(--bg-hover); border-radius: 8px; border-left: 4px solid var(--primary); display: none;">
+                        <div style="font-weight: 600; margin-bottom: 8px;">Status bazy danych:</div>
+                        <div id="database-status-details" style="color: var(--text-secondary); font-size: 14px; white-space: pre-line;"></div>
+                    </div>
+                    
+                    <p style="color: var(--text-secondary); margin-top: 15px; font-size: 12px; font-style: italic;">
+                        💡 Osierocone fiszki to fiszki przypisane do usuniętych wykładów
+                    </p>
+                </div>
+
                 <!-- Save Button -->
                 <div style="display: flex; justify-content: flex-end;">
                     <button class="btn btn-primary" id="btn-save-settings">

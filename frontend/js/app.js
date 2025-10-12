@@ -167,6 +167,115 @@ function switchTab(tabName) {
 }
 
 // ============================================
+// DATABASE MANAGEMENT FUNCTIONS
+// ============================================
+
+// Database management functions
+window.checkDatabaseHealth = async function() {
+    try {
+        // Get statistics
+        const subjects = await db.listSubjects();
+        const lectures = await db.listLectures();
+        const flashcards = await db.listFlashcards();
+        const orphaned = await db.findOrphanedFlashcards();
+        
+        // Calculate stats
+        const totalFlashcards = flashcards.length;
+        const orphanedCount = orphaned.length;
+        const validFlashcards = totalFlashcards - orphanedCount;
+        
+        const stats = `📚 Przedmioty: ${subjects.length}
+🎓 Wykłady: ${lectures.length} 
+🃏 Fiszki: ${validFlashcards} (poprawne) + ${orphanedCount} (osierocone)
+${orphanedCount > 0 ? '⚠️ Zalecane: wyczyść osierocone fiszki' : '✅ Baza danych w dobrym stanie'}`;
+        
+        // Show in UI
+        showDatabaseStatus(stats, orphanedCount > 0 ? 'warning' : 'success');
+        
+        console.log(stats);
+        return { subjects: subjects.length, lectures: lectures.length, validFlashcards, orphanedCount };
+        
+    } catch (error) {
+        console.error('Błąd podczas sprawdzania bazy:', error);
+        showDatabaseStatus('❌ Błąd podczas sprawdzania: ' + error.message, 'error');
+        throw error;
+    }
+};
+
+window.cleanupOrphanedFlashcards = async function() {
+    try {
+        // Check for orphaned flashcards first
+        const orphaned = await db.findOrphanedFlashcards();
+        
+        if (orphaned.length === 0) {
+            const message = '✅ Brak osieroconych fiszek do usunięcia!';
+            showDatabaseStatus(message, 'success');
+            console.log(message);
+            return 0;
+        }
+        
+        console.log(`Znaleziono ${orphaned.length} osieroconych fiszek:`);
+        orphaned.forEach(card => console.log(`- "${card.front}" (lectureId: ${card.lectureId})`));
+        
+        // Ask for confirmation
+        const confirmed = confirm(`Znaleziono ${orphaned.length} osieroconych fiszek. Czy chcesz je usunąć?\\n\\nFiszki do usunięcia:\\n${orphaned.slice(0, 5).map(f => '• ' + f.front).join('\\n')}${orphaned.length > 5 ? '\\n...i więcej' : ''}`);
+        
+        if (!confirmed) {
+            const message = 'Anulowano czyszczenie.';
+            showDatabaseStatus(message, 'info');
+            console.log(message);
+            return 0;
+        }
+        
+        // Clean up
+        const removedCount = await db.cleanupOrphanedFlashcards();
+        const message = `✅ Usunięto ${removedCount} osieroconych fiszek!`;
+        showDatabaseStatus(message, 'success');
+        console.log(message);
+        
+        // Refresh current view if needed
+        const activeTab = document.querySelector('.tab-content.active')?.id;
+        if (activeTab === 'flashcards') {
+            await loadFlashcards();
+        } else if (activeTab === 'subjects') {
+            await loadSubjects();
+        }
+        
+        return removedCount;
+        
+    } catch (error) {
+        console.error('Błąd podczas czyszczenia fiszek:', error);
+        showDatabaseStatus('❌ Błąd podczas czyszczenia: ' + error.message, 'error');
+        throw error;
+    }
+};
+
+function showDatabaseStatus(message, type = 'info') {
+    const statusDiv = document.getElementById('database-status-display');
+    const detailsDiv = document.getElementById('database-status-details');
+    
+    if (statusDiv && detailsDiv) {
+        statusDiv.style.display = 'block';
+        detailsDiv.textContent = message;
+        
+        // Update border color based on type
+        switch(type) {
+            case 'success':
+                statusDiv.style.borderLeftColor = 'var(--success)';
+                break;
+            case 'warning':
+                statusDiv.style.borderLeftColor = '#f59e0b';
+                break;
+            case 'error':
+                statusDiv.style.borderLeftColor = '#ef4444';
+                break;
+            default:
+                statusDiv.style.borderLeftColor = 'var(--primary)';
+        }
+    }
+}
+
+// ============================================
 // EVENT LISTENERS
 // ============================================
 
@@ -414,6 +523,24 @@ function setupEventListeners() {
     document.getElementById('btn-clear-schedule').addEventListener('click', clearAllSchedule);
     document.getElementById('btn-clear-subjects').addEventListener('click', clearAllSubjects);
     document.getElementById('btn-clear-all-data').addEventListener('click', clearAllData);
+    
+    // Database management buttons
+    const checkHealthBtn = document.getElementById('btn-check-database-health');
+    const cleanupBtn = document.getElementById('btn-cleanup-orphaned-flashcards');
+    
+    if (checkHealthBtn) {
+        checkHealthBtn.addEventListener('click', window.checkDatabaseHealth);
+        console.log('✅ Database health button listener attached');
+    } else {
+        console.warn('⚠️ btn-check-database-health not found in DOM');
+    }
+    
+    if (cleanupBtn) {
+        cleanupBtn.addEventListener('click', window.cleanupOrphanedFlashcards);
+        console.log('✅ Cleanup orphaned flashcards button listener attached');
+    } else {
+        console.warn('⚠️ btn-cleanup-orphaned-flashcards not found in DOM');
+    }
 }
 
 // ============================================
@@ -4006,77 +4133,6 @@ window.deleteSubject = async (id) => {
 window.openStudyMode = openStudyMode;
 window.switchTab = switchTab;
 window.startRetryRound = startRetryRound;
-
-// Database management functions
-window.checkDatabaseHealth = async function() {
-    try {
-        // Get statistics
-        const subjects = await db.listSubjects();
-        const lectures = await db.listLectures();
-        const flashcards = await db.listFlashcards();
-        const orphaned = await db.findOrphanedFlashcards();
-        
-        // Calculate stats
-        const totalFlashcards = flashcards.length;
-        const orphanedCount = orphaned.length;
-        const validFlashcards = totalFlashcards - orphanedCount;
-        
-        const stats = `
-📚 Przedmioty: ${subjects.length}
-🎓 Wykłady: ${lectures.length} 
-🃏 Fiszki: ${validFlashcards} (poprawne) + ${orphanedCount} (osierocone)
-${orphanedCount > 0 ? '⚠️ Zalecane: uruchom cleanupOrphanedFlashcards()' : '✅ Baza danych w dobrym stanie'}
-        `;
-        
-        console.log(stats);
-        return { subjects: subjects.length, lectures: lectures.length, validFlashcards, orphanedCount };
-        
-    } catch (error) {
-        console.error('Błąd podczas sprawdzania bazy:', error);
-        throw error;
-    }
-};
-
-window.cleanupOrphanedFlashcards = async function() {
-    try {
-        // Check for orphaned flashcards first
-        const orphaned = await db.findOrphanedFlashcards();
-        
-        if (orphaned.length === 0) {
-            console.log('✅ Brak osieroconych fiszek do usunięcia!');
-            return 0;
-        }
-        
-        console.log(`Znaleziono ${orphaned.length} osieroconych fiszek:`);
-        orphaned.forEach(card => console.log(`- "${card.front}" (lectureId: ${card.lectureId})`));
-        
-        // Ask for confirmation
-        const confirmed = confirm(`Znaleziono ${orphaned.length} osieroconych fiszek. Czy chcesz je usunąć?\\n\\nFiszki do usunięcia:\\n${orphaned.slice(0, 5).map(f => '• ' + f.front).join('\\n')}${orphaned.length > 5 ? '\\n...i więcej' : ''}`);
-        
-        if (!confirmed) {
-            console.log('Anulowano czyszczenie.');
-            return 0;
-        }
-        
-        // Clean up
-        const removedCount = await db.cleanupOrphanedFlashcards();
-        console.log(`✅ Usunięto ${removedCount} osieroconych fiszek!`);
-        
-        // Refresh current view if needed
-        const activeTab = document.querySelector('.tab-content.active')?.id;
-        if (activeTab === 'flashcards') {
-            await loadFlashcards();
-        } else if (activeTab === 'subjects') {
-            await loadSubjects();
-        }
-        
-        return removedCount;
-        
-    } catch (error) {
-        console.error('Błąd podczas czyszczenia fiszek:', error);
-        throw error;
-    }
-};
 
 // Note: Other functions (deleteSubject, toggleFlashcardSection, etc.) are already defined as window.function above
 
