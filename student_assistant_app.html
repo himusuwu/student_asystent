@@ -1160,6 +1160,38 @@
                 </div>
             </div>
 
+            <div class="card" style="margin-bottom: 20px;">
+                <h3 style="font-size: 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    🗃️ Zarządzanie bazą danych
+                </h3>
+                <div style="display: grid; gap: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; margin-bottom: 4px;">Wyczyść osierocone fiszki</div>
+                            <div style="color: var(--text-secondary); font-size: 14px;">Usuń fiszki z usuniętych wykładów</div>
+                        </div>
+                        <button class="btn" style="background: var(--accent); color: white;" onclick="cleanupOrphanedFlashcards()">
+                            🧹 Wyczyść
+                        </button>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; margin-bottom: 4px;">Sprawdź stan bazy</div>
+                            <div style="color: var(--text-secondary); font-size: 14px;">Wyświetl statystyki i problemy</div>
+                        </div>
+                        <button class="btn" style="background: var(--secondary); color: white;" onclick="checkDatabaseHealth()">
+                            📊 Sprawdź
+                        </button>
+                    </div>
+                    
+                    <div id="database-status" style="padding: 15px; background: var(--bg-hover); border-radius: 8px; border-left: 4px solid var(--primary); display: none;">
+                        <div style="font-weight: 600; margin-bottom: 8px;">Status bazy danych:</div>
+                        <div id="database-details" style="color: var(--text-secondary); font-size: 14px;"></div>
+                    </div>
+                </div>
+            </div>
+
             <div style="display: flex; gap: 15px; margin-top: 30px;">
                 <button class="btn btn-primary" onclick="alert('Ustawienia zapisane! ✅')">💾 Zapisz zmiany</button>
                 <button class="btn" style="background: var(--bg-hover); color: var(--text);">Anuluj</button>
@@ -2092,6 +2124,102 @@
         
         // Start app
         initialize();
+        
+        // ============================================
+        // DATABASE MANAGEMENT FUNCTIONS
+        // ============================================
+        
+        async function cleanupOrphanedFlashcards() {
+            try {
+                // Import the database module
+                const dbModule = await import('./frontend/js/modules/database.js');
+                
+                // Check for orphaned flashcards first
+                const orphaned = await dbModule.findOrphanedFlashcards();
+                
+                if (orphaned.length === 0) {
+                    showDatabaseStatus('✅ Brak osieroconych fiszek do usunięcia!', 'success');
+                    return;
+                }
+                
+                // Ask for confirmation
+                const confirmed = confirm(`Znaleziono ${orphaned.length} osieroconych fiszek. Czy chcesz je usunąć?\\n\\nFiszki do usunięcia:\\n${orphaned.slice(0, 5).map(f => '• ' + f.front).join('\\n')}${orphaned.length > 5 ? '\\n...i więcej' : ''}`);
+                
+                if (!confirmed) return;
+                
+                // Clean up
+                const removedCount = await dbModule.cleanupOrphanedFlashcards();
+                showDatabaseStatus(`✅ Usunięto ${removedCount} osieroconych fiszek!`, 'success');
+                
+                // Refresh flashcard view if it's currently open
+                if (currentState.activeTab === 'flashcards') {
+                    listAllFlashcards();
+                }
+                
+            } catch (error) {
+                console.error('Błąd podczas czyszczenia fiszek:', error);
+                showDatabaseStatus('❌ Błąd podczas czyszczenia: ' + error.message, 'error');
+            }
+        }
+        
+        async function checkDatabaseHealth() {
+            try {
+                const dbModule = await import('./frontend/js/modules/database.js');
+                
+                // Get statistics
+                const subjects = await dbModule.listSubjects();
+                const lectures = await dbModule.listLectures();
+                const flashcards = await dbModule.listFlashcards();
+                const orphaned = await dbModule.findOrphanedFlashcards();
+                
+                // Calculate stats
+                const totalFlashcards = flashcards.length;
+                const orphanedCount = orphaned.length;
+                const validFlashcards = totalFlashcards - orphanedCount;
+                
+                const stats = `
+                📚 Przedmioty: ${subjects.length}
+                🎓 Wykłady: ${lectures.length} 
+                🃏 Fiszki: ${validFlashcards} (poprawne) + ${orphanedCount} (osierocone)
+                ${orphanedCount > 0 ? '⚠️ Zalecane: uruchom czyszczenie osieroconych fiszek' : '✅ Baza danych w dobrym stanie'}
+                `;
+                
+                showDatabaseStatus(stats, orphanedCount > 0 ? 'warning' : 'success');
+                
+            } catch (error) {
+                console.error('Błąd podczas sprawdzania bazy:', error);
+                showDatabaseStatus('❌ Błąd podczas sprawdzania: ' + error.message, 'error');
+            }
+        }
+        
+        function showDatabaseStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('database-status');
+            const detailsDiv = document.getElementById('database-details');
+            
+            if (statusDiv && detailsDiv) {
+                statusDiv.style.display = 'block';
+                detailsDiv.innerHTML = message.replace(/\\n/g, '<br>');
+                
+                // Update border color based on type
+                switch(type) {
+                    case 'success':
+                        statusDiv.style.borderLeftColor = 'var(--success)';
+                        break;
+                    case 'warning':
+                        statusDiv.style.borderLeftColor = '#f59e0b';
+                        break;
+                    case 'error':
+                        statusDiv.style.borderLeftColor = '#ef4444';
+                        break;
+                    default:
+                        statusDiv.style.borderLeftColor = 'var(--primary)';
+                }
+            }
+        }
+        
+        // Export functions to global scope
+        window.cleanupOrphanedFlashcards = cleanupOrphanedFlashcards;
+        window.checkDatabaseHealth = checkDatabaseHealth;
         
         // Expose API for debugging
         window.StudentAssistant = {
