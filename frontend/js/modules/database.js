@@ -88,6 +88,21 @@ export async function getSubject(id) {
 
 export async function deleteSubject(id) {
     const db = await openDatabase();
+    
+    // Najpierw usuń wszystkie wykłady tego przedmiotu (co automatycznie usuwa fiszki)
+    const lectures = await listLecturesBySubject(id);
+    for (const lecture of lectures) {
+        await deleteLecture(lecture.id);
+    }
+    
+    // Usuń również fiszki bezpośrednio przypisane do przedmiotu (bez wykładu)
+    const allFlashcards = await listFlashcards();
+    const subjectFlashcards = allFlashcards.filter(card => card.subjectId === id && !card.lectureId);
+    for (const flashcard of subjectFlashcards) {
+        await db.delete('flashcards', flashcard.id);
+    }
+    
+    // Na końcu usuń sam przedmiot
     await db.delete('subjects', id);
 }
 
@@ -146,6 +161,39 @@ export async function updateLecture(id, updates) {
 
 export async function deleteLecture(id) {
     const db = await openDatabase();
+    
+    // Najpierw usuń wszystkie fiszki powiązane z tym wykładem
+    const flashcards = await getFlashcardsByLecture(id);
+    for (const flashcard of flashcards) {
+        await db.delete('flashcards', flashcard.id);
+    }
+    
+    // Usuń wszystkie inne powiązane dane
+    // Usuń zakładki wykładu
+    const tabs = await db.getAll('lectureTabs');
+    for (const tab of tabs) {
+        if (tab.lectureId === id) {
+            await db.delete('lectureTabs', tab.id);
+        }
+    }
+    
+    // Usuń pytania quizu
+    const quizQuestions = await db.getAll('quizQuestions');
+    for (const question of quizQuestions) {
+        if (question.lectureId === id) {
+            await db.delete('quizQuestions', question.id);
+        }
+    }
+    
+    // Usuń wiadomości czatu
+    const chatMessages = await db.getAll('chatMessages');
+    for (const message of chatMessages) {
+        if (message.lectureId === id) {
+            await db.delete('chatMessages', message.id);
+        }
+    }
+    
+    // Na końcu usuń sam wykład
     await db.delete('lectures', id);
 }
 
