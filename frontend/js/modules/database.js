@@ -278,6 +278,35 @@ export async function getFlashcardsByLecture(lectureId) {
     return allFlashcards.filter(card => card.lectureId === lectureId);
 }
 
+// Cleanup Functions
+export async function findOrphanedFlashcards() {
+    const db = await openDatabase();
+    const allFlashcards = await listFlashcards();
+    const allLectures = await listLectures();
+    const lectureIds = new Set(allLectures.map(lecture => lecture.id));
+    
+    // Znajdź fiszki które mają lectureId ale wykład już nie istnieje
+    const orphanedFlashcards = allFlashcards.filter(card => 
+        card.lectureId && !lectureIds.has(card.lectureId)
+    );
+    
+    return orphanedFlashcards;
+}
+
+export async function cleanupOrphanedFlashcards() {
+    const db = await openDatabase();
+    const orphanedFlashcards = await findOrphanedFlashcards();
+    
+    console.log(`Znaleziono ${orphanedFlashcards.length} osieroconych fiszek do usunięcia...`);
+    
+    for (const flashcard of orphanedFlashcards) {
+        await db.delete('flashcards', flashcard.id);
+        console.log(`Usunięto fiszkę: "${flashcard.front}"`);
+    }
+    
+    return orphanedFlashcards.length;
+}
+
 // Schedule Operations
 export async function createScheduleEvent(event) {
     const db = await openDatabase();
