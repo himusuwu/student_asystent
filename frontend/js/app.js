@@ -4006,6 +4006,78 @@ window.deleteSubject = async (id) => {
 window.openStudyMode = openStudyMode;
 window.switchTab = switchTab;
 window.startRetryRound = startRetryRound;
+
+// Database management functions
+window.checkDatabaseHealth = async function() {
+    try {
+        // Get statistics
+        const subjects = await db.listSubjects();
+        const lectures = await db.listLectures();
+        const flashcards = await db.listFlashcards();
+        const orphaned = await db.findOrphanedFlashcards();
+        
+        // Calculate stats
+        const totalFlashcards = flashcards.length;
+        const orphanedCount = orphaned.length;
+        const validFlashcards = totalFlashcards - orphanedCount;
+        
+        const stats = `
+📚 Przedmioty: ${subjects.length}
+🎓 Wykłady: ${lectures.length} 
+🃏 Fiszki: ${validFlashcards} (poprawne) + ${orphanedCount} (osierocone)
+${orphanedCount > 0 ? '⚠️ Zalecane: uruchom cleanupOrphanedFlashcards()' : '✅ Baza danych w dobrym stanie'}
+        `;
+        
+        console.log(stats);
+        return { subjects: subjects.length, lectures: lectures.length, validFlashcards, orphanedCount };
+        
+    } catch (error) {
+        console.error('Błąd podczas sprawdzania bazy:', error);
+        throw error;
+    }
+};
+
+window.cleanupOrphanedFlashcards = async function() {
+    try {
+        // Check for orphaned flashcards first
+        const orphaned = await db.findOrphanedFlashcards();
+        
+        if (orphaned.length === 0) {
+            console.log('✅ Brak osieroconych fiszek do usunięcia!');
+            return 0;
+        }
+        
+        console.log(`Znaleziono ${orphaned.length} osieroconych fiszek:`);
+        orphaned.forEach(card => console.log(`- "${card.front}" (lectureId: ${card.lectureId})`));
+        
+        // Ask for confirmation
+        const confirmed = confirm(`Znaleziono ${orphaned.length} osieroconych fiszek. Czy chcesz je usunąć?\\n\\nFiszki do usunięcia:\\n${orphaned.slice(0, 5).map(f => '• ' + f.front).join('\\n')}${orphaned.length > 5 ? '\\n...i więcej' : ''}`);
+        
+        if (!confirmed) {
+            console.log('Anulowano czyszczenie.');
+            return 0;
+        }
+        
+        // Clean up
+        const removedCount = await db.cleanupOrphanedFlashcards();
+        console.log(`✅ Usunięto ${removedCount} osieroconych fiszek!`);
+        
+        // Refresh current view if needed
+        const activeTab = document.querySelector('.tab-content.active')?.id;
+        if (activeTab === 'flashcards') {
+            await loadFlashcards();
+        } else if (activeTab === 'subjects') {
+            await loadSubjects();
+        }
+        
+        return removedCount;
+        
+    } catch (error) {
+        console.error('Błąd podczas czyszczenia fiszek:', error);
+        throw error;
+    }
+};
+
 // Note: Other functions (deleteSubject, toggleFlashcardSection, etc.) are already defined as window.function above
 
 console.log('✅ App.js loaded');
