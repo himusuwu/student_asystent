@@ -1,7 +1,21 @@
 // AI Module - Student Assistant v2.1
-// Generowanie tekstu przez backend AI
+// Generowanie tekstu przez backend AI (Ollama / Gemini)
 
 import { getSettings } from './settings.js';
+
+/**
+ * Helper: Pobierz parametry AI z ustawień
+ * @returns {Object} Parametry AI providera
+ */
+function getAIParams() {
+    const settings = getSettings();
+    return {
+        aiProvider: settings.aiProvider || 'ollama',
+        geminiApiKey: settings.geminiApiKey || '',
+        geminiModel: settings.geminiModel || 'gemini-1.5-pro',
+        ollamaModel: settings.ollamaModel || 'qwen2.5:14b'
+    };
+}
 
 /**
  * Generate lecture title from transcription using AI
@@ -15,16 +29,20 @@ export async function generateLectureTitle(transcription) {
     
     const settings = getSettings();
     const backendUrl = settings.backendUrl || 'http://localhost:3001';
+    const aiParams = getAIParams();
     
     try {
-        console.log('🤖 Generowanie tytułu przez AI...');
+        console.log(`🤖 Generowanie tytułu przez AI (${aiParams.aiProvider})...`);
         
         const response = await fetch(`${backendUrl}/generate-title`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ transcription })
+            body: JSON.stringify({ 
+                transcription,
+                ...aiParams
+            })
         });
         
         if (!response.ok) {
@@ -33,7 +51,7 @@ export async function generateLectureTitle(transcription) {
         }
         
         const result = await response.json();
-        console.log(`✅ AI wygenerowało tytuł: "${result.title}"`);
+        console.log(`✅ AI wygenerowało tytuł: "${result.title}" (${result.provider || aiParams.aiProvider})`);
         
         return result.title;
         
@@ -94,17 +112,21 @@ export async function generateNotes(transcription, onProgress = null) {
     
     const settings = getSettings();
     const backendUrl = settings.backendUrl || 'http://localhost:3001';
+    const aiParams = getAIParams();
     
     try {
-        console.log(`🤖 Generowanie notatek z ${transcription.length} znaków...`);
-        if (onProgress) onProgress(10, 'Wysyłanie do AI...');
+        console.log(`🤖 Generowanie notatek z ${transcription.length} znaków (${aiParams.aiProvider})...`);
+        if (onProgress) onProgress(10, `Wysyłanie do AI (${aiParams.aiProvider})...`);
         
         const response = await fetch(`${backendUrl}/generate-notes`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ transcription })
+            body: JSON.stringify({ 
+                transcription,
+                ...aiParams
+            })
         });
         
         if (!response.ok) {
@@ -118,7 +140,7 @@ export async function generateNotes(transcription, onProgress = null) {
         
         if (onProgress) onProgress(100, 'Gotowe!');
         
-        console.log(`✅ Notatki wygenerowane w ${(result.duration / 1000).toFixed(1)}s`);
+        console.log(`✅ Notatki wygenerowane w ${(result.duration / 1000).toFixed(1)}s (${result.provider || aiParams.aiProvider})`);
         
         return {
             formatted: result.formatted || '',
@@ -147,17 +169,21 @@ export async function generateFlashcards(transcription, onProgress = null) {
     
     const settings = getSettings();
     const backendUrl = settings.backendUrl || 'http://localhost:3001';
+    const aiParams = getAIParams();
     
     try {
-        console.log(`🤖 Generowanie fiszek z ${transcription.length} znaków...`);
-        if (onProgress) onProgress(10, 'Wysyłanie do AI...');
+        console.log(`🤖 Generowanie fiszek z ${transcription.length} znaków (${aiParams.aiProvider})...`);
+        if (onProgress) onProgress(10, `Wysyłanie do AI (${aiParams.aiProvider})...`);
         
         const response = await fetch(`${backendUrl}/generate-flashcards`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ transcription })
+            body: JSON.stringify({ 
+                transcription,
+                ...aiParams
+            })
         });
         
         if (!response.ok) {
@@ -194,17 +220,21 @@ export async function generateDetailedNote(transcription, onProgress = null) {
     
     const settings = getSettings();
     const backendUrl = settings.backendUrl || 'http://localhost:3001';
+    const aiParams = getAIParams();
     
     try {
-        console.log(`🤖 Generowanie szczegółowej notatki z ${transcription.length} znaków...`);
-        if (onProgress) onProgress(10, 'Wysyłanie do AI...');
+        console.log(`🤖 Generowanie szczegółowej notatki z ${transcription.length} znaków (${aiParams.aiProvider})...`);
+        if (onProgress) onProgress(10, `Wysyłanie do AI (${aiParams.aiProvider})...`);
         
         const response = await fetch(`${backendUrl}/generate-detailed-note`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ transcription })
+            body: JSON.stringify({ 
+                transcription,
+                ...aiParams
+            })
         });
         
         if (!response.ok) {
@@ -241,17 +271,21 @@ export async function generateShortNote(transcription, onProgress = null) {
     
     const settings = getSettings();
     const backendUrl = settings.backendUrl || 'http://localhost:3001';
+    const aiParams = getAIParams();
     
     try {
-        console.log(`🤖 Generowanie krótkiej notatki z ${transcription.length} znaków...`);
-        if (onProgress) onProgress(10, 'Wysyłanie do AI...');
+        console.log(`🤖 Generowanie krótkiej notatki z ${transcription.length} znaków (${aiParams.aiProvider})...`);
+        if (onProgress) onProgress(10, `Wysyłanie do AI (${aiParams.aiProvider})...`);
         
         const response = await fetch(`${backendUrl}/generate-short-note`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ transcription })
+            body: JSON.stringify({ 
+                transcription,
+                ...aiParams
+            })
         });
         
         if (!response.ok) {
@@ -288,17 +322,21 @@ export async function generateKeyPoints(transcription, onProgress = null) {
     
     const settings = getSettings();
     const backendUrl = settings.backendUrl || 'http://localhost:3001';
+    const aiParams = getAIParams();
     
     try {
-        console.log(`🤖 Generowanie kluczowych punktów z ${transcription.length} znaków...`);
-        if (onProgress) onProgress(10, 'Wysyłanie do AI...');
+        console.log(`🤖 Generowanie kluczowych punktów z ${transcription.length} znaków (${aiParams.aiProvider})...`);
+        if (onProgress) onProgress(10, `Wysyłanie do AI (${aiParams.aiProvider})...`);
         
         const response = await fetch(`${backendUrl}/generate-key-points`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ transcription })
+            body: JSON.stringify({ 
+                transcription,
+                ...aiParams
+            })
         });
         
         if (!response.ok) {
@@ -335,17 +373,21 @@ export async function generateQuiz(transcription, onProgress = null) {
     
     const settings = getSettings();
     const backendUrl = settings.backendUrl || 'http://localhost:3001';
+    const aiParams = getAIParams();
     
     try {
-        console.log(`🤖 Generowanie quizu z ${transcription.length} znaków...`);
-        if (onProgress) onProgress(10, 'Wysyłanie do AI...');
+        console.log(`🤖 Generowanie quizu z ${transcription.length} znaków (${aiParams.aiProvider})...`);
+        if (onProgress) onProgress(10, `Wysyłanie do AI (${aiParams.aiProvider})...`);
         
         const response = await fetch(`${backendUrl}/generate-quiz`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ transcription })
+            body: JSON.stringify({ 
+                transcription,
+                ...aiParams
+            })
         });
         
         if (!response.ok) {

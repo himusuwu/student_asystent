@@ -2014,13 +2014,45 @@ function showToast(message) {
 async function loadSettings() {
     const appSettings = settings.getSettings();
     
+    // Whisper settings
     document.getElementById('setting-whisper-model').value = appSettings.whisperModel;
     document.getElementById('setting-whisper-language').value = appSettings.whisperLanguage;
     document.getElementById('setting-backend-url').value = appSettings.backendUrl;
+    
+    // GitHub settings
     document.getElementById('setting-github-repo').value = appSettings.githubRepo;
     document.getElementById('setting-github-token').value = appSettings.githubToken;
     document.getElementById('setting-github-branch').value = appSettings.githubBranch;
     document.getElementById('setting-username').value = appSettings.username;
+    
+    // AI Provider settings
+    const aiProviderSelect = document.getElementById('setting-ai-provider');
+    const ollamaSettings = document.getElementById('ollama-settings');
+    const geminiSettings = document.getElementById('gemini-settings');
+    const ollamaModelSelect = document.getElementById('setting-ollama-model');
+    const geminiKeyInput = document.getElementById('setting-gemini-key');
+    const geminiModelSelect = document.getElementById('setting-gemini-model');
+    
+    if (aiProviderSelect) {
+        aiProviderSelect.value = appSettings.aiProvider || 'ollama';
+        toggleAIProviderSettings(appSettings.aiProvider || 'ollama');
+        
+        aiProviderSelect.addEventListener('change', (e) => {
+            toggleAIProviderSettings(e.target.value);
+        });
+    }
+    
+    if (ollamaModelSelect) {
+        ollamaModelSelect.value = appSettings.ollamaModel || 'qwen2.5:14b';
+    }
+    
+    if (geminiKeyInput) {
+        geminiKeyInput.value = appSettings.geminiApiKey || '';
+    }
+    
+    if (geminiModelSelect) {
+        geminiModelSelect.value = appSettings.geminiModel || 'gemini-1.5-pro';
+    }
     
     // Add backend check button listener
     const checkBtn = document.getElementById('btn-check-backend');
@@ -2041,6 +2073,88 @@ async function loadSettings() {
             }
         });
     }
+    
+    // Add Gemini test button listener
+    const testGeminiBtn = document.getElementById('btn-test-gemini');
+    if (testGeminiBtn) {
+        testGeminiBtn.addEventListener('click', testGeminiConnection);
+    }
+    
+    function toggleAIProviderSettings(provider) {
+        if (ollamaSettings && geminiSettings) {
+            if (provider === 'gemini') {
+                ollamaSettings.style.display = 'none';
+                geminiSettings.style.display = 'block';
+            } else {
+                ollamaSettings.style.display = 'block';
+                geminiSettings.style.display = 'none';
+            }
+        }
+    }
+}
+
+async function testGeminiConnection() {
+    const geminiKeyInput = document.getElementById('setting-gemini-key');
+    const geminiModelSelect = document.getElementById('setting-gemini-model');
+    const statusSpan = document.getElementById('gemini-status');
+    const btn = document.getElementById('btn-test-gemini');
+    
+    const apiKey = geminiKeyInput?.value;
+    const model = geminiModelSelect?.value || 'gemini-1.5-pro';
+    
+    if (!apiKey) {
+        if (statusSpan) {
+            statusSpan.textContent = '❌ Wprowadź klucz API!';
+            statusSpan.style.color = 'var(--accent)';
+        }
+        return;
+    }
+    
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ Testuję...';
+    }
+    if (statusSpan) {
+        statusSpan.textContent = '';
+    }
+    
+    try {
+        const appSettings = settings.getSettings();
+        const backendUrl = appSettings.backendUrl || 'http://localhost:3001';
+        
+        const response = await fetch(`${backendUrl}/test-gemini`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                geminiApiKey: apiKey,
+                geminiModel: model
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            if (statusSpan) {
+                statusSpan.textContent = `✅ Działa! (${data.duration}ms)`;
+                statusSpan.style.color = 'var(--success)';
+            }
+        } else {
+            if (statusSpan) {
+                statusSpan.textContent = '❌ ' + (data.error || 'Błąd');
+                statusSpan.style.color = 'var(--accent)';
+            }
+        }
+    } catch (error) {
+        if (statusSpan) {
+            statusSpan.textContent = '❌ Błąd połączenia z backendem';
+            statusSpan.style.color = 'var(--accent)';
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '🔌 Testuj połączenie';
+        }
+    }
 }
 
 async function saveSettings() {
@@ -2052,7 +2166,12 @@ async function saveSettings() {
         githubRepo: document.getElementById('setting-github-repo').value,
         githubToken: document.getElementById('setting-github-token').value,
         githubBranch: document.getElementById('setting-github-branch').value,
-        username: document.getElementById('setting-username').value
+        username: document.getElementById('setting-username').value,
+        // AI Provider settings
+        aiProvider: document.getElementById('setting-ai-provider')?.value || 'ollama',
+        ollamaModel: document.getElementById('setting-ollama-model')?.value || 'qwen2.5:14b',
+        geminiApiKey: document.getElementById('setting-gemini-key')?.value || '',
+        geminiModel: document.getElementById('setting-gemini-model')?.value || 'gemini-1.5-pro'
     };
     
     settings.setSettings(newSettings);
@@ -2060,7 +2179,8 @@ async function saveSettings() {
     // Update username in header
     document.getElementById('username').textContent = newSettings.username || 'Student';
     
-    alert('✅ Ustawienia zapisane!');
+    const provider = newSettings.aiProvider === 'gemini' ? 'Gemini Pro' : 'Ollama';
+    alert(`✅ Ustawienia zapisane!\n\n🤖 AI Provider: ${provider}`);
 }
 
 // ============================================

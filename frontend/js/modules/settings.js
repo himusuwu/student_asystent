@@ -10,6 +10,13 @@ const DEFAULT_SETTINGS = {
     transcriptionMode: 'backend', // TYLKO BACKEND - przeglądarka jest zbyt wolna
     backendUrl: 'http://localhost:3001',
     aiMode: 'local',
+    
+    // AI Provider Settings
+    aiProvider: 'ollama',           // 'ollama' | 'gemini'
+    geminiApiKey: 'AIzaSyDprHnqhSkgUwthkzn-EDlVtxwqVpynwdc',               // Klucz API Gemini
+    geminiModel: 'gemini-3-pro-preview',  // Model Gemini: gemini-1.5-pro, gemini-1.5-flash, gemini-2.0-flash-exp
+    ollamaModel: 'qwen2.5:14b',     // Model Ollama
+    
     githubRepo: '',
     githubToken: '',
     githubBranch: 'main',

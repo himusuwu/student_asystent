@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import fs from 'fs/promises'
 import FactChecker from './fact-checker.js'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -705,19 +706,19 @@ async function audioBufferToPCM(buffer) {
 // Endpoint do generowania tytułu wykładu z transkrypcji
 app.post('/generate-title', express.json(), async (req, res) => {
   try {
-    let { transcription } = req.body;
+    let { 
+      transcription,
+      aiProvider = 'ollama',
+      geminiApiKey = null,
+      geminiModel = 'gemini-1.5-pro',
+      ollamaModel = 'qwen2.5:14b'
+    } = req.body;
     
     if (!transcription || transcription.trim().length === 0) {
       return res.status(400).json({ error: 'Brak transkrypcji' });
     }
     
-    console.log(`[GenerateTitle] Otrzymano transkrypcję: ${transcription.length} znaków`);
-    
-
-    
-    // === OLLAMA LLM - Ten sam model co do generowania notatek ===
-    const ollamaUrl = 'http://localhost:11434';
-    const model = 'qwen2.5:14b'; // Lub phi3.5:3.8b jeśli qwen nie działa
+    console.log(`[GenerateTitle] Otrzymano transkrypcję: ${transcription.length} znaków, provider: ${aiProvider}`);
     
     // Prompt dla LLM - prosty i jasny
     const prompt = `Przeanalizuj poniższą transkrypcję wykładu i wygeneruj ZWIĘZŁY tytuł (maksymalnie 60 znaków).
@@ -734,41 +735,20 @@ ZASADY:
 
 TYTUŁ:`;
 
-    console.log(`[GenerateTitle] Wywołuję Ollama model: ${model}...`);
     const startTime = Date.now();
     
-    // Timeout 60s
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000);
+    let title;
     
     try {
-      const response = await fetch(`${ollamaUrl}/api/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          model,
-          prompt,
-          stream: false,
-          options: {
-            temperature: 0.1, // Deterministyczne
-            top_p: 0.9,
-            top_k: 40,
-            num_predict: 100 // Max 100 tokenów (~60 znaków)
-          }
-        })
+      const response = await callAI(prompt, {
+        provider: aiProvider,
+        geminiApiKey,
+        geminiModel,
+        ollamaModel,
+        maxTokens: 100
       });
       
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        throw new Error(`Ollama error: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      const duration = Date.now() - startTime;
-      
-      let title = data.response.trim();
+      title = response.trim();
       
       // Oczyszczanie odpowiedzi LLM
       title = title
@@ -788,72 +768,24 @@ TYTUŁ:`;
         title = title.charAt(0).toUpperCase() + title.slice(1);
       }
       
-      console.log(`[GenerateTitle] Wygenerowano w ${duration}ms: "${title}"`);
+      const duration = Date.now() - startTime;
+      console.log(`[GenerateTitle] Wygenerowano w ${duration}ms (${aiProvider}): "${title}"`);
       
       res.json({
         success: true,
         title: title,
-        model: model,
+        provider: aiProvider,
+        model: aiProvider === 'gemini' ? geminiModel : ollamaModel,
         duration: duration
       });
       
-    } catch (ollamaError) {
-      clearTimeout(timeoutId);
-      
-      // Sprawdź czy to timeout
-      if (ollamaError.name === 'AbortError') {
-        console.error('[GenerateTitle] Timeout - Ollama nie odpowiedziała w 60s');
-        return res.status(504).json({ error: 'Timeout - model nie odpowiedział w czasie' });
-      }
-      
-      // Próbuj fallback na mniejszy model
-      console.log('[GenerateTitle] Qwen nie działa, próbuję phi3.5:3.8b...');
-      
-      try {
-        const fallbackResponse = await fetch(`${ollamaUrl}/api/generate`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'phi3.5:3.8b',
-            prompt,
-            stream: false,
-            options: { temperature: 0.1, num_predict: 100 }
-          })
-        });
-        
-        if (fallbackResponse.ok) {
-          const data = await fallbackResponse.json();
-          let title = data.response.trim()
-            .replace(/^(Tytuł|TYTUŁ|Title):\s*/i, '')
-            .replace(/^["']|["']$/g, '')
-            .substring(0, 60);
-          
-          console.log(`[GenerateTitle] Fallback sukces: "${title}"`);
-          return res.json({ success: true, title, model: 'phi3.5:3.8b (fallback)' });
-        }
-      } catch {}
-      
-      throw ollamaError;
+    } catch (aiError) {
+      console.error('[GenerateTitle] Błąd AI:', aiError.message);
+      throw aiError;
     }
     
   } catch (error) {
     console.error('[GenerateTitle] Błąd:', error);
-    
-    // Sprawdź czy Ollama działa
-    try {
-      const healthCheck = await fetch('http://localhost:11434/api/tags');
-      if (!healthCheck.ok) {
-        return res.status(503).json({ 
-          error: 'Ollama nie jest dostępna',
-          details: 'Uruchom: ollama serve'
-        });
-      }
-    } catch {
-      return res.status(503).json({ 
-        error: 'Ollama nie jest dostępna',
-        details: 'Zainstaluj i uruchom: ollama serve'
-      });
-    }
     
     res.status(500).json({ 
       error: error.message || 'Błąd generowania tytułu'
@@ -1076,7 +1008,7 @@ function chunkText(text, maxChunkLength = 25000, overlapLength = 2000) {
 }
 
 // ============================================
-// OLLAMA AI - GENEROWANIE NOTATEK I FISZEK
+// AI PROVIDERS - GEMINI & OLLAMA
 // ============================================
 
 // Helper: Czyszczenie i parsowanie JSON z odpowiedzi AI
@@ -1125,6 +1057,75 @@ function cleanAndParseJSON(response, context = 'unknown') {
   }
 }
 
+// ============================================
+// GEMINI API INTEGRATION
+// ============================================
+
+// Helper: Wywołanie Gemini API
+async function callGeminiAPI(prompt, apiKey, model = 'gemini-1.5-pro', maxTokens = 8192) {
+  console.log(`[Gemini] Wywołuję model: ${model}... (prompt: ${prompt.length} znaków)`);
+  
+  if (!apiKey) {
+    throw new Error('Brak klucza API Gemini. Skonfiguruj go w ustawieniach.');
+  }
+  
+  const genAI = new GoogleGenerativeAI(apiKey);
+  
+  // Systemowy prompt kontrolujący język
+  const systemPrompt = "Jesteś polskim asystentem AI. Odpowiadaj WYŁĄCZNIE w języku polskim. NIE używaj żadnych słów w innych językach, szczególnie chińskim lub angielskim. Jeśli nie znasz polskiego odpowiednika jakiegoś terminu, użyj opisowego wyjaśnienia w języku polskim.";
+  
+  const geminiModel = genAI.getGenerativeModel({ 
+    model: model,
+    systemInstruction: systemPrompt,
+    generationConfig: {
+      maxOutputTokens: maxTokens,
+      temperature: 0.3,
+      topP: 0.9,
+      topK: 40,
+    }
+  });
+  
+  const startTime = Date.now();
+  
+  try {
+    const result = await geminiModel.generateContent(prompt);
+    const response = result.response.text();
+    const duration = Date.now() - startTime;
+    
+    console.log(`[Gemini] ${model} odpowiedział: ${response.length} znaków w ${duration}ms`);
+    return response.trim();
+  } catch (error) {
+    console.error(`[Gemini] Błąd:`, error.message);
+    throw new Error(`Błąd Gemini API: ${error.message}`);
+  }
+}
+
+// Uniwersalna funkcja AI - wybiera provider na podstawie ustawień
+async function callAI(prompt, options = {}) {
+  const { 
+    provider = 'ollama', 
+    geminiApiKey = null,
+    geminiModel = 'gemini-1.5-pro',
+    ollamaModel = 'qwen2.5:14b',
+    maxTokens = 4096 
+  } = options;
+  
+  console.log(`[AI] Provider: ${provider}, Model: ${provider === 'gemini' ? geminiModel : ollamaModel}`);
+  
+  if (provider === 'gemini') {
+    if (!geminiApiKey) {
+      throw new Error('Wybrano Gemini, ale nie podano klucza API. Skonfiguruj go w ustawieniach.');
+    }
+    return await callGeminiAPI(prompt, geminiApiKey, geminiModel, maxTokens);
+  } else {
+    return await callOllamaAPI(prompt, ollamaModel, maxTokens);
+  }
+}
+
+// ============================================
+// OLLAMA API
+// ============================================
+
 // Helper: Wywołanie Ollama API
 async function callOllamaAPI(prompt, model = 'qwen2.5:14b', maxTokens = 2048) {
   const ollamaUrl = 'http://localhost:11434';
@@ -1132,8 +1133,8 @@ async function callOllamaAPI(prompt, model = 'qwen2.5:14b', maxTokens = 2048) {
   console.log(`[CallOllamaAPI] Wywołuję model: ${model}... (prompt: ${prompt.length} znaków)`);
   
   const controller = new AbortController();
-  // Zwiększamy timeout do 4 minut dla dużych tekstów
-  const timeoutId = setTimeout(() => controller.abort(), 240000); // 240s timeout
+  // Zwiększamy timeout do 10 minut dla dużych tekstów i długich notatek
+  const timeoutId = setTimeout(() => controller.abort(), 600000); // 600s timeout (10 min)
   
   const startTime = Date.now();
   
@@ -1190,7 +1191,7 @@ async function callOllamaAPI(prompt, model = 'qwen2.5:14b', maxTokens = 2048) {
     console.error(`[CallOllamaAPI] Błąd wywołania ${model}:`, error.message);
     
     if (error.name === 'AbortError') {
-      throw new Error('Timeout - model nie odpowiedział w 240s');
+      throw new Error('Timeout - model nie odpowiedział w 600s (10 minut)');
     }
     
     throw error;
@@ -1200,13 +1201,19 @@ async function callOllamaAPI(prompt, model = 'qwen2.5:14b', maxTokens = 2048) {
 // Endpoint: Generowanie notatek z transkrypcji
 app.post('/generate-notes', express.json(), async (req, res) => {
   try {
-    const { transcription } = req.body;
+    const { 
+      transcription,
+      aiProvider = 'ollama',
+      geminiApiKey = null,
+      geminiModel = 'gemini-1.5-pro',
+      ollamaModel = 'qwen2.5:14b'
+    } = req.body;
     
     if (!transcription || transcription.trim().length === 0) {
       return res.status(400).json({ error: 'Brak transkrypcji' });
     }
     
-    console.log(`[GenerateNotes] Otrzymano: ${transcription.length} znaków`);
+    console.log(`[GenerateNotes] Otrzymano: ${transcription.length} znaków, provider: ${aiProvider}`);
     
     const prompt = `Jestem studentem i potrzebuję profesjonalnych notatek z tego wykładu.
 
@@ -1226,7 +1233,13 @@ Wygeneruj KOMPLETNE notatki w formacie JSON:
 WAŻNE: Odpowiedź TYLKO w JSON, bez dodatkowego tekstu!`;
 
     const startTime = Date.now();
-    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 2048);
+    const response = await callAI(prompt, {
+      provider: aiProvider,
+      geminiApiKey,
+      geminiModel,
+      ollamaModel,
+      maxTokens: 4096
+    });
     const duration = Date.now() - startTime;
     
     // Parsuj JSON
@@ -1237,12 +1250,13 @@ WAŻNE: Odpowiedź TYLKO w JSON, bez dodatkowego tekstu!`;
     
     const result = JSON.parse(jsonMatch[0]);
     
-    console.log(`[GenerateNotes] Wygenerowano w ${duration}ms`);
+    console.log(`[GenerateNotes] Wygenerowano w ${duration}ms (${aiProvider})`);
     
     res.json({
       success: true,
       ...result,
-      duration
+      duration,
+      provider: aiProvider
     });
     
   } catch (error) {
@@ -1254,13 +1268,19 @@ WAŻNE: Odpowiedź TYLKO w JSON, bez dodatkowego tekstu!`;
 // Endpoint: Generowanie fiszek z transkrypcji
 app.post('/generate-flashcards', express.json(), async (req, res) => {
   try {
-    const { transcription } = req.body;
+    const { 
+      transcription,
+      aiProvider = 'ollama',
+      geminiApiKey = null,
+      geminiModel = 'gemini-1.5-pro',
+      ollamaModel = 'qwen2.5:14b'
+    } = req.body;
     
     if (!transcription || transcription.trim().length === 0) {
       return res.status(400).json({ error: 'Brak transkrypcji' });
     }
     
-    console.log(`[GenerateFlashcards] Otrzymano: ${transcription.length} znaków`);
+    console.log(`[GenerateFlashcards] Otrzymano: ${transcription.length} znaków, provider: ${aiProvider}`);
     
     const startTime = Date.now();
     let allFlashcards = [];
@@ -1291,7 +1311,13 @@ ZASADY:
 - Nie pomijaj żadnych ważnych informacji
 - Fiszki powinny pokrywać cały zakres tematu dogłębnie`;
 
-    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 8192);
+    const response = await callAI(prompt, {
+      provider: aiProvider,
+      geminiApiKey,
+      geminiModel,
+      ollamaModel,
+      maxTokens: 8192
+    });
     
     // Parsuj JSON array
     const jsonMatch = response.match(/\[[\s\S]*\]/);
@@ -1314,7 +1340,7 @@ ZASADY:
       }
     }
     
-    console.log(`[GenerateFlashcards] Wygenerowano ${uniqueFlashcards.length} unikalnych fiszek w ${duration}ms`);
+    console.log(`[GenerateFlashcards] Wygenerowano ${uniqueFlashcards.length} unikalnych fiszek w ${duration}ms (${aiProvider})`);
     
     res.json({
       success: true,
@@ -1332,13 +1358,19 @@ ZASADY:
 // Endpoint: Generowanie szczegółowej notatki
 app.post('/generate-detailed-note', express.json(), async (req, res) => {
   try {
-    const { transcription } = req.body;
+    const { 
+      transcription,
+      aiProvider = 'ollama',
+      geminiApiKey = null,
+      geminiModel = 'gemini-1.5-pro',
+      ollamaModel = 'qwen2.5:14b'
+    } = req.body;
     
     if (!transcription || transcription.trim().length === 0) {
       return res.status(400).json({ error: 'Brak transkrypcji' });
     }
     
-    console.log(`[GenerateDetailedNote] Otrzymano: ${transcription.length} znaków`);
+    console.log(`[GenerateDetailedNote] Otrzymano: ${transcription.length} znaków, provider: ${aiProvider}`);
     
     const prompt = `JĘZYK ODPOWIEDZI: TYLKO JĘZYK POLSKI. Nie używaj ŻADNYCH słów w innych językach (chińskim, angielskim itp.).
 
@@ -1384,15 +1416,22 @@ ZASADY:
 - PAMIĘTAJ: Odpowiadaj TYLKO po polsku, bez żadnych słów w innych językach!`;
 
     const startTime = Date.now();
-    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 16384);
+    const response = await callAI(prompt, {
+      provider: aiProvider,
+      geminiApiKey,
+      geminiModel,
+      ollamaModel,
+      maxTokens: 16384
+    });
     const duration = Date.now() - startTime;
     
-    console.log(`[GenerateDetailedNote] Wygenerowano notatkę w ${duration}ms`);
+    console.log(`[GenerateDetailedNote] Wygenerowano notatkę w ${duration}ms (${aiProvider})`);
     
     res.json({
       success: true,
       note: response,
-      duration
+      duration,
+      provider: aiProvider
     });
     
   } catch (error) {
@@ -1505,13 +1544,19 @@ ZASADY:
 // Endpoint: Generowanie krótkiej notatki
 app.post('/generate-short-note', express.json(), async (req, res) => {
   try {
-    const { transcription } = req.body;
+    const { 
+      transcription,
+      aiProvider = 'ollama',
+      geminiApiKey = null,
+      geminiModel = 'gemini-1.5-pro',
+      ollamaModel = 'qwen2.5:14b'
+    } = req.body;
     
     if (!transcription || transcription.trim().length === 0) {
       return res.status(400).json({ error: 'Brak transkrypcji' });
     }
     
-    console.log(`[GenerateShortNote] Otrzymano: ${transcription.length} znaków`);
+    console.log(`[GenerateShortNote] Otrzymano: ${transcription.length} znaków, provider: ${aiProvider}`);
     
     const prompt = `JĘZYK ODPOWIEDZI: TYLKO JĘZYK POLSKI. Nie używaj ŻADNYCH słów w innych językach (chińskim, angielskim itp.).
 
@@ -1545,15 +1590,22 @@ ZASADY:
 - PAMIĘTAJ: Odpowiadaj TYLKO po polsku, bez żadnych słów w innych językach!`;
 
     const startTime = Date.now();
-    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 4096);
+    const response = await callAI(prompt, {
+      provider: aiProvider,
+      geminiApiKey,
+      geminiModel,
+      ollamaModel,
+      maxTokens: 4096
+    });
     const duration = Date.now() - startTime;
     
-    console.log(`[GenerateShortNote] Wygenerowano krótką notatkę w ${duration}ms`);
+    console.log(`[GenerateShortNote] Wygenerowano krótką notatkę w ${duration}ms (${aiProvider})`);
     
     res.json({
       success: true,
       note: response,
-      duration
+      duration,
+      provider: aiProvider
     });
     
   } catch (error) {
@@ -1565,13 +1617,19 @@ ZASADY:
 // Endpoint: Generowanie kluczowych punktów
 app.post('/generate-key-points', express.json(), async (req, res) => {
   try {
-    const { transcription } = req.body;
+    const { 
+      transcription,
+      aiProvider = 'ollama',
+      geminiApiKey = null,
+      geminiModel = 'gemini-1.5-pro',
+      ollamaModel = 'qwen2.5:14b'
+    } = req.body;
     
     if (!transcription || transcription.trim().length === 0) {
       return res.status(400).json({ error: 'Brak transkrypcji' });
     }
     
-    console.log(`[GenerateKeyPoints] Otrzymano: ${transcription.length} znaków`);
+    console.log(`[GenerateKeyPoints] Otrzymano: ${transcription.length} znaków, provider: ${aiProvider}`);
     
     const prompt = `Wyodrębnij KLUCZOWE PUNKTY z tego materiału w formacie Markdown.
 
@@ -1606,15 +1664,22 @@ ZASADY:
 - Pokryj cały zakres tematu systematycznie`;
 
     const startTime = Date.now();
-    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 2048);
+    const response = await callAI(prompt, {
+      provider: aiProvider,
+      geminiApiKey,
+      geminiModel,
+      ollamaModel,
+      maxTokens: 4096
+    });
     const duration = Date.now() - startTime;
     
-    console.log(`[GenerateKeyPoints] Wygenerowano kluczowe punkty w ${duration}ms`);
+    console.log(`[GenerateKeyPoints] Wygenerowano kluczowe punkty w ${duration}ms (${aiProvider})`);
     
     res.json({
       success: true,
       keyPoints: response,
-      duration
+      duration,
+      provider: aiProvider
     });
     
   } catch (error) {
@@ -1626,13 +1691,19 @@ ZASADY:
 // Endpoint: Generowanie quizu
 app.post('/generate-quiz', express.json(), async (req, res) => {
   try {
-    const { transcription } = req.body;
+    const { 
+      transcription,
+      aiProvider = 'ollama',
+      geminiApiKey = null,
+      geminiModel = 'gemini-1.5-pro',
+      ollamaModel = 'qwen2.5:14b'
+    } = req.body;
     
     if (!transcription || transcription.trim().length === 0) {
       return res.status(400).json({ error: 'Brak transkrypcji' });
     }
     
-    console.log(`[GenerateQuiz] Otrzymano: ${transcription.length} znaków`);
+    console.log(`[GenerateQuiz] Otrzymano: ${transcription.length} znaków, provider: ${aiProvider}`);
     
     const prompt = `Stwórz quiz wielokrotnego wyboru z tego materiału:
 
@@ -1667,7 +1738,13 @@ ZASADY:
 Rozpocznij odpowiedź od [ i zakończ na ]`;
 
     const startTime = Date.now();
-    const response = await callOllamaAPI(prompt, 'qwen2.5:14b', 4096);
+    const response = await callAI(prompt, {
+      provider: aiProvider,
+      geminiApiKey,
+      geminiModel,
+      ollamaModel,
+      maxTokens: 4096
+    });
     const duration = Date.now() - startTime;
     
     // Czyszczenie i parsowanie JSON
@@ -1923,6 +2000,51 @@ WAŻNE:
   }
 });
 
+// ============================================
+// ENDPOINT TESTOWY GEMINI
+// ============================================
+
+// Endpoint: Testowanie połączenia z Gemini API
+app.post('/test-gemini', express.json(), async (req, res) => {
+  console.log('[TestGemini] Testowanie połączenia z Gemini API');
+  
+  try {
+    const { geminiApiKey, geminiModel = 'gemini-1.5-pro' } = req.body;
+    
+    if (!geminiApiKey) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Brak klucza API' 
+      });
+    }
+    
+    const startTime = Date.now();
+    const response = await callGeminiAPI(
+      'Odpowiedz jednym słowem: "OK"',
+      geminiApiKey,
+      geminiModel,
+      10
+    );
+    const duration = Date.now() - startTime;
+    
+    console.log('[TestGemini] Odpowiedź:', response);
+    
+    res.json({ 
+      success: true, 
+      model: geminiModel,
+      response: response.trim(),
+      duration
+    });
+    
+  } catch (error) {
+    console.error('[TestGemini] Błąd:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`\n✅ Server uruchomiony na http://localhost:${PORT}`)
@@ -1938,21 +2060,23 @@ app.listen(PORT, () => {
   console.log(`\n   ⚡ Whisper.cpp (SZYBSZY):`)
   console.log(`   POST /transcribe-cpp - ultraszybka transkrypcja`)
   console.log(`   POST /transcribe-stream-cpp - ultraszybka z progress`)
-  console.log(`\n   🤖 AI (Ollama):`)
+  console.log(`\n   🤖 AI (Ollama / Gemini):`)
   console.log(`   POST /generate-title - generuj tytuł z transkrypcji`)
   console.log(`   POST /generate-notes - generuj notatki z transkrypcji`)
   console.log(`   POST /generate-detailed-note - generuj szczegółową notatkę`)
-  console.log(`   POST /generate-detailed-note-with-fact-check - generuj szczegółową notatkę z weryfikacją faktów`)
+  console.log(`   POST /generate-detailed-note-with-fact-check - notatka z weryfikacją`)
   console.log(`   POST /generate-short-note - generuj krótką notatkę`)
   console.log(`   POST /generate-key-points - generuj kluczowe punkty`)
   console.log(`   POST /generate-flashcards - generuj fiszki z transkrypcji`)
   console.log(`   POST /generate-quiz - generuj quiz z transkrypcji`)
+  console.log(`   POST /test-gemini - testuj połączenie z Gemini API`)
   console.log(`\n   🔍 Fact-checking:`)
   console.log(`   POST /fact-check - weryfikuj fakty w transkrypcji`)
-  console.log(`   POST /generate-notes-with-fact-check - generuj notatki z weryfikacją faktów`)
+  console.log(`   POST /generate-notes-with-fact-check - notatki z weryfikacją faktów`)
   console.log(`\n   📄 Dokumenty:`)
   console.log(`   POST /api/extract-ppt - wyekstrahuj tekst z PowerPoint (PPTX)`)
-  console.log(`\n💡 Ollama musi działać: ollama serve`)
+  console.log(`\n💡 AI Provider: Ollama (lokalny) lub Gemini Pro (API)`)
+  console.log(`💡 Ollama musi działać: ollama serve`)
   console.log(`💡 Aby zatrzymać: Ctrl+C\n`)
 })
 

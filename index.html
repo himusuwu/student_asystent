@@ -564,6 +564,70 @@
             <h2 style="margin-bottom: 30px; font-size: 28px;">⚙️ Ustawienia</h2>
             
             <div style="max-width: 800px; margin: 0 auto;">
+                <!-- AI Provider Settings -->
+                <div class="card" style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 20px;">🤖 Ustawienia AI</h3>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Provider AI</label>
+                        <select id="setting-ai-provider" class="search-box" style="width: 100%;">
+                            <option value="ollama">🖥️ Ollama (lokalny)</option>
+                            <option value="gemini">☁️ Google Gemini Pro (API)</option>
+                        </select>
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                            Wybierz, czy używać lokalnego modelu czy chmurowego API Google
+                        </p>
+                    </div>
+                    
+                    <!-- Ustawienia Ollama -->
+                    <div id="ollama-settings" style="margin-top: 15px; padding: 15px; background: var(--bg-hover); border-radius: 8px; border-left: 3px solid var(--primary);">
+                        <h4 style="margin-bottom: 12px; font-size: 14px; color: var(--text-secondary);">🖥️ Ustawienia Ollama</h4>
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Model Ollama</label>
+                            <select id="setting-ollama-model" class="search-box" style="width: 100%;">
+                                <option value="qwen2.5:14b">Qwen 2.5 14B (zalecany)</option>
+                                <option value="qwen2.5:7b">Qwen 2.5 7B (szybszy)</option>
+                                <option value="llama3.1:8b">Llama 3.1 8B</option>
+                                <option value="mistral:7b">Mistral 7B</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Ustawienia Gemini -->
+                    <div id="gemini-settings" style="display: none; margin-top: 15px; padding: 15px; background: var(--bg-hover); border-radius: 8px; border-left: 3px solid #4285f4;">
+                        <h4 style="margin-bottom: 12px; font-size: 14px; color: var(--text-secondary);">☁️ Ustawienia Gemini</h4>
+                        
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Klucz API Gemini</label>
+                            <input type="password" id="setting-gemini-key" class="search-box" 
+                                   placeholder="AIzaSy..." style="width: 100%;">
+                            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                                Pobierz klucz z <a href="https://aistudio.google.com/apikey" target="_blank" style="color: var(--primary);">Google AI Studio →</a>
+                            </p>
+                        </div>
+                        
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Model Gemini</label>
+                            <select id="setting-gemini-model" class="search-box" style="width: 100%;">
+                                <option value="gemini-1.5-pro">Gemini 1.5 Pro (najlepszy)</option>
+                                <option value="gemini-1.5-flash">Gemini 1.5 Flash (szybszy)</option>
+                                <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (eksperymentalny)</option>
+                            </select>
+                            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                                Pro = lepsza jakość notatek, Flash = szybszy i tańszy
+                            </p>
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button type="button" id="btn-test-gemini" class="btn" 
+                                    style="background: #4285f4; color: white;">
+                                🔌 Testuj połączenie
+                            </button>
+                            <span id="gemini-status" style="font-size: 14px;"></span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Whisper Settings -->
                 <div class="card" style="margin-bottom: 20px;">
                     <h3 style="margin-bottom: 20px;">🎤 Transkrypcja (Whisper)</h3>
