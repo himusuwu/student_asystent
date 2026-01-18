@@ -10,6 +10,73 @@ import * as documentProcessor from './modules/document-processor.js';
 import { generateLectureTitle } from './modules/ai.js';
 
 // ============================================
+// LATEX RENDERING HELPERS
+// ============================================
+
+/**
+ * Render LaTeX formulas in an element using KaTeX
+ * Supports both inline ($...$) and display ($$...$$) math
+ * @param {HTMLElement|string} element - DOM element or selector
+ */
+function renderLatex(element) {
+    const el = typeof element === 'string' ? document.querySelector(element) : element;
+    if (!el) return;
+    
+    // Wait for KaTeX to load
+    if (typeof renderMathInElement === 'undefined') {
+        // KaTeX not loaded yet, try again after a short delay
+        setTimeout(() => renderLatex(element), 100);
+        return;
+    }
+    
+    try {
+        renderMathInElement(el, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '$', right: '$', display: false },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false,
+            errorColor: '#ef4444',
+            trust: true,
+            strict: false
+        });
+    } catch (e) {
+        console.warn('KaTeX rendering error:', e);
+    }
+}
+
+/**
+ * Render Markdown and then LaTeX in content
+ * @param {string} text - Markdown text potentially containing LaTeX
+ * @returns {string} Rendered HTML
+ */
+function renderMarkdownWithLatex(text) {
+    if (!text) return '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">Brak treści</p>';
+    try {
+        const rawHtml = marked.parse(text);
+        return DOMPurify.sanitize(rawHtml);
+    } catch (e) {
+        console.error('Markdown parse error:', e);
+        return `<div style="white-space: pre-wrap;">${text}</div>`;
+    }
+}
+
+/**
+ * Set innerHTML and then render LaTeX
+ * @param {string} elementId - Element ID
+ * @param {string} html - HTML content
+ */
+function setContentWithLatex(elementId, html) {
+    const el = document.getElementById(elementId);
+    if (el) {
+        el.innerHTML = html;
+        renderLatex(el);
+    }
+}
+
+// ============================================
 // GLOBAL STATE
 // ============================================
 
@@ -1731,6 +1798,9 @@ async function loadFlashcards() {
     
     container.innerHTML = html;
     
+    // Render LaTeX in flashcards
+    renderLatex(container);
+    
     // Initialize sections based on saved state or default to expanded
     setTimeout(() => {
         const allCollapsible = container.querySelectorAll('.collapsible-content');
@@ -2368,37 +2438,25 @@ async function openLectureView(lectureId) {
         document.getElementById('lecture-view-meta').textContent = 
             `${subject?.name || 'Brak przedmiotu'} • ${new Date(lecture.createdAt).toLocaleString('pl-PL')}`;
         
-        // Helper function to render markdown
-        const renderMarkdown = (text) => {
-            if (!text) return '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">Brak treści</p>';
-            try {
-                const rawHtml = marked.parse(text);
-                return DOMPurify.sanitize(rawHtml);
-            } catch (e) {
-                console.error('Markdown parse error:', e);
-                return `<div style="white-space: pre-wrap;">${text}</div>`;
-            }
-        };
-        
         // Load basic notes content
-        document.getElementById('lecture-notes-content').innerHTML = lecture.notes 
-            ? renderMarkdown(lecture.notes)
-            : '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">Brak notatek. Użyj przycisku "Generuj z AI" aby stworzyć notatki automatycznie.</p>';
+        setContentWithLatex('lecture-notes-content', lecture.notes 
+            ? renderMarkdownWithLatex(lecture.notes)
+            : '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">Brak notatek. Użyj przycisku "Generuj z AI" aby stworzyć notatki automatycznie.</p>');
         
         // Load detailed note
-        document.getElementById('lecture-detailed-content').innerHTML = lecture.detailedNote 
-            ? renderMarkdown(lecture.detailedNote)
-            : '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">Brak szczegółowej notatki. Użyj przycisku "Generuj z AI".</p>';
+        setContentWithLatex('lecture-detailed-content', lecture.detailedNote 
+            ? renderMarkdownWithLatex(lecture.detailedNote)
+            : '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">Brak szczegółowej notatki. Użyj przycisku "Generuj z AI".</p>');
         
         // Load short note
-        document.getElementById('lecture-short-content').innerHTML = lecture.shortNote 
-            ? renderMarkdown(lecture.shortNote)
-            : '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">Brak krótkiej notatki. Użyj przycisku "Generuj z AI".</p>';
+        setContentWithLatex('lecture-short-content', lecture.shortNote 
+            ? renderMarkdownWithLatex(lecture.shortNote)
+            : '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">Brak krótkiej notatki. Użyj przycisku "Generuj z AI".</p>');
         
         // Load key points
-        document.getElementById('lecture-keypoints-content').innerHTML = lecture.keyPoints 
-            ? renderMarkdown(lecture.keyPoints)
-            : '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">Brak kluczowych punktów. Użyj przycisku "Generuj z AI".</p>';
+        setContentWithLatex('lecture-keypoints-content', lecture.keyPoints 
+            ? renderMarkdownWithLatex(lecture.keyPoints)
+            : '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">Brak kluczowych punktów. Użyj przycisku "Generuj z AI".</p>');
         
         // Load transcription
         document.getElementById('lecture-transcription-content').innerHTML = lecture.transcription
@@ -2407,11 +2465,12 @@ async function openLectureView(lectureId) {
         
         // Load flashcards
         const flashcards = await db.getFlashcardsByLecture(lectureId);
+        const flashcardsContent = document.getElementById('lecture-flashcards-content');
         if (flashcards.length > 0) {
-            document.getElementById('lecture-flashcards-content').innerHTML = `
+            flashcardsContent.innerHTML = `
                 <div class="grid">
                     ${flashcards.map(card => `
-                        <div class="card">
+                        <div class="card flashcard-content">
                             <div style="margin-bottom: 10px; font-weight: 600;">❓ ${card.question}</div>
                             <div style="color: var(--text-secondary);">💡 ${card.answer}</div>
                             ${card.category ? `<div style="margin-top: 10px; font-size: 12px; color: var(--primary);">📁 ${card.category}</div>` : ''}
@@ -2419,8 +2478,10 @@ async function openLectureView(lectureId) {
                     `).join('')}
                 </div>
             `;
+            // Render LaTeX in flashcards
+            renderLatex(flashcardsContent);
         } else {
-            document.getElementById('lecture-flashcards-content').innerHTML = 
+            flashcardsContent.innerHTML = 
                 '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">Brak fiszek. Użyj przycisku "Generuj z AI" aby stworzyć fiszki automatycznie.</p>';
         }
         
@@ -2495,17 +2556,8 @@ function setupLectureViewListeners() {
                 aiNotes: notes
             });
             
-            // Update UI
-            const renderMarkdown = (text) => {
-                try {
-                    const rawHtml = marked.parse(text);
-                    return DOMPurify.sanitize(rawHtml);
-                } catch (e) {
-                    return `<div style="white-space: pre-wrap;">${text}</div>`;
-                }
-            };
-            
-            document.getElementById('lecture-notes-content').innerHTML = renderMarkdown(notes.formatted);
+            // Update UI with LaTeX support
+            setContentWithLatex('lecture-notes-content', renderMarkdownWithLatex(notes.formatted));
             
             btn.textContent = '✨ Generuj z AI';
             btn.disabled = false;
@@ -2552,17 +2604,8 @@ function setupLectureViewListeners() {
                 factCheck: result.factCheck
             });
             
-            // Update UI
-            const renderMarkdown = (text) => {
-                try {
-                    const rawHtml = marked.parse(text);
-                    return DOMPurify.sanitize(rawHtml);
-                } catch (e) {
-                    return `<div style="white-space: pre-wrap;">${text}</div>`;
-                }
-            };
-            
-            document.getElementById('lecture-notes-content').innerHTML = renderMarkdown(result.formatted);
+            // Update UI with LaTeX support
+            setContentWithLatex('lecture-notes-content', renderMarkdownWithLatex(result.formatted));
             
             btn.textContent = '🔍✨ Z weryfikacją faktów';
             btn.disabled = false;
@@ -2599,16 +2642,8 @@ function setupLectureViewListeners() {
             
             await db.updateLecture(window.currentLectureId, { detailedNote });
             
-            const renderMarkdown = (text) => {
-                try {
-                    const rawHtml = marked.parse(text);
-                    return DOMPurify.sanitize(rawHtml);
-                } catch (e) {
-                    return `<div style="white-space: pre-wrap;">${text}</div>`;
-                }
-            };
-            
-            document.getElementById('lecture-detailed-content').innerHTML = renderMarkdown(detailedNote);
+            // Update UI with LaTeX support
+            setContentWithLatex('lecture-detailed-content', renderMarkdownWithLatex(detailedNote));
             
             btn.textContent = '✨ Generuj z AI';
             btn.disabled = false;
@@ -2643,16 +2678,8 @@ function setupLectureViewListeners() {
             
             await db.updateLecture(window.currentLectureId, { shortNote });
             
-            const renderMarkdown = (text) => {
-                try {
-                    const rawHtml = marked.parse(text);
-                    return DOMPurify.sanitize(rawHtml);
-                } catch (e) {
-                    return `<div style="white-space: pre-wrap;">${text}</div>`;
-                }
-            };
-            
-            document.getElementById('lecture-short-content').innerHTML = renderMarkdown(shortNote);
+            // Update UI with LaTeX support
+            setContentWithLatex('lecture-short-content', renderMarkdownWithLatex(shortNote));
             
             btn.textContent = '✨ Generuj z AI';
             btn.disabled = false;
@@ -2687,16 +2714,8 @@ function setupLectureViewListeners() {
             
             await db.updateLecture(window.currentLectureId, { keyPoints });
             
-            const renderMarkdown = (text) => {
-                try {
-                    const rawHtml = marked.parse(text);
-                    return DOMPurify.sanitize(rawHtml);
-                } catch (e) {
-                    return `<div style="white-space: pre-wrap;">${text}</div>`;
-                }
-            };
-            
-            document.getElementById('lecture-keypoints-content').innerHTML = renderMarkdown(keyPoints);
+            // Update UI with LaTeX support
+            setContentWithLatex('lecture-keypoints-content', renderMarkdownWithLatex(keyPoints));
             
             btn.textContent = '✨ Generuj z AI';
             btn.disabled = false;
@@ -2740,10 +2759,11 @@ function setupLectureViewListeners() {
             
             // Reload flashcards
             const allFlashcards = await db.getFlashcardsByLecture(window.currentLectureId);
-            document.getElementById('lecture-flashcards-content').innerHTML = `
+            const flashcardsContainer = document.getElementById('lecture-flashcards-content');
+            flashcardsContainer.innerHTML = `
                 <div class="grid">
                     ${allFlashcards.map(card => `
-                        <div class="card">
+                        <div class="card flashcard-content">
                             <div style="margin-bottom: 10px; font-weight: 600;">❓ ${card.question}</div>
                             <div style="color: var(--text-secondary);">💡 ${card.answer}</div>
                             ${card.category ? `<div style="margin-top: 10px; font-size: 12px; color: var(--primary);">📁 ${card.category}</div>` : ''}
@@ -2751,6 +2771,8 @@ function setupLectureViewListeners() {
                     `).join('')}
                 </div>
             `;
+            // Render LaTeX in flashcards
+            renderLatex(flashcardsContainer);
             
             btn.textContent = '✨ Generuj z AI';
             btn.disabled = false;
@@ -2868,6 +2890,9 @@ function renderQuiz(questions) {
             </div>
         `;
     }).join('');
+    
+    // Render LaTeX in quiz questions and options
+    renderLatex(container);
     
     // Add event listeners for options
     container.querySelectorAll('.quiz-option').forEach(btn => {
@@ -3628,6 +3653,9 @@ function startFlashcardMode() {
             </button>
         </div>
     `;
+    
+    // Render LaTeX in study flashcard
+    renderLatex(sessionContainer);
 }
 
 // Quiz mode implementation
@@ -3679,6 +3707,9 @@ function startQuizMode() {
             </button>
         </div>
     `;
+    
+    // Render LaTeX in quiz mode
+    renderLatex(sessionContainer);
 }
 
 // Memory mode implementation
@@ -3719,6 +3750,9 @@ function startMemoryMode() {
             </button>
         </div>
     `;
+    
+    // Render LaTeX in memory mode
+    renderLatex(sessionContainer);
     
     // Focus on input
     setTimeout(() => {
