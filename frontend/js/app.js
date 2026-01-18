@@ -4124,7 +4124,7 @@ window.openEditScheduleModal = async (id) => {
     
     try {
         // Pobierz dane zajęć
-        const events = await db.getScheduleEvents();
+        const events = await db.listScheduleEvents();
         const event = events.find(e => e.id === id);
         
         if (!event) {
@@ -4134,7 +4134,7 @@ window.openEditScheduleModal = async (id) => {
         
         // Wypełnij selektor przedmiotów
         const selector = document.getElementById('edit-schedule-subject');
-        const subjects = await db.getSubjects();
+        const subjects = await db.listSubjects();
         
         selector.innerHTML = '<option value="">Wybierz przedmiot...</option>' + 
             subjects.map(s => `<option value="${s.id}" ${s.id === event.subjectId ? 'selected' : ''}>${s.name}</option>`).join('');
