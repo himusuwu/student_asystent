@@ -3820,7 +3820,7 @@ function checkQuizAnswers(questions) {
 }
 
 // ============================================
-// SCHEDULE (PLAN ZAJĘĆ)
+// SCHEDULE (PLAN ZAJĘĆ) - Grid View
 // ============================================
 
 async function loadSchedule() {
@@ -3834,7 +3834,7 @@ async function loadSchedule() {
     
     if (events.length === 0) {
         container.innerHTML = `
-            <div class="card" style="width: 100%; text-align: center; padding: 60px; margin: 0;">
+            <div style="width: 100%; text-align: center; padding: 60px;">
                 <p style="color: var(--text-secondary); font-size: 18px; margin-bottom: 20px;">
                     📅 Brak zajęć w planie
                 </p>
@@ -3849,10 +3849,27 @@ async function loadSchedule() {
         return;
     }
     
-    // Grupuj według dni tygodnia
-    const dayNames = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
-    const eventsByDay = {};
+    // Find time range for schedule
+    let minHour = 24, maxHour = 0;
+    events.forEach(event => {
+        const startHour = parseInt(event.startTime.split(':')[0]);
+        const endHour = parseInt(event.endTime.split(':')[0]);
+        minHour = Math.min(minHour, startHour);
+        maxHour = Math.max(maxHour, endHour + 1);
+    });
     
+    // Add padding
+    minHour = Math.max(7, minHour - 1);
+    maxHour = Math.min(22, maxHour + 1);
+    
+    const dayNames = ['Niedz.', 'Pon.', 'Wt.', 'Śr.', 'Czw.', 'Pt.', 'Sob.'];
+    const dayNamesFull = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
+    const currentDay = new Date().getDay();
+    const currentHour = new Date().getHours();
+    const currentMinutes = new Date().getMinutes();
+    
+    // Group events by day
+    const eventsByDay = {};
     events.forEach(event => {
         if (!eventsByDay[event.dayOfWeek]) {
             eventsByDay[event.dayOfWeek] = [];
@@ -3860,175 +3877,181 @@ async function loadSchedule() {
         eventsByDay[event.dayOfWeek].push(event);
     });
     
-    // Sort events within each day by start time
-    Object.keys(eventsByDay).forEach(day => {
-        eventsByDay[day].sort((a, b) => a.startTime.localeCompare(b.startTime));
-    });
+    // Generate time slots
+    const timeSlots = [];
+    for (let hour = minHour; hour < maxHour; hour++) {
+        timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);
+    }
     
-    // Get current day of week (0 = Sunday, 1 = Monday, etc.)
-    const currentDay = new Date().getDay();
+    const hourHeight = 60; // pixels per hour
+    const gridHeight = (maxHour - minHour) * hourHeight;
     
-    // Generate HTML for each day in one row (Mon-Fri only)
-    let html = '';
-    for (let day = 1; day <= 5; day++) { // Mon-Fri only
-        const dayEvents = eventsByDay[day] || [];
-        const isToday = day === currentDay;
-        
-        html += `
-            <div class="card schedule-day ${isToday ? 'today' : ''}" style="
-                width: calc(20% - 16px); 
-                min-width: 180px;
-                max-width: 240px;
-                padding: 0; 
-                overflow: hidden;
-                flex-shrink: 0;
-                ${isToday ? 'box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); border: 2px solid var(--primary);' : ''}
-            ">
+    // Build grid HTML
+    let html = `
+        <div class="schedule-grid" style="display: grid; grid-template-columns: 60px repeat(5, 1fr); min-width: 700px;">
+            <!-- Header Row -->
+            <div style="background: var(--bg-dark); padding: 12px 8px; text-align: center; font-weight: 600; border-bottom: 2px solid var(--border);">
+                🕐
+            </div>
+            ${[1, 2, 3, 4, 5].map(day => `
                 <div style="
-                    background: ${isToday ? 'var(--primary)' : 'var(--text-secondary)'}; 
-                    color: white; 
-                    padding: 12px 15px; 
-                    font-weight: 700; 
-                    font-size: 16px;
-                    position: relative;
+                    background: ${day === currentDay ? 'var(--primary)' : 'var(--bg-dark)'}; 
+                    color: ${day === currentDay ? 'white' : 'var(--text)'}; 
+                    padding: 12px 8px; 
+                    text-align: center; 
+                    font-weight: 600;
+                    border-bottom: 2px solid var(--border);
+                    border-left: 1px solid var(--border);
                 ">
                     ${dayNames[day]}
-                    ${isToday ? '<span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%);">●</span>' : ''}
+                    ${day === currentDay ? '<span style="margin-left: 5px;">●</span>' : ''}
                 </div>
-                <div style="padding: 12px; position: relative; min-height: 180px;">
-                    ${dayEvents.length === 0 ? 
-                        '<div style="color: var(--text-secondary); text-align: center; padding: 30px 0; font-size: 13px;">Brak zajęć</div>' :
-                        generateDayScheduleWithBreaks(dayEvents, subjects, isToday)
-                    }
-                </div>
-            </div>
-        `;
-    }
-    
-    container.innerHTML = html;
-}
-
-function generateDayScheduleWithBreaks(dayEvents, subjects, isToday) {
-    let html = '';
-    const now = new Date();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    
-    for (let i = 0; i < dayEvents.length; i++) {
-        const event = dayEvents[i];
-        const subject = subjects.find(s => s.id === event.subjectId);
-        const typeEmoji = {
-            'lecture': '📖',
-            'exercise': '✏️',
-            'lab': '🔬',
-            'seminar': '💬',
-            'exam': '📝',
-            'other': '📌'
-        };
-        
-        // Calculate time positions for timeline
-        const startMinutes = parseTimeToMinutes(event.startTime);
-        const endMinutes = parseTimeToMinutes(event.endTime);
-        const duration = endMinutes - startMinutes;
-        
-        // Add break time if there's a gap between events
-        if (i > 0) {
-            const prevEvent = dayEvents[i - 1];
-            const prevEndMinutes = parseTimeToMinutes(prevEvent.endTime);
-            const breakDuration = startMinutes - prevEndMinutes;
+            `).join('')}
             
-            if (breakDuration > 0) {
-                html += `
+            <!-- Time Column + Day Columns -->
+            <div style="position: relative; height: ${gridHeight}px; background: var(--bg-dark);">
+                ${timeSlots.map((time, idx) => `
                     <div style="
-                        margin: 8px 0; 
-                        padding: 8px 12px; 
-                        background: rgba(255, 193, 7, 0.1); 
-                        border-radius: 6px; 
-                        text-align: center;
-                        font-size: 13px;
+                        position: absolute;
+                        top: ${idx * hourHeight}px;
+                        width: 100%;
+                        height: ${hourHeight}px;
+                        padding: 4px 8px;
+                        font-size: 12px;
                         color: var(--text-secondary);
-                        border-left: 3px solid #ffc107;
+                        border-bottom: 1px solid var(--border);
+                        box-sizing: border-box;
                     ">
-                        ⏰ Przerwa ${formatMinutesToTime(breakDuration)}
+                        ${time}
+                    </div>
+                `).join('')}
+            </div>
+            
+            ${[1, 2, 3, 4, 5].map(day => {
+                const dayEvents = eventsByDay[day] || [];
+                const isToday = day === currentDay;
+                
+                return `
+                    <div style="
+                        position: relative; 
+                        height: ${gridHeight}px; 
+                        background: ${isToday ? 'rgba(99, 102, 241, 0.03)' : 'var(--bg-card)'};
+                        border-left: 1px solid var(--border);
+                    ">
+                        <!-- Hour lines -->
+                        ${timeSlots.map((_, idx) => `
+                            <div style="
+                                position: absolute;
+                                top: ${idx * hourHeight}px;
+                                width: 100%;
+                                height: ${hourHeight}px;
+                                border-bottom: 1px solid var(--border);
+                                box-sizing: border-box;
+                            "></div>
+                        `).join('')}
+                        
+                        <!-- Current time indicator -->
+                        ${isToday && currentHour >= minHour && currentHour < maxHour ? `
+                            <div style="
+                                position: absolute;
+                                top: ${((currentHour - minHour) * 60 + currentMinutes) * (hourHeight / 60)}px;
+                                left: 0;
+                                right: 0;
+                                height: 2px;
+                                background: #ef4444;
+                                z-index: 10;
+                            ">
+                                <div style="
+                                    position: absolute;
+                                    left: -4px;
+                                    top: -4px;
+                                    width: 10px;
+                                    height: 10px;
+                                    background: #ef4444;
+                                    border-radius: 50%;
+                                "></div>
+                            </div>
+                        ` : ''}
+                        
+                        <!-- Events -->
+                        ${dayEvents.map(event => {
+                            const subject = subjects.find(s => s.id === event.subjectId);
+                            const startMinutes = parseTimeToMinutes(event.startTime);
+                            const endMinutes = parseTimeToMinutes(event.endTime);
+                            const topPos = ((startMinutes / 60) - minHour) * hourHeight;
+                            const height = ((endMinutes - startMinutes) / 60) * hourHeight;
+                            
+                            const typeEmoji = {
+                                'lecture': '📖',
+                                'exercise': '✏️',
+                                'lab': '🔬',
+                                'seminar': '💬',
+                                'exam': '📝',
+                                'other': '📌'
+                            };
+                            
+                            // Check if currently active
+                            const nowMinutes = currentHour * 60 + currentMinutes;
+                            const isActive = isToday && nowMinutes >= startMinutes && nowMinutes <= endMinutes;
+                            
+                            return `
+                                <div class="schedule-event" 
+                                     onclick="openEditScheduleModal('${event.id}')"
+                                     style="
+                                        position: absolute;
+                                        top: ${topPos + 2}px;
+                                        left: 4px;
+                                        right: 4px;
+                                        height: ${height - 4}px;
+                                        background: ${subject?.color || 'var(--primary)'}22;
+                                        border-left: 4px solid ${subject?.color || 'var(--primary)'};
+                                        border-radius: 6px;
+                                        padding: 6px 8px;
+                                        overflow: hidden;
+                                        cursor: pointer;
+                                        transition: all 0.2s;
+                                        z-index: 5;
+                                        ${isActive ? 'box-shadow: 0 0 0 2px #22c55e; background: rgba(34, 197, 94, 0.15);' : ''}
+                                     "
+                                     onmouseover="this.style.transform='scale(1.02)'; this.style.zIndex='20';"
+                                     onmouseout="this.style.transform='none'; this.style.zIndex='5';"
+                                     title="Kliknij aby edytować">
+                                    <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 2px;">
+                                        ${event.startTime} - ${event.endTime}
+                                        ${isActive ? '<span style="color: #22c55e; margin-left: 4px;">● TERAZ</span>' : ''}
+                                    </div>
+                                    <div style="font-weight: 600; font-size: 13px; color: ${subject?.color || 'var(--primary)'}; display: flex; align-items: center; gap: 4px;">
+                                        <span>${typeEmoji[event.type] || '📌'}</span>
+                                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                            ${event.title || subject?.name || 'Zajęcia'}
+                                        </span>
+                                    </div>
+                                    ${height > 50 && event.location ? `
+                                        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">
+                                            📍 ${event.location}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
                 `;
-            }
-        }
+            }).join('')}
+        </div>
         
-        // Check if event is currently active
-        const isActive = isToday && currentMinutes >= startMinutes && currentMinutes <= endMinutes;
-        
-        html += `
-            <div style="
-                margin-bottom: 12px; 
-                padding: 12px; 
-                background: ${isActive ? 'rgba(34, 197, 94, 0.1)' : 'var(--bg-dark)'}; 
-                border-radius: 8px; 
-                border-left: 4px solid ${subject?.color || 'var(--primary)'};
-                position: relative;
-                ${isActive ? 'border: 2px solid #22c55e;' : ''}
-            ">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
-                    <div style="flex: 1;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                            <span style="font-size: 18px;">${typeEmoji[event.type] || '📌'}</span>
-                            <span style="font-weight: 600; font-size: 16px; color: ${subject?.color || 'var(--primary)'};">
-                                ${event.title || subject?.name || 'Zajęcia'}
-                            </span>
-                            ${isActive ? '<span style="color: #22c55e; font-weight: bold; font-size: 12px;">● NA ŻYWO</span>' : ''}
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--text-secondary);">
-                            <span>🕐 ${event.startTime} - ${event.endTime}</span>
-                            ${event.location ? `<span>📍 ${event.location}</span>` : ''}
-                        </div>
-                        ${event.notes ? `<div style="margin-top: 8px; font-size: 13px; color: var(--text-secondary); font-style: italic;">${event.notes}</div>` : ''}
-                    </div>
-                    <button class="btn" onclick="deleteScheduleEvent('${event.id}')" 
-                            style="background: var(--accent)22; color: var(--accent); padding: 6px 12px; font-size: 12px;">
-                        🗑️
-                    </button>
-                </div>
-                ${isToday ? generateTimelineBar(startMinutes, endMinutes, currentMinutes) : ''}
-            </div>
-        `;
-    }
-    
-    return html;
-}
-
-function generateTimelineBar(startMinutes, endMinutes, currentMinutes) {
-    const duration = endMinutes - startMinutes;
-    const elapsed = Math.max(0, Math.min(duration, currentMinutes - startMinutes));
-    const progress = duration > 0 ? (elapsed / duration) * 100 : 0;
-    
-    return `
-        <div style="
-            margin-top: 12px; 
-            height: 4px; 
-            background: rgba(99, 102, 241, 0.2); 
-            border-radius: 2px; 
-            position: relative;
-            overflow: hidden;
-        ">
-            <div style="
-                height: 100%; 
-                background: var(--primary); 
-                width: ${progress}%; 
-                transition: width 0.3s ease;
-                border-radius: 2px;
-            "></div>
-            <div style="
-                position: absolute; 
-                top: -2px; 
-                left: ${progress}%; 
-                width: 8px; 
-                height: 8px; 
-                background: var(--primary); 
-                border-radius: 50%; 
-                transform: translateX(-50%);
-                box-shadow: 0 0 6px rgba(99, 102, 241, 0.5);
-            "></div>
+        <!-- Legend -->
+        <div style="padding: 15px; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
+            <span style="font-size: 13px; color: var(--text-secondary);">Legenda:</span>
+            <span style="font-size: 13px;">📖 Wykład</span>
+            <span style="font-size: 13px;">✏️ Ćwiczenia</span>
+            <span style="font-size: 13px;">🔬 Laboratorium</span>
+            <span style="font-size: 13px;">💬 Seminarium</span>
+            <span style="font-size: 13px;">📝 Egzamin</span>
+            <span style="font-size: 13px; margin-left: auto; color: var(--text-secondary);">💡 Kliknij na zajęcia aby edytować</span>
         </div>
     `;
+    
+    container.innerHTML = html;
 }
 
 function parseTimeToMinutes(timeString) {
@@ -4094,6 +4117,89 @@ window.deleteScheduleEvent = async (id) => {
     await loadSchedule();
     showToast('✅ Zajęcia usunięte z planu');
 };
+
+// Otwórz modal edycji zajęć
+window.openEditScheduleModal = async (id) => {
+    console.log('📝 Opening edit modal for schedule event:', id);
+    
+    try {
+        // Pobierz dane zajęć
+        const events = await db.getScheduleEvents();
+        const event = events.find(e => e.id === id);
+        
+        if (!event) {
+            showToast('❌ Nie znaleziono zajęć');
+            return;
+        }
+        
+        // Wypełnij selektor przedmiotów
+        const selector = document.getElementById('edit-schedule-subject');
+        const subjects = await db.getSubjects();
+        
+        selector.innerHTML = '<option value="">Wybierz przedmiot...</option>' + 
+            subjects.map(s => `<option value="${s.id}" ${s.id === event.subjectId ? 'selected' : ''}>${s.name}</option>`).join('');
+        
+        // Wypełnij formularz danymi
+        document.getElementById('edit-schedule-id').value = event.id;
+        document.getElementById('edit-schedule-title').value = event.title || '';
+        document.getElementById('edit-schedule-day').value = event.dayOfWeek;
+        document.getElementById('edit-schedule-start').value = event.startTime;
+        document.getElementById('edit-schedule-end').value = event.endTime;
+        document.getElementById('edit-schedule-location').value = event.location || '';
+        document.getElementById('edit-schedule-type').value = event.type || 'lecture';
+        document.getElementById('edit-schedule-notes').value = event.notes || '';
+        
+        openModal('modal-edit-schedule');
+    } catch (error) {
+        console.error('Error opening edit modal:', error);
+        showToast('❌ Błąd podczas otwierania edycji');
+    }
+};
+
+// Obsługa formularza edycji zajęć
+document.getElementById('form-edit-schedule')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const id = document.getElementById('edit-schedule-id').value;
+    const subjectId = document.getElementById('edit-schedule-subject').value;
+    const title = document.getElementById('edit-schedule-title').value.trim();
+    const dayOfWeek = parseInt(document.getElementById('edit-schedule-day').value);
+    const startTime = document.getElementById('edit-schedule-start').value;
+    const endTime = document.getElementById('edit-schedule-end').value;
+    const location = document.getElementById('edit-schedule-location').value.trim();
+    const type = document.getElementById('edit-schedule-type').value;
+    const notes = document.getElementById('edit-schedule-notes').value.trim();
+    
+    if (!subjectId || !startTime || !endTime) {
+        alert('Wypełnij wszystkie wymagane pola!');
+        return;
+    }
+    
+    // Walidacja godzin
+    if (startTime >= endTime) {
+        alert('❌ Godzina rozpoczęcia musi być wcześniejsza niż godzina zakończenia!');
+        return;
+    }
+    
+    try {
+        await db.updateScheduleEvent(id, {
+            subjectId,
+            title,
+            dayOfWeek,
+            startTime,
+            endTime,
+            location,
+            type,
+            notes
+        });
+        closeModal('modal-edit-schedule');
+        await loadSchedule();
+        showToast('✅ Zajęcia zaktualizowane');
+    } catch (error) {
+        console.error('Error updating schedule event:', error);
+        alert('❌ Błąd podczas aktualizacji: ' + error.message);
+    }
+});
 
 // ============================================
 // CLEAR DATA FUNCTIONS

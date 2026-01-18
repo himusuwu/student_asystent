@@ -681,15 +681,11 @@
                 <span id="current-date-time">Ładowanie...</span>
             </div>
             
-            <div id="schedule-view" style="
-                display: flex; 
-                gap: 16px; 
-                padding-bottom: 10px;
-                min-height: 350px;
-                justify-content: space-between;
-                flex-wrap: nowrap;
-            ">
-                <!-- Dynamic schedule will be loaded here -->
+            <!-- Schedule Grid Container -->
+            <div class="card" style="padding: 0; overflow: hidden;">
+                <div id="schedule-view" style="overflow-x: auto;">
+                    <!-- Dynamic schedule grid will be loaded here -->
+                </div>
             </div>
         </div>
 
@@ -1146,6 +1142,95 @@
                     <button type="submit" class="btn btn-primary">
                         ✅ Dodaj do planu
                     </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Schedule Event Modal -->
+    <div id="modal-edit-schedule" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 20px;">✏️ Edytuj zajęcia</h3>
+            <form id="form-edit-schedule">
+                <input type="hidden" id="edit-schedule-id">
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Przedmiot</label>
+                    <select id="edit-schedule-subject" class="search-box" required style="width: 100%;">
+                        <option value="">Wybierz przedmiot...</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Nazwa zajęć (opcjonalnie)</label>
+                    <input type="text" id="edit-schedule-title" class="search-box" 
+                           placeholder="np. Wykład, Ćwiczenia, Laboratorium..." style="width: 100%;">
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Dzień tygodnia</label>
+                    <select id="edit-schedule-day" class="search-box" required style="width: 100%;">
+                        <option value="1">Poniedziałek</option>
+                        <option value="2">Wtorek</option>
+                        <option value="3">Środa</option>
+                        <option value="4">Czwartek</option>
+                        <option value="5">Piątek</option>
+                        <option value="6">Sobota</option>
+                        <option value="0">Niedziela</option>
+                    </select>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Godzina rozpoczęcia</label>
+                        <input type="time" id="edit-schedule-start" class="search-box" required style="width: 100%;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Godzina zakończenia</label>
+                        <input type="time" id="edit-schedule-end" class="search-box" required style="width: 100%;">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Miejsce (opcjonalnie)</label>
+                    <input type="text" id="edit-schedule-location" class="search-box" 
+                           placeholder="np. Sala A101, Budynek Informatyki..." style="width: 100%;">
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Typ zajęć</label>
+                    <select id="edit-schedule-type" class="search-box" style="width: 100%;">
+                        <option value="lecture">Wykład</option>
+                        <option value="exercise">Ćwiczenia</option>
+                        <option value="lab">Laboratorium</option>
+                        <option value="seminar">Seminarium</option>
+                        <option value="exam">Egzamin</option>
+                        <option value="other">Inne</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Notatki (opcjonalnie)</label>
+                    <textarea id="edit-schedule-notes" class="search-box" rows="3" 
+                              placeholder="Dodatkowe informacje..." 
+                              style="width: 100%; resize: vertical;"></textarea>
+                </div>
+
+                <div style="display: flex; gap: 10px; justify-content: space-between; align-items: center;">
+                    <button type="button" class="btn" 
+                            onclick="if(confirm('Czy na pewno chcesz usunąć te zajęcia?')) { deleteScheduleEvent(document.getElementById('edit-schedule-id').value); closeModal('modal-edit-schedule'); }"
+                            style="background: var(--danger); color: white;">
+                        🗑️ Usuń
+                    </button>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" class="btn" onclick="closeModal('modal-edit-schedule')" 
+                                style="background: var(--bg-card);">
+                            Anuluj
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            💾 Zapisz zmiany
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>

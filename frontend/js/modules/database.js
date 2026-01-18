@@ -359,14 +359,22 @@ export async function getScheduleEvent(id) {
 
 export async function updateScheduleEvent(id, updates) {
     const db = await openDatabase();
-    const event = await db.get('subjects', id);
-    if (!event || event.dayOfWeek === undefined) throw new Error('Schedule event not found');
+    const existing = await db.get('subjects', id);
+    if (!existing) throw new Error('Schedule event not found');
     
     const updated = {
-        ...event,
-        ...updates,
+        ...existing,
+        subjectId: updates.subjectId,
+        title: updates.title || '',
+        dayOfWeek: updates.dayOfWeek,
+        startTime: updates.startTime,
+        endTime: updates.endTime,
+        location: updates.location || '',
+        type: updates.type || 'lecture',
+        notes: updates.notes || '',
         updatedAt: new Date().toISOString()
     };
+    
     await db.put('subjects', updated, id);
     return updated;
 }
