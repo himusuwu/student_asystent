@@ -1355,6 +1355,301 @@ ZASADY:
   }
 });
 
+// Endpoint: Generowanie fiszek CLOZE (z lukami) z transkrypcji
+app.post('/generate-cloze-flashcards', express.json(), async (req, res) => {
+  try {
+    const { 
+      transcription,
+      aiProvider = 'ollama',
+      geminiApiKey = null,
+      geminiModel = 'gemini-1.5-pro',
+      ollamaModel = 'qwen2.5:14b'
+    } = req.body;
+    
+    if (!transcription || transcription.trim().length === 0) {
+      return res.status(400).json({ error: 'Brak transkrypcji' });
+    }
+    
+    console.log(`[GenerateCloze] Otrzymano: ${transcription.length} znaków, provider: ${aiProvider}`);
+    
+    const startTime = Date.now();
+    
+    const prompt = `Stwórz fiszki CLOZE (z lukami do uzupełnienia) z tego materiału.
+
+MATERIAŁ:
+"${transcription}"
+
+CZYM SĄ FISZKI CLOZE:
+Fiszki cloze to zdania z ukrytymi fragmentami {{c1::odpowiedź}}, które użytkownik musi uzupełnić.
+Przykład: "Wzór na energię kinetyczną to $E_k = {{c1::$\\frac{1}{2}mv^2$}}$"
+Przykład: "Stolicą Polski jest {{c1::Warszawa}}"
+Przykład: "DNA składa się z {{c1::nukleotydów}}, które zawierają {{c2::zasady azotowe}}"
+
+Format JSON (TYLKO array, bez innych tekstów):
+[
+  {
+    "text": "Pełne zdanie z {{c1::ukrytym fragmentem}} do uzupełnienia",
+    "clozes": [
+      { "id": "c1", "answer": "ukryty fragment", "hint": "opcjonalna podpowiedź" }
+    ],
+    "category": "wzór/definicja/fakt/proces",
+    "difficulty": "easy/medium/hard"
+  }
+]
+
+ZASADY TWORZENIA FISZEK CLOZE:
+1. WZORY MATEMATYCZNE - ukrywaj kluczowe elementy wzorów:
+   - "Wzór Einsteina: $E = {{c1::mc^2}}$"
+   - "Pole koła: $S = {{c1::πr^2}}$"
+   - "Twierdzenie Pitagorasa: $a^2 + b^2 = {{c1::c^2}}$"
+
+2. DEFINICJE - ukrywaj kluczowe terminy:
+   - "{{c1::Mitochondrium}} to organellum odpowiedzialne za produkcję ATP"
+   - "Proces fotosyntezy zachodzi w {{c1::chloroplastach}}"
+
+3. FAKTY I DATY - ukrywaj liczby, nazwy:
+   - "Konstytucja 3 maja została uchwalona w roku {{c1::1791}}"
+   - "Najwyższym szczytem Polski jest {{c1::Rysy}} o wysokości {{c2::2499}} m n.p.m."
+
+4. PROCESY - ukrywaj etapy:
+   - "Cykl Krebsa zachodzi w {{c1::macierzy mitochondrialnej}}"
+
+5. POWIĄZANIA - ukrywaj relacje:
+   - "{{c1::Newton}} sformułował prawa dynamiki w {{c2::1687}} roku"
+
+WAŻNE:
+- Używaj LaTeX dla wzorów matematycznych ($ dla inline, $$ dla block)
+- Możesz mieć wiele luk w jednym zdaniu (c1, c2, c3...)
+- Ukrywaj NAJWAŻNIEJSZE informacje - te, które trzeba zapamiętać
+- Twórz jak najwięcej fiszek - minimum 15-20
+- Różne trudności: easy (podstawowe fakty), medium (wzory, definicje), hard (złożone koncepcje)
+- Hint jest opcjonalny - dodawaj dla trudniejszych
+- Odpowiadaj TYLKO po polsku`;
+
+    const response = await callAI(prompt, {
+      provider: aiProvider,
+      geminiApiKey,
+      geminiModel,
+      ollamaModel,
+      maxTokens: 8192
+    });
+    
+    // Parsuj JSON array
+    const jsonMatch = response.match(/\\[[\s\S]*\\]/);
+    if (!jsonMatch) {
+      throw new Error('Brak JSON array w odpowiedzi');
+    }
+    
+    let clozeCards = JSON.parse(jsonMatch[0]);
+    
+    const duration = Date.now() - startTime;
+    
+    // Walidacja i czyszczenie
+    clozeCards = clozeCards.filter(card => 
+      card.text && 
+      card.clozes && 
+      Array.isArray(card.clozes) && 
+      card.clozes.length > 0
+    );
+    
+    console.log(`[GenerateCloze] Wygenerowano ${clozeCards.length} fiszek cloze w ${duration}ms (${aiProvider})`);
+    
+    res.json({
+      success: true,
+      clozeCards,
+      duration,
+      provider: aiProvider
+    });
+    
+  } catch (error) {
+    console.error('[GenerateCloze] Błąd:', error);
+    res.status(500).json({ error: error.message || 'Błąd generowania fiszek cloze' });
+  }
+});
+
+// ============================================
+// EXAM/KOLOKWIUM ENDPOINTS
+// ============================================
+
+// Endpoint: Generowanie materiałów na kolokwium
+app.post('/generate-exam-materials', express.json(), async (req, res) => {
+  try {
+    const { 
+      transcription,
+      examRequirements,
+      materialType = 'summary', // summary, flashcards, quiz, cheatsheet
+      aiProvider = 'ollama',
+      geminiApiKey = null,
+      geminiModel = 'gemini-1.5-pro',
+      ollamaModel = 'qwen2.5:14b'
+    } = req.body;
+    
+    if (!examRequirements || examRequirements.trim().length === 0) {
+      return res.status(400).json({ error: 'Brak wymagań na kolokwium' });
+    }
+    
+    console.log(`[ExamMaterials] Typ: ${materialType}, wymagania: ${examRequirements.length} znaków, transkrypcja: ${transcription?.length || 0} znaków`);
+    
+    const startTime = Date.now();
+    
+    // Different prompts based on material type
+    let prompt;
+    
+    if (materialType === 'summary') {
+      prompt = `Jesteś ekspertem w przygotowywaniu studentów do egzaminów. Stwórz ZWIĘZŁE PODSUMOWANIE na kolokwium.
+
+WYMAGANIA PROFESORA NA KOLOKWIUM:
+"${examRequirements}"
+
+${transcription ? `MATERIAŁ Z WYKŁADU:
+"${transcription}"` : ''}
+
+ZADANIE:
+Stwórz podsumowanie TYLKO tematów wymaganych na kolokwium. Skup się WYŁĄCZNIE na tym, co profesor wymienił jako wymagane.
+
+FORMAT:
+1. Użyj nagłówków ## dla każdego głównego tematu
+2. Pod każdym tematem dodaj kluczowe informacje w punktach
+3. Wyróżnij wzory używając LaTeX: $wzór$ dla inline, $$wzór$$ dla blokowego
+4. Dodaj sekcję "⚠️ Najważniejsze do zapamiętania" na końcu
+5. Odpowiadaj TYLKO po polsku
+
+Pamiętaj: to ma być materiał do szybkiej powtórki przed kolokwium - zwięzły ale kompletny.`;
+    
+    } else if (materialType === 'flashcards') {
+      prompt = `Stwórz FISZKI na kolokwium z tego materiału.
+
+WYMAGANIA PROFESORA NA KOLOKWIUM:
+"${examRequirements}"
+
+${transcription ? `MATERIAŁ Z WYKŁADU:
+"${transcription}"` : ''}
+
+ZADANIE:
+Stwórz fiszki TYLKO z tematów wymaganych na kolokwium. Każda fiszka powinna testować konkretną wiedzę potrzebną na egzaminie.
+
+Format JSON (TYLKO array, bez innych tekstów):
+[
+  {
+    "question": "Pytanie testujące wiedzę wymaganą na kolokwium",
+    "answer": "Precyzyjna odpowiedź",
+    "category": "temat z wymagań",
+    "difficulty": "easy/medium/hard",
+    "examTip": "Opcjonalna wskazówka jak to może pojawić się na egzaminie"
+  }
+]
+
+ZASADY:
+- Twórz fiszki TYLKO z materiału wymienionego w wymaganiach
+- Używaj LaTeX dla wzorów: $E = mc^2$
+- Dodawaj różne poziomy trudności
+- Minimum 15 fiszek
+- Odpowiadaj TYLKO po polsku`;
+    
+    } else if (materialType === 'quiz') {
+      prompt = `Stwórz QUIZ EGZAMINACYJNY na podstawie wymagań profesora.
+
+WYMAGANIA PROFESORA NA KOLOKWIUM:
+"${examRequirements}"
+
+${transcription ? `MATERIAŁ Z WYKŁADU:
+"${transcription}"` : ''}
+
+ZADANIE:
+Stwórz pytania w stylu egzaminacyjnym - takie, jakie mogą pojawić się na kolokwium.
+
+Format JSON (TYLKO array):
+[
+  {
+    "question": "Pytanie egzaminacyjne",
+    "options": ["A) odpowiedź", "B) odpowiedź", "C) odpowiedź", "D) odpowiedź"],
+    "correctIndex": 0,
+    "explanation": "Wyjaśnienie poprawnej odpowiedzi",
+    "category": "temat z wymagań",
+    "examStyle": "definicja/obliczenie/zastosowanie/analiza"
+  }
+]
+
+ZASADY:
+- Pytania mają symulować prawdziwy egzamin
+- Dodaj pułapki typowe dla egzaminów (podobne odpowiedzi, częste błędy)
+- Używaj LaTeX dla wzorów
+- Minimum 10 pytań
+- Odpowiadaj TYLKO po polsku`;
+    
+    } else if (materialType === 'cheatsheet') {
+      prompt = `Stwórz ŚCIĄGAWKĘ - kompaktowe zestawienie wszystkich wzorów i definicji na kolokwium.
+
+WYMAGANIA PROFESORA NA KOLOKWIUM:
+"${examRequirements}"
+
+${transcription ? `MATERIAŁ Z WYKŁADU:
+"${transcription}"` : ''}
+
+ZADANIE:
+Stwórz ściągawkę zawierającą WSZYSTKIE wzory i definicje potrzebne na kolokwium w zwięzłej formie.
+
+FORMAT:
+## 📐 Wzory
+| Nazwa | Wzór | Kiedy używać |
+|-------|------|--------------|
+| Nazwa wzoru | $wzór$ | krótki opis |
+
+## 📖 Definicje
+**Termin** - zwięzła definicja
+
+## 🔑 Kluczowe wartości/stałe
+- nazwa = wartość
+
+## ⚡ Szybkie skróty myślowe
+- Jak zapamiętać X: ...
+
+ZASADY:
+- Używaj LaTeX dla WSZYSTKICH wzorów
+- Maksymalna zwięzłość - to ma się zmieścić na kartce
+- Tylko materiał z wymagań
+- Odpowiadaj TYLKO po polsku`;
+    }
+    
+    const response = await callAI(prompt, {
+      provider: aiProvider,
+      geminiApiKey,
+      geminiModel,
+      ollamaModel,
+      maxTokens: 8192
+    });
+    
+    const duration = Date.now() - startTime;
+    
+    // Parse response based on type
+    let result;
+    if (materialType === 'flashcards' || materialType === 'quiz') {
+      const jsonMatch = response.match(/\\[[\s\S]*\\]/);
+      if (jsonMatch) {
+        result = JSON.parse(jsonMatch[0]);
+      } else {
+        result = response;
+      }
+    } else {
+      result = response;
+    }
+    
+    console.log(`[ExamMaterials] Wygenerowano ${materialType} w ${duration}ms (${aiProvider})`);
+    
+    res.json({
+      success: true,
+      materialType,
+      content: result,
+      duration,
+      provider: aiProvider
+    });
+    
+  } catch (error) {
+    console.error('[ExamMaterials] Błąd:', error);
+    res.status(500).json({ error: error.message || 'Błąd generowania materiałów na kolokwium' });
+  }
+});
+
 // Endpoint: Generowanie szczegółowej notatki
 app.post('/generate-detailed-note', express.json(), async (req, res) => {
   try {

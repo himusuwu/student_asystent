@@ -27,6 +27,9 @@
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         }
     </script>
+    
+    <!-- Chart.js for statistics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="background-gradient"></div>
@@ -57,20 +60,45 @@
         <div class="content active" id="dashboard">
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-value" id="stat-flashcards">0</div>
-                    <div class="stat-label">Fiszek opanowanych</div>
+                    <div class="stat-value" id="stat-due-today">0</div>
+                    <div class="stat-label">Do powtórki dziś</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="stat-subjects">0</div>
-                    <div class="stat-label">Aktywnych przedmiotów</div>
+                    <div class="stat-value" id="stat-flashcards">0</div>
+                    <div class="stat-label">Fiszek opanowanych</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value" id="stat-accuracy">0%</div>
                     <div class="stat-label">Średnia skuteczność</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card streak-card">
                     <div class="stat-value" id="stat-streak">0</div>
-                    <div class="stat-label">Dni streak</div>
+                    <div class="stat-label">🔥 Dni streak</div>
+                </div>
+            </div>
+
+            <!-- Due Cards Alert -->
+            <div id="due-cards-alert" class="due-cards-alert" style="display: none;">
+                <div class="due-cards-content">
+                    <div class="due-cards-icon">📚</div>
+                    <div class="due-cards-text">
+                        <strong id="due-cards-count">0</strong> fiszek czeka na powtórkę!
+                    </div>
+                    <button class="btn btn-primary" id="btn-start-due-review" style="padding: 10px 20px;">
+                        🎯 Zacznij powtórkę
+                    </button>
+                </div>
+            </div>
+
+            <!-- Study Statistics Charts -->
+            <div class="dashboard-charts">
+                <div class="chart-card">
+                    <h3>📈 Aktywność (ostatnie 7 dni)</h3>
+                    <canvas id="activity-chart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>🎯 Skuteczność nauki</h3>
+                    <canvas id="accuracy-chart"></canvas>
                 </div>
             </div>
 
@@ -157,22 +185,22 @@
                                 <button class="study-mode-btn" data-mode="flashcards">
                                     <div style="font-size: 24px; margin-bottom: 8px;">🎴</div>
                                     <div style="font-weight: 600;">Fiszki</div>
-                                    <div style="font-size: 12px; color: var(--text-secondary);">Klasyczne przewracanie kart</div>
+                                    <div style="font-size: 13px; color: var(--text-secondary);">Klasyczne przewracanie kart</div>
                                 </button>
                                 <button class="study-mode-btn" data-mode="quiz">
                                     <div style="font-size: 24px; margin-bottom: 8px;">❓</div>
                                     <div style="font-weight: 600;">Quiz</div>
-                                    <div style="font-size: 12px; color: var(--text-secondary);">Pytania z wieloma odpowiedziami</div>
+                                    <div style="font-size: 13px; color: var(--text-secondary);">Pytania z wieloma odpowiedziami</div>
                                 </button>
                                 <button class="study-mode-btn" data-mode="memory">
                                     <div style="font-size: 24px; margin-bottom: 8px;">🧠</div>
                                     <div style="font-weight: 600;">Pamięć</div>
-                                    <div style="font-size: 12px; color: var(--text-secondary);">Sprawdź co pamiętasz</div>
+                                    <div style="font-size: 13px; color: var(--text-secondary);">Sprawdź co pamiętasz</div>
                                 </button>
                                 <button class="study-mode-btn" data-mode="typing">
                                     <div style="font-size: 24px; margin-bottom: 8px;">⌨️</div>
                                     <div style="font-weight: 600;">Pisanie</div>
-                                    <div style="font-size: 12px; color: var(--text-secondary);">Wpisz odpowiedź</div>
+                                    <div style="font-size: 13px; color: var(--text-secondary);">Wpisz odpowiedź</div>
                                 </button>
                             </div>
                         </div>
@@ -247,7 +275,9 @@
                     <button class="tab-btn" data-lecture-tab="short">📄 Krótka</button>
                     <button class="tab-btn" data-lecture-tab="keypoints">🎯 Kluczowe</button>
                     <button class="tab-btn" data-lecture-tab="flashcards">🎴 Fiszki</button>
+                    <button class="tab-btn" data-lecture-tab="cloze">🔲 Cloze</button>
                     <button class="tab-btn" data-lecture-tab="quiz">📝 Quiz</button>
+                    <button class="tab-btn" data-lecture-tab="exam">🎓 Kolokwium</button>
                     <button class="tab-btn" data-lecture-tab="transcription">📄 Transkrypcja</button>
                 </div>
 
@@ -358,6 +388,98 @@
                     </div>
                 </div>
 
+                <!-- Tab Content: Cloze Flashcards -->
+                <div class="lecture-tab-content" id="lecture-tab-cloze">
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3>🔲 Fiszki Cloze (z lukami)</h3>
+                            <button class="btn btn-primary" id="btn-generate-cloze">
+                                ✨ Generuj z AI
+                            </button>
+                        </div>
+                        <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 20px;">
+                            Fiszki typu Cloze to zdania z ukrytymi fragmentami, które musisz uzupełnić. 
+                            Idealne do nauki wzorów, definicji i terminów.
+                        </p>
+                        <div id="lecture-cloze-content" style="min-height: 200px;">
+                            <p style="color: var(--text-secondary); text-align: center; padding: 40px;">
+                                Brak fiszek Cloze. Użyj przycisku "Generuj z AI" aby stworzyć fiszki z lukami.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Exam/Kolokwium -->
+                <div class="lecture-tab-content" id="lecture-tab-exam">
+                    <div class="card" style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3>🎓 Wymagania na kolokwium</h3>
+                            <button class="btn" id="btn-save-exam-requirements" style="background: var(--primary); color: white;">
+                                💾 Zapisz
+                            </button>
+                        </div>
+                        <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 15px;">
+                            📝 Wpisz tutaj informacje od profesora o tym, co będzie wymagane na kolokwium/egzaminie.
+                            AI użyje tych informacji do wygenerowania materiałów skupionych tylko na wymaganych tematach.
+                        </p>
+                        <textarea id="exam-requirements-input" class="search-box" rows="6" 
+                                  placeholder="Np. Na kolokwium będą: definicje z rozdziału 3, wzory na energię kinetyczną i potencjalną, twierdzenie Pitagorasa, zadania z obliczaniem pola koła..."
+                                  style="width: 100%; font-size: 14px; line-height: 1.6;"></textarea>
+                        <div style="margin-top: 10px; padding: 12px; background: var(--bg-hover); border-radius: 8px; border-left: 3px solid var(--primary);">
+                            <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">
+                                💡 <strong>Wskazówka:</strong> Im dokładniej opiszesz wymagania (tematy, rozdziały, typy zadań), 
+                                tym lepiej AI dopasuje materiały do nauki.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Exam Materials Generation -->
+                    <div class="card" style="margin-bottom: 20px;">
+                        <h3 style="margin-bottom: 20px;">✨ Generuj materiały na kolokwium</h3>
+                        <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 20px;">
+                            Na podstawie wymagań i transkrypcji wykładu AI wygeneruje materiały ukierunkowane na kolokwium.
+                        </p>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                            <button class="btn exam-gen-btn" id="btn-generate-exam-summary" 
+                                    style="padding: 20px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15)); border: 2px solid var(--primary); border-radius: 12px; text-align: left;">
+                                <div style="font-size: 24px; margin-bottom: 8px;">📋</div>
+                                <div style="font-weight: 600; margin-bottom: 4px;">Podsumowanie</div>
+                                <div style="font-size: 13px; color: var(--text-secondary);">Skondensowane informacje tylko z wymaganych tematów</div>
+                            </button>
+                            <button class="btn exam-gen-btn" id="btn-generate-exam-flashcards"
+                                    style="padding: 20px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.15)); border: 2px solid #10b981; border-radius: 12px; text-align: left;">
+                                <div style="font-size: 24px; margin-bottom: 8px;">🎴</div>
+                                <div style="font-weight: 600; margin-bottom: 4px;">Fiszki na kolokwium</div>
+                                <div style="font-size: 13px; color: var(--text-secondary);">Fiszki tylko z materiału wymaganego na egzamin</div>
+                            </button>
+                            <button class="btn exam-gen-btn" id="btn-generate-exam-quiz"
+                                    style="padding: 20px; background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(234, 88, 12, 0.15)); border: 2px solid #f97316; border-radius: 12px; text-align: left;">
+                                <div style="font-size: 24px; margin-bottom: 8px;">❓</div>
+                                <div style="font-weight: 600; margin-bottom: 4px;">Quiz egzaminacyjny</div>
+                                <div style="font-size: 13px; color: var(--text-secondary);">Pytania w stylu egzaminacyjnym</div>
+                            </button>
+                            <button class="btn exam-gen-btn" id="btn-generate-exam-cheatsheet"
+                                    style="padding: 20px; background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.15)); border: 2px solid #ef4444; border-radius: 12px; text-align: left;">
+                                <div style="font-size: 24px; margin-bottom: 8px;">📑</div>
+                                <div style="font-weight: 600; margin-bottom: 4px;">Ściągawka</div>
+                                <div style="font-size: 13px; color: var(--text-secondary);">Wszystkie wzory i definicje w jednym miejscu</div>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Generated Exam Materials -->
+                    <div class="card" id="exam-materials-container" style="display: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3 id="exam-materials-title">📚 Materiały na kolokwium</h3>
+                            <button class="btn" id="btn-copy-exam-materials" style="background: var(--bg-card);">
+                                📋 Kopiuj
+                            </button>
+                        </div>
+                        <div id="exam-materials-content" class="markdown-content" style="min-height: 200px;">
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Tab Content: Transcription -->
                 <div class="lecture-tab-content" id="lecture-tab-transcription">
                     <div class="card">
@@ -377,22 +499,25 @@
             <div class="card" style="max-width: 800px; margin: 0 auto;">
                 <form id="new-lecture-form">
                     <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Przedmiot</label>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">📚 Przedmiot</label>
                         <select id="lecture-subject" class="search-box" required style="width: 100%;">
                             <option value="">Wybierz przedmiot...</option>
                         </select>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
+                            Nie masz przedmiotu? <a href="#" id="link-to-subjects" style="color: var(--primary); cursor: pointer;">Utwórz nowy przedmiot →</a>
+                        </p>
                     </div>
 
-                    <!-- Auto-generated title (shown after transcription) -->
-                    <div id="lecture-title-section" style="margin-bottom: 20px; display: none;">
+                    <!-- Lecture title - always visible -->
+                    <div id="lecture-title-section" style="margin-bottom: 20px;">
                         <label style="display: block; margin-bottom: 8px; font-weight: 600;">
-                            ✨ Tytuł wykładu (wygenerowany automatycznie)
+                            📝 Tytuł wykładu
                         </label>
                         <input type="text" id="lecture-title" class="search-box" 
-                               placeholder="Tytuł zostanie wygenerowany po transkrypcji..." 
+                               placeholder="Wprowadź tytuł lub zostaw puste (AI wygeneruje automatycznie)" 
                                style="width: 100%;">
-                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
-                            Możesz edytować tytuł przed zapisaniem
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
+                            💡 Jeśli zostawisz puste, AI wygeneruje tytuł z transkrypcji lub notatek
                         </p>
                     </div>
 
@@ -472,7 +597,7 @@
                                     <p style="margin: 0; color: var(--primary); font-weight: 600;">
                                         <span id="document-file-name">📄 Plik wgrany</span>
                                     </p>
-                                    <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--text-secondary);">
+                                    <p style="margin: 4px 0 0 0; font-size: 13px; color: var(--text-secondary);">
                                         Przetwarzanie...
                                     </p>
                                 </div>
@@ -498,18 +623,22 @@
                     </div>
 
                     <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Notatki</label>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">📝 Notatki (opcjonalne)</label>
                         <textarea id="lecture-notes" class="search-box" rows="6" 
-                                  placeholder="Dodaj swoje notatki..." 
+                                  placeholder="Możesz dodać własne notatki lub zostawić puste - AI wygeneruje je później z transkrypcji..." 
                                   style="width: 100%;"></textarea>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
+                            💡 Po zapisaniu możesz użyć AI do automatycznego generowania notatek, fiszek i quizów
+                        </p>
                     </div>
 
-                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center;">
+                        <span id="save-status" style="font-size: 13px; color: var(--text-secondary); display: none;"></span>
                         <button type="button" class="btn" id="btn-cancel-lecture" 
                                 style="background: var(--bg-card);">
-                            Anuluj
+                            ✖ Anuluj
                         </button>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary" id="btn-save-lecture">
                             💾 Zapisz wykład
                         </button>
                     </div>
@@ -579,7 +708,7 @@
                             <option value="ollama">🖥️ Ollama (lokalny)</option>
                             <option value="gemini">☁️ Google Gemini Pro (API)</option>
                         </select>
-                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
                             Wybierz, czy używać lokalnego modelu czy chmurowego API Google
                         </p>
                     </div>
@@ -606,7 +735,7 @@
                             <label style="display: block; margin-bottom: 8px; font-weight: 600;">Klucz API Gemini</label>
                             <input type="password" id="setting-gemini-key" class="search-box" 
                                    placeholder="AIzaSy..." style="width: 100%;">
-                            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
                                 Pobierz klucz z <a href="https://aistudio.google.com/apikey" target="_blank" style="color: var(--primary);">Google AI Studio →</a>
                             </p>
                         </div>
@@ -619,7 +748,7 @@
                                 <option value="gemini-2.5-flash-preview-05-20">Gemini 2.5 Flash Preview</option>
                                 <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
                             </select>
-                            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
                                 Pro = lepsza jakość notatek, Flash = szybszy i tańszy
                             </p>
                         </div>
@@ -660,7 +789,7 @@
                         <label style="display: block; margin-bottom: 8px; font-weight: 600;">Backend URL</label>
                         <input type="text" id="setting-backend-url" class="search-box" 
                                value="http://localhost:3001" style="width: 100%;">
-                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 8px; margin-bottom: 12px;">
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-top: 8px; margin-bottom: 12px;">
                             ⚠️ <strong>Backend musi być uruchomiony!</strong>
                         </p>
                         <div style="display: flex; gap: 10px; align-items: center;">
@@ -670,7 +799,7 @@
                             </button>
                             <span id="backend-status" style="font-size: 14px;"></span>
                         </div>
-                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 12px; padding: 12px; background: var(--bg-hover); border-radius: 8px;">
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-top: 12px; padding: 12px; background: var(--bg-hover); border-radius: 8px;">
                             <strong>📝 Jak uruchomić backend:</strong><br>
                             Otwórz nowy terminal i wpisz: <code style="background: var(--bg-dark); padding: 2px 6px; border-radius: 4px; color: var(--primary);">npm run server</code>
                         </p>
@@ -691,7 +820,7 @@
                         <label style="display: block; margin-bottom: 8px; font-weight: 600;">Personal Access Token</label>
                         <input type="password" id="setting-github-token" class="search-box" 
                                placeholder="ghp_..." style="width: 100%;">
-                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
                             <a href="https://github.com/settings/tokens" target="_blank" style="color: var(--primary);">
                                 Stwórz token na GitHub →
                             </a>
@@ -758,7 +887,7 @@
                         </button>
                         <input type="file" id="import-data-file" accept=".json" style="display: none;">
                         
-                        <p style="color: var(--text-secondary); margin-top: 5px; font-size: 12px;">
+                        <p style="color: var(--text-secondary); margin-top: 5px; font-size: 13px;">
                             💡 Dane są przechowywane lokalnie w przeglądarce. Eksportuj regularnie kopie zapasowe!
                         </p>
                     </div>
@@ -799,7 +928,7 @@
                         </button>
                     </div>
                     
-                    <p style="color: var(--text-secondary); margin-top: 15px; font-size: 12px; font-style: italic;">
+                    <p style="color: var(--text-secondary); margin-top: 15px; font-size: 13px; font-style: italic;">
                         💡 Wskazówka: Te funkcje są przydatne podczas testowania aplikacji
                     </p>
                 </div>
@@ -829,7 +958,7 @@
                         <div id="database-status-details" style="color: var(--text-secondary); font-size: 14px; white-space: pre-line;"></div>
                     </div>
                     
-                    <p style="color: var(--text-secondary); margin-top: 15px; font-size: 12px; font-style: italic;">
+                    <p style="color: var(--text-secondary); margin-top: 15px; font-size: 13px; font-style: italic;">
                         💡 Osierocone fiszki to fiszki przypisane do usuniętych wykładów
                     </p>
                 </div>
@@ -955,7 +1084,7 @@
                     <label style="display: block; margin-bottom: 8px; font-weight: 600;">Nazwa zajęć (opcjonalnie)</label>
                     <input type="text" id="input-schedule-title" class="search-box" 
                            placeholder="np. Wykład, Ćwiczenia, Laboratorium..." style="width: 100%;">
-                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                    <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
                         Jeśli puste, użyta zostanie nazwa przedmiotu
                     </p>
                 </div>
@@ -1070,6 +1199,45 @@
                     🗑️ Usuń wykład
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Pomodoro Timer Widget -->
+    <div id="pomodoro-widget" class="pomodoro-widget">
+        <div class="pomodoro-header" id="pomodoro-header">
+            <span>🍅 Pomodoro</span>
+            <button class="pomodoro-toggle" id="pomodoro-toggle">−</button>
+        </div>
+        <div class="pomodoro-body" id="pomodoro-body">
+            <div class="pomodoro-timer" id="pomodoro-timer">25:00</div>
+            <div class="pomodoro-status" id="pomodoro-status">Praca</div>
+            <div class="pomodoro-controls">
+                <button class="pomodoro-btn" id="pomodoro-start">▶️</button>
+                <button class="pomodoro-btn" id="pomodoro-pause" style="display: none;">⏸️</button>
+                <button class="pomodoro-btn" id="pomodoro-reset">🔄</button>
+            </div>
+            <div class="pomodoro-sessions">
+                <span id="pomodoro-session-count">0</span> / 4 sesje
+            </div>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Help -->
+    <div id="keyboard-help" class="keyboard-help" style="display: none;">
+        <div class="keyboard-help-content">
+            <h3>⌨️ Skróty klawiszowe</h3>
+            <div class="shortcut-list">
+                <div class="shortcut-item"><kbd>Spacja</kbd> Przewróć fiszkę</div>
+                <div class="shortcut-item"><kbd>1</kbd> Znowu (nie umiem)</div>
+                <div class="shortcut-item"><kbd>2</kbd> Trudne</div>
+                <div class="shortcut-item"><kbd>3</kbd> Dobre</div>
+                <div class="shortcut-item"><kbd>4</kbd> Łatwe</div>
+                <div class="shortcut-item"><kbd>←</kbd> Poprzednia fiszka</div>
+                <div class="shortcut-item"><kbd>→</kbd> Następna fiszka</div>
+                <div class="shortcut-item"><kbd>?</kbd> Pokaż/ukryj pomoc</div>
+                <div class="shortcut-item"><kbd>Esc</kbd> Zakończ sesję</div>
+            </div>
+            <button class="btn" onclick="document.getElementById('keyboard-help').style.display='none'">Zamknij</button>
         </div>
     </div>
 

@@ -16,7 +16,8 @@
     --bg-card: #1a1a2e;
     --bg-hover: #252538;
     --text: #e2e8f0;
-    --text-secondary: #94a3b8;
+    --text-secondary: #a8b4c4; /* Improved contrast: was #94a3b8 */
+    --text-muted: #7a8899; /* For less important hints */
     --border: #2d2d44;
 }
 
@@ -457,6 +458,21 @@ label.btn:active {
 .search-box:focus {
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Placeholder text - ensure good visibility */
+.search-box::placeholder,
+textarea::placeholder,
+input::placeholder {
+    color: #6b7a8a;
+    opacity: 1;
+}
+
+/* Small text readability */
+.small-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
 }
 
 .lecture-item {
@@ -1575,3 +1591,527 @@ label.btn:active {
     font-size: 1.2em;
 }
 
+/* ============================================
+   DASHBOARD CHARTS & STATISTICS
+   ============================================ */
+
+.dashboard-charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.chart-card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid var(--border);
+}
+
+.chart-card h3 {
+    margin-bottom: 15px;
+    font-size: 16px;
+    color: var(--text);
+}
+
+.chart-card canvas {
+    max-height: 200px;
+}
+
+/* Due Cards Alert */
+.due-cards-alert {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15));
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 30px;
+    animation: pulse-border 2s infinite;
+}
+
+@keyframes pulse-border {
+    0%, 100% { border-color: rgba(99, 102, 241, 0.3); }
+    50% { border-color: rgba(99, 102, 241, 0.6); }
+}
+
+.due-cards-content {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.due-cards-icon {
+    font-size: 40px;
+}
+
+.due-cards-text {
+    flex: 1;
+    font-size: 18px;
+}
+
+.due-cards-text strong {
+    color: var(--primary);
+    font-size: 24px;
+}
+
+/* Streak Card Special Styling */
+.streak-card {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(234, 88, 12, 0.1)) !important;
+    border-color: rgba(249, 115, 22, 0.3) !important;
+}
+
+.streak-card .stat-value {
+    color: #f97316 !important;
+}
+
+/* ============================================
+   POMODORO TIMER WIDGET
+   ============================================ */
+
+.pomodoro-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    min-width: 180px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.pomodoro-widget.minimized .pomodoro-body {
+    display: none;
+}
+
+.pomodoro-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    cursor: move;
+    font-weight: 600;
+}
+
+.pomodoro-toggle {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0 5px;
+}
+
+.pomodoro-body {
+    padding: 20px;
+    text-align: center;
+}
+
+.pomodoro-timer {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+    font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+.pomodoro-status {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 15px;
+}
+
+.pomodoro-status.work {
+    color: #ef4444;
+}
+
+.pomodoro-status.break {
+    color: #10b981;
+}
+
+.pomodoro-controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.pomodoro-btn {
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 15px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pomodoro-btn:hover {
+    background: var(--bg-hover);
+    transform: scale(1.05);
+}
+
+.pomodoro-sessions {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* ============================================
+   KEYBOARD SHORTCUTS HELP
+   ============================================ */
+
+.keyboard-help {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.keyboard-help-content {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 30px;
+    max-width: 400px;
+    width: 90%;
+}
+
+.keyboard-help-content h3 {
+    margin-bottom: 20px;
+    font-size: 20px;
+}
+
+.shortcut-list {
+    margin-bottom: 20px;
+}
+
+.shortcut-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.shortcut-item:last-child {
+    border-bottom: none;
+}
+
+kbd {
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-family: 'SF Mono', 'Consolas', monospace;
+    font-size: 12px;
+    min-width: 60px;
+    text-align: center;
+}
+
+/* ============================================
+   SRS RATING BUTTONS
+   ============================================ */
+
+.srs-rating-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.srs-btn {
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: 2px solid transparent;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 80px;
+}
+
+.srs-btn.again {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2));
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.srs-btn.hard {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(234, 88, 12, 0.2));
+    border-color: #f97316;
+    color: #f97316;
+}
+
+.srs-btn.good {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.2));
+    border-color: #22c55e;
+    color: #22c55e;
+}
+
+.srs-btn.easy {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.2));
+    border-color: #3b82f6;
+    color: #3b82f6;
+}
+
+.srs-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.srs-btn .interval {
+    display: block;
+    font-size: 11px;
+    font-weight: 400;
+    opacity: 0.8;
+    margin-top: 4px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dashboard-charts {
+        grid-template-columns: 1fr;
+    }
+    
+    .due-cards-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .pomodoro-widget {
+        bottom: 10px;
+        right: 10px;
+        left: 10px;
+        min-width: auto;
+    }
+    
+    .srs-rating-buttons {
+        flex-wrap: wrap;
+    }
+    
+    .srs-btn {
+        flex: 1;
+        min-width: 70px;
+    }
+}
+
+/* ============================================
+   CLOZE FLASHCARDS
+   ============================================ */
+
+.cloze-cards-grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+}
+
+.cloze-card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 20px;
+    transition: all 0.2s;
+}
+
+.cloze-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.cloze-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.cloze-card-number {
+    background: var(--primary);
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.cloze-card-category {
+    background: var(--bg-dark);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.cloze-card-difficulty {
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: auto;
+}
+
+.cloze-card-content {
+    font-size: 16px;
+    line-height: 1.8;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+}
+
+.cloze-card-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.cloze-card-actions button {
+    background: var(--bg-dark);
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+}
+
+.cloze-card-actions button:hover {
+    background: var(--primary);
+    color: white;
+}
+
+/* Cloze Blank Styles */
+.cloze-blank {
+    display: inline-block;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.cloze-hidden {
+    background: linear-gradient(135deg, var(--primary), #6366f1);
+    color: white;
+    padding: 4px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.cloze-blank:hover .cloze-hidden {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.cloze-answer {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    padding: 4px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    animation: clozeReveal 0.3s ease;
+}
+
+@keyframes clozeReveal {
+    0% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.cloze-blank.revealed {
+    /* Visual indicator that answer is shown */
+    filter: brightness(1.1);
+}
+
+/* Study Cloze Card */
+.study-cloze-card {
+    background: linear-gradient(135deg, var(--bg-card), var(--bg-dark));
+    border: 2px solid var(--primary);
+}
+
+.study-cloze-card .cloze-hidden {
+    font-size: 18px;
+    padding: 8px 24px;
+}
+
+.study-cloze-card .cloze-answer {
+    font-size: 18px;
+    padding: 8px 24px;
+}
+
+/* Responsive Cloze */
+@media (max-width: 768px) {
+    .cloze-cards-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .cloze-card-actions {
+        justify-content: center;
+    }
+    
+    .study-cloze-card {
+        font-size: 16px !important;
+        padding: 24px !important;
+    }
+}
+
+/* ============================================
+   EXAM/KOLOKWIUM STYLES
+   ============================================ */
+
+.exam-gen-btn {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.exam-gen-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.exam-gen-btn:active {
+    transform: translateY(-1px);
+}
+
+.exam-flashcard {
+    transition: all 0.3s;
+}
+
+.exam-flashcard:hover {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.exam-quiz-option {
+    transition: all 0.2s;
+}
+
+.exam-quiz-option:hover {
+    background: var(--bg-hover) !important;
+    border-color: var(--primary) !important;
+}
+
+/* Exam tab highlight */
+.tab-btn[data-lecture-tab="exam"] {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(234, 88, 12, 0.1));
+    border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.tab-btn[data-lecture-tab="exam"].active {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(234, 88, 12, 0.2));
+    border-color: #f97316;
+    color: #f97316;
+}

@@ -9,6 +9,9 @@ import * as ai from './modules/ai.js';
 import * as documentProcessor from './modules/document-processor.js';
 import { generateLectureTitle } from './modules/ai.js';
 
+// Current exam context
+window.currentExamId = null;
+
 // ============================================
 // LATEX RENDERING HELPERS
 // ============================================
@@ -365,6 +368,16 @@ function setupEventListeners() {
         document.querySelector('[data-tab="lectures"]').click();
     });
     
+    // Link to subjects from new lecture form
+    document.getElementById('link-to-subjects')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.querySelector('[data-tab="subjects"]').click();
+        // Open add subject modal after a short delay
+        setTimeout(() => {
+            document.getElementById('btn-add-subject')?.click();
+        }, 300);
+    });
+    
     // Recording
     document.getElementById('btn-start-recording').addEventListener('click', handleStartRecording);
     document.getElementById('btn-stop-recording').addEventListener('click', handleStopRecording);
@@ -617,15 +630,27 @@ function setupEventListeners() {
 async function loadDashboard() {
     const subjects = await db.listSubjects();
     const lectures = await db.listLectures();
-    const flashcards = await db.listFlashcards();
     
-    // Update stats
-    document.getElementById('stat-subjects').textContent = subjects.length;
-    document.getElementById('stat-flashcards').textContent = flashcards.length;
+    // Get study statistics
+    const stats = await db.getStudyStatistics();
     
-    // TODO: Calculate accuracy and streak
-    document.getElementById('stat-accuracy').textContent = '0%';
-    document.getElementById('stat-streak').textContent = '0';
+    // Update stats cards
+    document.getElementById('stat-due-today').textContent = stats.dueCount;
+    document.getElementById('stat-flashcards').textContent = stats.masteredCount;
+    document.getElementById('stat-accuracy').textContent = stats.accuracy + '%';
+    document.getElementById('stat-streak').textContent = stats.streak;
+    
+    // Show/hide due cards alert
+    const dueAlert = document.getElementById('due-cards-alert');
+    if (stats.dueCount > 0) {
+        dueAlert.style.display = 'block';
+        document.getElementById('due-cards-count').textContent = stats.dueCount;
+    } else {
+        dueAlert.style.display = 'none';
+    }
+    
+    // Load charts
+    await loadDashboardCharts();
     
     // Show recent activity
     const recentLectures = lectures.slice(0, 3);
@@ -647,6 +672,99 @@ async function loadDashboard() {
     }).join('');
     
     document.getElementById('recent-activity').innerHTML = activityHTML || '<p style="text-align: center; color: var(--text-secondary);">Brak ostatniej aktywności</p>';
+}
+
+// Dashboard Charts
+let activityChart = null;
+let accuracyChart = null;
+
+async function loadDashboardCharts() {
+    const activity = await db.getStudyActivity(7);
+    const dates = Object.keys(activity);
+    const reviewedData = dates.map(d => activity[d].reviewed);
+    const correctData = dates.map(d => activity[d].correct);
+    
+    // Activity Chart
+    const activityCtx = document.getElementById('activity-chart');
+    if (activityCtx) {
+        if (activityChart) activityChart.destroy();
+        activityChart = new Chart(activityCtx, {
+            type: 'bar',
+            data: {
+                labels: dates.map(d => {
+                    const date = new Date(d);
+                    return date.toLocaleDateString('pl-PL', { weekday: 'short' });
+                }),
+                datasets: [{
+                    label: 'Powtórzone fiszki',
+                    data: reviewedData,
+                    backgroundColor: 'rgba(99, 102, 241, 0.6)',
+                    borderColor: '#6366f1',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#94a3b8' },
+                        grid: { color: 'rgba(255,255,255,0.05)' }
+                    },
+                    x: {
+                        ticks: { color: '#94a3b8' },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Accuracy Chart
+    const accuracyCtx = document.getElementById('accuracy-chart');
+    if (accuracyCtx) {
+        const stats = await db.getStudyStatistics();
+        const masteredPercent = stats.totalFlashcards > 0 
+            ? Math.round((stats.masteredCount / stats.totalFlashcards) * 100) 
+            : 0;
+        
+        if (accuracyChart) accuracyChart.destroy();
+        accuracyChart = new Chart(accuracyCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Opanowane', 'W nauce', 'Nowe'],
+                datasets: [{
+                    data: [
+                        stats.masteredCount,
+                        stats.totalFlashcards - stats.masteredCount - stats.dueCount,
+                        stats.dueCount
+                    ],
+                    backgroundColor: [
+                        '#10b981',
+                        '#6366f1',
+                        '#f59e0b'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#94a3b8', padding: 15 }
+                    }
+                },
+                cutout: '65%'
+            }
+        });
+    }
 }
 
 // ============================================
@@ -715,10 +833,11 @@ function filterSubjects() {
 async function loadLectures() {
     const lectures = await db.listLectures();
     const subjects = await db.listSubjects();
+    const exams = await db.listExams();
     
     const list = document.getElementById('lectures-list');
     
-    if (lectures.length === 0) {
+    if (lectures.length === 0 && exams.length === 0) {
         list.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Brak wykładów. Dodaj pierwszy!</p>';
         return;
     }
@@ -738,18 +857,33 @@ async function loadLectures() {
         }
     });
     
+    // Grupuj kolokwia według przedmiotów
+    const examsBySubject = {};
+    exams.forEach(exam => {
+        if (exam.subjectId) {
+            if (!examsBySubject[exam.subjectId]) {
+                examsBySubject[exam.subjectId] = [];
+            }
+            examsBySubject[exam.subjectId].push(exam);
+        }
+    });
+    
     // Generuj HTML z podziałem na przedmioty
     let html = '';
     
     // Wykłady z przypisanym przedmiotem
     subjects.forEach(subject => {
-        const subjectLectures = lecturesBySubject[subject.id];
-        if (subjectLectures && subjectLectures.length > 0) {
-            const subjectCollapseId = `subject-lectures-${subject.id}`;
-            const isCollapsed = localStorage.getItem(`lecture-section-${subjectCollapseId}`) === 'collapsed';
+        const subjectLectures = lecturesBySubject[subject.id] || [];
+        const subjectExams = examsBySubject[subject.id] || [];
+        
+        // Pokaż przedmiot tylko jeśli ma wykłady lub kolokwia
+        if (subjectLectures.length > 0 || subjectExams.length > 0) {
+            const subjectCollapseId = `subject-${subject.id}`;
+            const isSubjectCollapsed = localStorage.getItem(`lecture-section-${subjectCollapseId}`) === 'collapsed';
             
             html += `
-                <div style="margin-bottom: 30px;">
+                <div class="subject-container" style="margin-bottom: 30px;">
+                    <!-- Nagłówek przedmiotu -->
                     <div class="collapsible-header" onclick="toggleLectureSection('${subjectCollapseId}')" 
                          style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px; padding: 15px; 
                                 background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; 
@@ -764,41 +898,112 @@ async function loadLectures() {
                                 ${subject.name}
                             </h3>
                             <p style="font-size: 13px; color: var(--text-secondary); margin: 2px 0 0 0;">
-                                ${subjectLectures.length} ${subjectLectures.length === 1 ? 'wykład' : 'wykładów'}
+                                ${subjectExams.length > 0 ? `${subjectExams.length} ${subjectExams.length === 1 ? 'kolokwium' : 'kolokwia'} • ` : ''}${subjectLectures.length} ${subjectLectures.length === 1 ? 'wykład' : 'wykładów'}
                             </p>
                         </div>
-                        <div class="collapse-icon" style="font-size: 18px; color: ${subject.color}; transition: transform 0.3s; transform: rotate(${isCollapsed ? '-90deg' : '0deg'});">
+                        <button class="btn btn-create-exam" data-subject-id="${subject.id}" data-subject-name="${subject.name}" data-subject-color="${subject.color}"
+                                style="padding: 8px 14px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(139, 92, 246, 0.2)); 
+                                       border: 1px solid rgba(168, 85, 247, 0.5); color: #a855f7; font-size: 13px; border-radius: 8px;"
+                                onclick="event.stopPropagation(); openCreateExamModal('${subject.id}', '${subject.name.replace(/'/g, "\\'")}', '${subject.color}');"
+                                title="Utwórz kolokwium z wykładów tego przedmiotu">
+                            📝 Nowe kolokwium
+                        </button>
+                        <div class="collapse-icon" style="font-size: 18px; color: ${subject.color}; transition: transform 0.3s; transform: rotate(${isSubjectCollapsed ? '-90deg' : '0deg'});">
                             ▼
                         </div>
                     </div>
-                    <div id="${subjectCollapseId}" class="collapsible-content" style="overflow: hidden; transition: max-height 0.3s ease, opacity 0.3s ease; ${isCollapsed ? 'max-height: 0px; opacity: 0; margin-bottom: 0;' : ''}">
-                        <div style="display: flex; flex-direction: column; gap: 10px; padding-left: 20px;">
-                            ${subjectLectures.map(lecture => `
-                                <div class="lecture-item" data-lecture-id="${lecture.id}">
-                                    <div class="lecture-icon" style="background: ${subject.color}22; color: ${subject.color};">📖</div>
-                                    <div class="lecture-info">
-                                        <div class="lecture-title">${lecture.title}</div>
-                                        <div class="lecture-date">${new Date(lecture.createdAt).toLocaleString('pl-PL')}</div>
+                    
+                    <!-- Zawartość przedmiotu -->
+                    <div id="${subjectCollapseId}" class="collapsible-content" style="overflow: hidden; transition: max-height 0.3s ease, opacity 0.3s ease; ${isSubjectCollapsed ? 'max-height: 0px; opacity: 0; margin-bottom: 0;' : ''}">
+                        <div style="padding-left: 20px;">
+                            
+                            ${subjectExams.length > 0 ? `
+                            <!-- Sekcja Kolokwia -->
+                            <div style="margin-bottom: 20px;">
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                                    <div style="width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(139, 92, 246, 0.2)); display: flex; align-items: center; justify-content: center; font-size: 14px;">
+                                        📝
                                     </div>
-                                    <div class="lecture-actions" style="display: flex; gap: 8px; align-items: center;">
-                                        <button class="btn btn-secondary btn-edit-lecture" data-lecture-id="${lecture.id}" 
-                                                style="padding: 6px 12px; font-size: 12px; background: rgba(59, 130, 246, 0.1); 
-                                                       border: 1px solid rgba(59, 130, 246, 0.3); color: #3b82f6;" 
-                                                title="Edytuj wykład">
-                                            ✏️
-                                        </button>
-                                        <button class="btn btn-secondary btn-delete-lecture" data-lecture-id="${lecture.id}" 
-                                                style="padding: 6px 12px; font-size: 12px; background: rgba(239, 68, 68, 0.1); 
-                                                       border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444;" 
-                                                title="Usuń wykład">
-                                            🗑️
-                                        </button>
-                                        <button class="btn btn-primary btn-open-lecture" data-lecture-id="${lecture.id}" style="padding: 8px 16px; background: ${subject.color};">
-                                            Otwórz
-                                        </button>
-                                    </div>
+                                    <span style="font-weight: 600; color: #a855f7; font-size: 15px;">Kolokwia</span>
                                 </div>
-                            `).join('')}
+                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    ${subjectExams.map(exam => `
+                                        <div class="exam-item" data-exam-id="${exam.id}" 
+                                             style="display: flex; align-items: center; gap: 12px; padding: 12px 15px; 
+                                                    background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(139, 92, 246, 0.08)); 
+                                                    border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 10px; cursor: pointer;
+                                                    transition: all 0.2s;"
+                                             onmouseover="this.style.borderColor='#a855f7'; this.style.transform='translateX(4px)';"
+                                             onmouseout="this.style.borderColor='rgba(168, 85, 247, 0.3)'; this.style.transform='none';">
+                                            <div style="width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #a855f7, #8b5cf6); display: flex; align-items: center; justify-content: center; color: white; font-size: 16px;">
+                                                📝
+                                            </div>
+                                            <div style="flex: 1;">
+                                                <div style="font-weight: 600; font-size: 15px; color: var(--text);">${exam.name}</div>
+                                                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                                                    ${exam.lectureIds ? exam.lectureIds.length : 0} wykładów • ${new Date(exam.createdAt).toLocaleDateString('pl-PL')}
+                                                </div>
+                                            </div>
+                                            <div style="display: flex; gap: 6px;">
+                                                <button class="btn btn-delete-exam" data-exam-id="${exam.id}"
+                                                        style="padding: 6px 10px; font-size: 12px; background: rgba(239, 68, 68, 0.1); 
+                                                               border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; border-radius: 6px;"
+                                                        onclick="event.stopPropagation(); deleteExamConfirm('${exam.id}');"
+                                                        title="Usuń kolokwium">
+                                                    🗑️
+                                                </button>
+                                                <button class="btn btn-open-exam" data-exam-id="${exam.id}"
+                                                        style="padding: 6px 14px; background: linear-gradient(135deg, #a855f7, #8b5cf6); color: white; border-radius: 6px; font-size: 13px;"
+                                                        onclick="event.stopPropagation(); openExamView('${exam.id}');">
+                                                    Otwórz
+                                                </button>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            ` : ''}
+                            
+                            ${subjectLectures.length > 0 ? `
+                            <!-- Sekcja Wykłady -->
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                                    <div style="width: 28px; height: 28px; border-radius: 8px; background: ${subject.color}22; display: flex; align-items: center; justify-content: center; font-size: 14px;">
+                                        📖
+                                    </div>
+                                    <span style="font-weight: 600; color: ${subject.color}; font-size: 15px;">Wykłady</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    ${subjectLectures.map(lecture => `
+                                        <div class="lecture-item" data-lecture-id="${lecture.id}">
+                                            <div class="lecture-icon" style="background: ${subject.color}22; color: ${subject.color};">📖</div>
+                                            <div class="lecture-info">
+                                                <div class="lecture-title">${lecture.title}</div>
+                                                <div class="lecture-date">${new Date(lecture.createdAt).toLocaleString('pl-PL')}</div>
+                                            </div>
+                                            <div class="lecture-actions" style="display: flex; gap: 8px; align-items: center;">
+                                                <button class="btn btn-secondary btn-edit-lecture" data-lecture-id="${lecture.id}" 
+                                                        style="padding: 6px 12px; font-size: 12px; background: rgba(59, 130, 246, 0.1); 
+                                                               border: 1px solid rgba(59, 130, 246, 0.3); color: #3b82f6;" 
+                                                        title="Edytuj wykład">
+                                                    ✏️
+                                                </button>
+                                                <button class="btn btn-secondary btn-delete-lecture" data-lecture-id="${lecture.id}" 
+                                                        style="padding: 6px 12px; font-size: 12px; background: rgba(239, 68, 68, 0.1); 
+                                                               border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444;" 
+                                                        title="Usuń wykład">
+                                                    🗑️
+                                                </button>
+                                                <button class="btn btn-primary btn-open-lecture" data-lecture-id="${lecture.id}" style="padding: 8px 16px; background: ${subject.color};">
+                                                    Otwórz
+                                                </button>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            ` : ''}
+                            
                         </div>
                     </div>
                 </div>
@@ -1111,19 +1316,29 @@ async function handleNewLectureSubmit(e) {
     const titleInput = document.getElementById('lecture-title');
     const transcriptionText = document.getElementById('lecture-transcription').value;
     const notes = document.getElementById('lecture-notes').value;
+    const saveBtn = document.getElementById('btn-save-lecture');
+    const saveStatus = document.getElementById('save-status');
     
     if (!subjectId) {
         alert('❌ Wybierz przedmiot!');
         return;
     }
     
+    // Show loading state
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '⏳ Zapisywanie...';
+    saveStatus.style.display = 'inline';
+    saveStatus.textContent = '';
+    
     // Generate title if not exists - ASYNC AI GENERATION
     let title = titleInput.value;
     if (!title || title.trim() === '') {
         if (transcriptionText) {
+            saveStatus.textContent = '🤖 AI generuje tytuł...';
             console.log('🤖 Generuję tytuł przez AI z transkrypcji...');
             title = await generateLectureTitle(transcriptionText);
         } else if (notes) {
+            saveStatus.textContent = '🤖 AI generuje tytuł...';
             console.log('🤖 Generuję tytuł przez AI z notatek...');
             title = await generateLectureTitle(notes);
         } else {
@@ -1132,6 +1347,8 @@ async function handleNewLectureSubmit(e) {
     }
     
     try {
+        saveStatus.textContent = '💾 Zapisuję...';
+        
         // Create lecture
         const lecture = await db.createLecture(subjectId, title);
         
@@ -1151,9 +1368,11 @@ async function handleNewLectureSubmit(e) {
         
         showToast('✅ Wykład zapisany!');
         
-        // Reset form
+        // Reset form and button
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '💾 Zapisz wykład';
+        saveStatus.style.display = 'none';
         document.getElementById('new-lecture-form').reset();
-        document.getElementById('lecture-title-section').style.display = 'none';
         document.getElementById('transcription-section').style.display = 'none';
         currentAudioFile = null;
         
@@ -1166,6 +1385,10 @@ async function handleNewLectureSubmit(e) {
         
     } catch (error) {
         console.error('Error saving lecture:', error);
+        // Reset button on error
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '💾 Zapisz wykład';
+        saveStatus.style.display = 'none';
         alert('❌ Błąd podczas zapisywania wykładu');
     }
 }
@@ -1265,7 +1488,7 @@ async function handleTranscription(audioFile) {
         
         const generatedTitle = await generateLectureTitle(text);
         titleInput.value = generatedTitle;
-        titleSection.style.display = 'block';
+        // Title section is now always visible
         
         loadingMsg.remove();
         
@@ -1531,7 +1754,7 @@ async function handleDocumentExtraction(file) {
         // Generate title from extracted content
         const generatedTitle = await generateLectureTitle(formattedText);
         titleInput.value = generatedTitle;
-        titleSection.style.display = 'block';
+        // Title section is now always visible
         
         // Hide progress
         progress.style.display = 'none';
@@ -2493,6 +2716,26 @@ async function openLectureView(lectureId) {
                 '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">Brak quizu. Użyj przycisku "Generuj z AI" aby stworzyć quiz automatycznie.</p>';
         }
         
+        // Load Cloze flashcards
+        if (lecture.clozeCards && lecture.clozeCards.length > 0) {
+            renderClozeCards(lecture.clozeCards);
+        } else {
+            document.getElementById('lecture-cloze-content').innerHTML = 
+                '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">Brak fiszek Cloze. Użyj przycisku "Generuj z AI" aby stworzyć fiszki z lukami.</p>';
+        }
+        
+        // Load exam requirements
+        const examRequirementsInput = document.getElementById('exam-requirements-input');
+        if (examRequirementsInput) {
+            examRequirementsInput.value = lecture.examRequirements || '';
+        }
+        
+        // Hide exam materials container initially
+        const examMaterialsContainer = document.getElementById('exam-materials-container');
+        if (examMaterialsContainer) {
+            examMaterialsContainer.style.display = 'none';
+        }
+        
         console.log('Switching to lecture-view tab...');
         // Switch to lecture view
         switchTab('lecture-view');
@@ -2766,7 +3009,7 @@ function setupLectureViewListeners() {
                         <div class="card flashcard-content">
                             <div style="margin-bottom: 10px; font-weight: 600;">❓ ${card.question}</div>
                             <div style="color: var(--text-secondary);">💡 ${card.answer}</div>
-                            ${card.category ? `<div style="margin-top: 10px; font-size: 12px; color: var(--primary);">📁 ${card.category}</div>` : ''}
+                            ${card.category ? `<div style="margin-top: 10px; font-size: 13px; color: var(--primary);">📁 ${card.category}</div>` : ''}
                         </div>
                     `).join('')}
                 </div>
@@ -2824,6 +3067,312 @@ function setupLectureViewListeners() {
             btn.disabled = false;
         }
     });
+    
+    // Generate Cloze flashcards
+    document.getElementById('btn-generate-cloze').addEventListener('click', async () => {
+        if (!window.currentLectureId) return;
+        
+        const lecture = await db.getLecture(window.currentLectureId);
+        if (!lecture.transcription) {
+            alert('❌ Brak transkrypcji do przetworzenia');
+            return;
+        }
+        
+        const btn = document.getElementById('btn-generate-cloze');
+        btn.disabled = true;
+        btn.textContent = '⏳ Generowanie...';
+        
+        try {
+            const clozeCards = await ai.generateClozeFlashcards(lecture.transcription, (percent, message) => {
+                btn.textContent = `⏳ ${message}`;
+            });
+            
+            // Save to database as flashcards with type: 'cloze'
+            for (const card of clozeCards) {
+                await db.addFlashcard({
+                    type: 'cloze',
+                    text: card.text,
+                    clozes: card.clozes,
+                    category: card.category,
+                    difficulty: card.difficulty,
+                    front: card.text, // For compatibility
+                    back: card.clozes.map(c => c.answer).join(', '),
+                    subjectId: lecture.subjectId,
+                    lectureId: window.currentLectureId
+                });
+            }
+            
+            // Save to lecture for persistence
+            await db.updateLecture(window.currentLectureId, { clozeCards });
+            
+            // Render cloze cards
+            renderClozeCards(clozeCards);
+            
+            btn.textContent = '✨ Generuj z AI';
+            btn.disabled = false;
+            
+            alert(`✅ Wygenerowano ${clozeCards.length} fiszek Cloze!`);
+            
+        } catch (error) {
+            console.error('Error generating cloze flashcards:', error);
+            alert(`❌ Błąd: ${error.message}`);
+            btn.textContent = '✨ Generuj z AI';
+            btn.disabled = false;
+        }
+    });
+    
+    // ============================================
+    // EXAM/KOLOKWIUM HANDLERS
+    // ============================================
+    
+    // Save exam requirements
+    document.getElementById('btn-save-exam-requirements')?.addEventListener('click', async () => {
+        if (!window.currentLectureId) return;
+        
+        const requirements = document.getElementById('exam-requirements-input').value;
+        
+        try {
+            await db.updateLecture(window.currentLectureId, { examRequirements: requirements });
+            showToast('✅ Wymagania na kolokwium zapisane!');
+        } catch (error) {
+            console.error('Error saving exam requirements:', error);
+            alert('❌ Błąd zapisywania');
+        }
+    });
+    
+    // Generate exam summary
+    document.getElementById('btn-generate-exam-summary')?.addEventListener('click', async () => {
+        await generateExamMaterial('summary', '📋 Podsumowanie na kolokwium');
+    });
+    
+    // Generate exam flashcards
+    document.getElementById('btn-generate-exam-flashcards')?.addEventListener('click', async () => {
+        await generateExamMaterial('flashcards', '🎴 Fiszki na kolokwium');
+    });
+    
+    // Generate exam quiz
+    document.getElementById('btn-generate-exam-quiz')?.addEventListener('click', async () => {
+        await generateExamMaterial('quiz', '❓ Quiz egzaminacyjny');
+    });
+    
+    // Generate cheatsheet
+    document.getElementById('btn-generate-exam-cheatsheet')?.addEventListener('click', async () => {
+        await generateExamMaterial('cheatsheet', '📑 Ściągawka');
+    });
+    
+    // Copy exam materials
+    document.getElementById('btn-copy-exam-materials')?.addEventListener('click', () => {
+        const content = document.getElementById('exam-materials-content');
+        if (content) {
+            navigator.clipboard.writeText(content.innerText)
+                .then(() => showToast('📋 Skopiowano do schowka!'))
+                .catch(() => alert('❌ Błąd kopiowania'));
+        }
+    });
+}
+
+/**
+ * Generate exam material of specified type
+ */
+async function generateExamMaterial(materialType, title) {
+    if (!window.currentLectureId) return;
+    
+    const requirements = document.getElementById('exam-requirements-input')?.value;
+    if (!requirements || requirements.trim().length === 0) {
+        alert('❌ Najpierw wpisz wymagania na kolokwium!');
+        return;
+    }
+    
+    const lecture = await db.getLecture(window.currentLectureId);
+    const btn = document.getElementById(`btn-generate-exam-${materialType}`);
+    const container = document.getElementById('exam-materials-container');
+    const contentDiv = document.getElementById('exam-materials-content');
+    const titleEl = document.getElementById('exam-materials-title');
+    
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    
+    try {
+        const result = await ai.generateExamMaterials(
+            requirements,
+            lecture.transcription || '',
+            materialType,
+            (percent, message) => {
+                // Could show progress here
+            }
+        );
+        
+        // Show results container
+        container.style.display = 'block';
+        titleEl.textContent = title;
+        
+        // Render based on type
+        if (materialType === 'flashcards') {
+            renderExamFlashcards(result.content, contentDiv);
+        } else if (materialType === 'quiz') {
+            renderExamQuiz(result.content, contentDiv);
+        } else {
+            // Summary or cheatsheet - markdown
+            setContentWithLatex('exam-materials-content', renderMarkdownWithLatex(result.content));
+        }
+        
+        // Save to lecture
+        const examMaterials = lecture.examMaterials || {};
+        examMaterials[materialType] = result.content;
+        await db.updateLecture(window.currentLectureId, { examMaterials });
+        
+        showToast(`✅ ${title} wygenerowane!`);
+        
+        // Scroll to results
+        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+    } catch (error) {
+        console.error('Error generating exam materials:', error);
+        alert(`❌ Błąd: ${error.message}`);
+    } finally {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+    }
+}
+
+/**
+ * Render exam flashcards
+ */
+function renderExamFlashcards(flashcards, container) {
+    if (!Array.isArray(flashcards)) {
+        container.innerHTML = renderMarkdownWithLatex(flashcards);
+        renderLatex(container);
+        return;
+    }
+    
+    container.innerHTML = `
+        <div style="display: grid; gap: 15px;">
+            ${flashcards.map((card, idx) => `
+                <div class="card exam-flashcard" style="cursor: pointer;" onclick="this.classList.toggle('flipped')">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                        <span style="background: var(--primary); color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                            #${idx + 1}
+                        </span>
+                        ${card.category ? `<span style="font-size: 13px; color: var(--text-secondary);">📁 ${card.category}</span>` : ''}
+                    </div>
+                    <div class="exam-flashcard-question" style="font-weight: 600; font-size: 16px; margin-bottom: 12px;">
+                        ❓ ${card.question}
+                    </div>
+                    <div class="exam-flashcard-answer" style="display: none; padding: 15px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1)); border-radius: 8px; border-left: 3px solid #10b981;">
+                        💡 ${card.answer}
+                        ${card.examTip ? `<div style="margin-top: 10px; font-size: 13px; color: var(--text-secondary);"><strong>🎓 Wskazówka:</strong> ${card.examTip}</div>` : ''}
+                    </div>
+                    <div style="text-align: center; margin-top: 10px; font-size: 13px; color: var(--text-secondary);">
+                        Kliknij, aby zobaczyć odpowiedź
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+        <style>
+            .exam-flashcard.flipped .exam-flashcard-answer { display: block !important; }
+            .exam-flashcard.flipped .exam-flashcard-question { color: var(--text-secondary); }
+        </style>
+    `;
+    
+    renderLatex(container);
+}
+
+/**
+ * Render exam quiz
+ */
+function renderExamQuiz(questions, container) {
+    if (!Array.isArray(questions)) {
+        container.innerHTML = renderMarkdownWithLatex(questions);
+        renderLatex(container);
+        return;
+    }
+    
+    container.innerHTML = `
+        <div id="exam-quiz-questions">
+            ${questions.map((q, idx) => `
+                <div class="card exam-quiz-question" data-correct="${q.correctIndex}" style="margin-bottom: 15px;">
+                    <div style="display: flex; gap: 12px; margin-bottom: 15px;">
+                        <span style="flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600;">
+                            ${idx + 1}
+                        </span>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 16px;">${q.question}</div>
+                            ${q.category ? `<span style="font-size: 13px; color: var(--text-secondary);">📁 ${q.category}</span>` : ''}
+                        </div>
+                    </div>
+                    <div style="display: grid; gap: 8px;">
+                        ${q.options.map((opt, optIdx) => `
+                            <button class="exam-quiz-option" data-idx="${optIdx}" 
+                                    style="text-align: left; padding: 12px 15px; background: var(--bg-dark); border: 2px solid transparent; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                ${opt}
+                            </button>
+                        `).join('')}
+                    </div>
+                    <div class="exam-quiz-explanation" style="display: none; margin-top: 15px; padding: 12px; background: var(--bg-hover); border-radius: 8px;">
+                        <strong>📝 Wyjaśnienie:</strong> ${q.explanation || 'Brak wyjaśnienia'}
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="btn btn-primary" id="btn-check-exam-quiz" style="padding: 12px 30px;">
+                ✅ Sprawdź odpowiedzi
+            </button>
+        </div>
+    `;
+    
+    // Add click handlers for options
+    container.querySelectorAll('.exam-quiz-option').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const question = this.closest('.exam-quiz-question');
+            question.querySelectorAll('.exam-quiz-option').forEach(o => {
+                o.style.borderColor = 'transparent';
+                o.style.background = 'var(--bg-dark)';
+            });
+            this.style.borderColor = 'var(--primary)';
+            this.style.background = 'rgba(99, 102, 241, 0.2)';
+            this.dataset.selected = 'true';
+        });
+    });
+    
+    // Check answers button
+    document.getElementById('btn-check-exam-quiz')?.addEventListener('click', () => {
+        let correct = 0;
+        let total = 0;
+        
+        container.querySelectorAll('.exam-quiz-question').forEach(question => {
+            const correctIdx = parseInt(question.dataset.correct);
+            const selectedBtn = question.querySelector('.exam-quiz-option[data-selected="true"]');
+            
+            if (selectedBtn) {
+                total++;
+                const selectedIdx = parseInt(selectedBtn.dataset.idx);
+                
+                if (selectedIdx === correctIdx) {
+                    correct++;
+                    selectedBtn.style.background = 'rgba(16, 185, 129, 0.3)';
+                    selectedBtn.style.borderColor = '#10b981';
+                } else {
+                    selectedBtn.style.background = 'rgba(239, 68, 68, 0.3)';
+                    selectedBtn.style.borderColor = '#ef4444';
+                }
+            }
+            
+            // Show correct answer
+            const correctBtn = question.querySelectorAll('.exam-quiz-option')[correctIdx];
+            if (correctBtn) {
+                correctBtn.style.background = 'rgba(16, 185, 129, 0.3)';
+                correctBtn.style.borderColor = '#10b981';
+            }
+            
+            // Show explanation
+            question.querySelector('.exam-quiz-explanation').style.display = 'block';
+        });
+        
+        showToast(`📊 Wynik: ${correct}/${total} poprawnych odpowiedzi`);
+    });
+    
+    renderLatex(container);
 }
 
 // ============================================
@@ -2869,7 +3418,7 @@ function renderQuiz(questions) {
                     </span>
                     <div style="flex: 1;">
                         <div style="font-weight: 600; font-size: 16px; margin-bottom: 5px;">${q.question}</div>
-                        ${q.category ? `<span style="display: inline-block; background: var(--bg-card); padding: 4px 10px; border-radius: 6px; font-size: 12px; color: var(--text-secondary);">📁 ${q.category}</span>` : ''}
+                        ${q.category ? `<span style="display: inline-block; background: var(--bg-card); padding: 4px 10px; border-radius: 6px; font-size: 13px; color: var(--text-secondary);">📁 ${q.category}</span>` : ''}
                     </div>
                     <span class="quiz-result-icon" style="font-size: 24px; display: none;"></span>
                 </div>
@@ -2928,6 +3477,283 @@ function renderQuiz(questions) {
         checkQuizAnswers(questions);
     });
 }
+
+// ============================================
+// CLOZE FLASHCARDS HELPERS
+// ============================================
+
+/**
+ * Render Cloze flashcards in the lecture view
+ * @param {Array} clozeCards - Array of cloze cards with text and clozes
+ */
+function renderClozeCards(clozeCards) {
+    const container = document.getElementById('lecture-cloze-content');
+    
+    if (!clozeCards || clozeCards.length === 0) {
+        container.innerHTML = `
+            <p style="color: var(--text-secondary); text-align: center; padding: 40px;">
+                Brak fiszek Cloze. Użyj przycisku "Generuj z AI" aby stworzyć fiszki z lukami.
+            </p>`;
+        return;
+    }
+    
+    container.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <span style="color: var(--text-secondary);">
+                📊 ${clozeCards.length} fiszek Cloze | Kliknij lukę aby odsłonić odpowiedź
+            </span>
+            <button class="btn" id="btn-study-cloze" style="background: var(--primary); padding: 10px 20px;">
+                🎓 Tryb nauki
+            </button>
+        </div>
+        <div class="cloze-cards-grid">
+            ${clozeCards.map((card, idx) => renderSingleClozeCard(card, idx)).join('')}
+        </div>
+    `;
+    
+    // Add click handlers for cloze blanks
+    container.querySelectorAll('.cloze-blank').forEach(blank => {
+        blank.addEventListener('click', () => toggleCloze(blank));
+    });
+    
+    // Add study mode button handler
+    document.getElementById('btn-study-cloze')?.addEventListener('click', () => {
+        startClozeStudyMode(clozeCards);
+    });
+    
+    // Render LaTeX
+    renderLatex(container);
+}
+
+/**
+ * Render a single Cloze card HTML
+ */
+function renderSingleClozeCard(card, idx) {
+    // Convert {{c1::answer}} format to clickable blanks
+    let displayText = card.text;
+    
+    if (card.clozes && Array.isArray(card.clozes)) {
+        card.clozes.forEach(cloze => {
+            const pattern = new RegExp(`\\{\\{${cloze.id}::([^}]+)\\}\\}`, 'g');
+            displayText = displayText.replace(pattern, 
+                `<span class="cloze-blank" data-answer="${cloze.answer}" data-hint="${cloze.hint || ''}" data-revealed="false">
+                    <span class="cloze-hidden">[...]</span>
+                    <span class="cloze-answer" style="display: none;">${cloze.answer}</span>
+                </span>`
+            );
+        });
+    }
+    
+    const difficultyColors = {
+        easy: '#10b981',
+        medium: '#f59e0b',
+        hard: '#ef4444'
+    };
+    const difficultyLabels = {
+        easy: 'Łatwe',
+        medium: 'Średnie',
+        hard: 'Trudne'
+    };
+    
+    return `
+        <div class="card cloze-card" data-card-idx="${idx}">
+            <div class="cloze-card-header">
+                <span class="cloze-card-number">#${idx + 1}</span>
+                ${card.category ? `<span class="cloze-card-category">📁 ${card.category}</span>` : ''}
+                ${card.difficulty ? `<span class="cloze-card-difficulty" style="color: ${difficultyColors[card.difficulty] || '#888'};">
+                    ${difficultyLabels[card.difficulty] || card.difficulty}
+                </span>` : ''}
+            </div>
+            <div class="cloze-card-content">
+                ${displayText}
+            </div>
+            <div class="cloze-card-actions">
+                <button class="btn-reveal-all" onclick="revealAllClozes(this.closest('.cloze-card'))">
+                    👁 Pokaż wszystkie
+                </button>
+                <button class="btn-hide-all" onclick="hideAllClozes(this.closest('.cloze-card'))">
+                    🙈 Ukryj wszystkie
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Toggle a single cloze blank visibility
+ */
+function toggleCloze(blankElement) {
+    const isRevealed = blankElement.dataset.revealed === 'true';
+    const hiddenSpan = blankElement.querySelector('.cloze-hidden');
+    const answerSpan = blankElement.querySelector('.cloze-answer');
+    
+    if (isRevealed) {
+        hiddenSpan.style.display = 'inline';
+        answerSpan.style.display = 'none';
+        blankElement.dataset.revealed = 'false';
+        blankElement.classList.remove('revealed');
+    } else {
+        hiddenSpan.style.display = 'none';
+        answerSpan.style.display = 'inline';
+        blankElement.dataset.revealed = 'true';
+        blankElement.classList.add('revealed');
+    }
+}
+
+/**
+ * Reveal all clozes in a card
+ */
+window.revealAllClozes = function(cardElement) {
+    cardElement.querySelectorAll('.cloze-blank').forEach(blank => {
+        const hiddenSpan = blank.querySelector('.cloze-hidden');
+        const answerSpan = blank.querySelector('.cloze-answer');
+        hiddenSpan.style.display = 'none';
+        answerSpan.style.display = 'inline';
+        blank.dataset.revealed = 'true';
+        blank.classList.add('revealed');
+    });
+};
+
+/**
+ * Hide all clozes in a card
+ */
+window.hideAllClozes = function(cardElement) {
+    cardElement.querySelectorAll('.cloze-blank').forEach(blank => {
+        const hiddenSpan = blank.querySelector('.cloze-hidden');
+        const answerSpan = blank.querySelector('.cloze-answer');
+        hiddenSpan.style.display = 'inline';
+        answerSpan.style.display = 'none';
+        blank.dataset.revealed = 'false';
+        blank.classList.remove('revealed');
+    });
+};
+
+/**
+ * Start Cloze study mode - interactive flashcard session
+ */
+function startClozeStudyMode(clozeCards) {
+    // Initialize study session for cloze cards
+    currentStudySession = {
+        type: 'cloze',
+        cards: clozeCards,
+        currentIndex: 0,
+        correct: 0,
+        incorrect: 0
+    };
+    
+    showView('study');
+    document.getElementById('study-mode-title').textContent = '🔲 Nauka fiszek Cloze';
+    
+    displayClozeStudyCard();
+}
+
+/**
+ * Display current cloze card in study mode
+ */
+function displayClozeStudyCard() {
+    const session = currentStudySession;
+    const sessionContainer = document.getElementById('study-session');
+    
+    if (session.currentIndex >= session.cards.length) {
+        showStudyResults();
+        return;
+    }
+    
+    const currentCard = session.cards[session.currentIndex];
+    
+    // Build display text with hidden clozes
+    let displayText = currentCard.text;
+    if (currentCard.clozes && Array.isArray(currentCard.clozes)) {
+        currentCard.clozes.forEach(cloze => {
+            const pattern = new RegExp(`\\{\\{${cloze.id}::([^}]+)\\}\\}`, 'g');
+            displayText = displayText.replace(pattern, 
+                `<span class="cloze-blank study-cloze" data-answer="${cloze.answer}" data-revealed="false">
+                    <span class="cloze-hidden">[...]</span>
+                    <span class="cloze-answer" style="display: none;">${cloze.answer}</span>
+                </span>`
+            );
+        });
+    }
+    
+    sessionContainer.innerHTML = `
+        <div class="study-progress">
+            <div class="study-progress-bar">
+                <div class="study-progress-fill" style="width: ${(session.currentIndex / session.cards.length) * 100}%"></div>
+            </div>
+            <div class="study-stats">
+                <span>Fiszka ${session.currentIndex + 1} z ${session.cards.length}</span>
+                <span>Poprawne: ${session.correct} | Błędne: ${session.incorrect}</span>
+            </div>
+        </div>
+        
+        <div class="card study-cloze-card" style="padding: 40px; font-size: 20px; line-height: 1.8; text-align: center; min-height: 200px;">
+            ${displayText}
+        </div>
+        
+        <p style="text-align: center; color: var(--text-secondary); margin: 20px 0;">
+            Kliknij na lukę [...] aby odsłonić odpowiedź
+        </p>
+        
+        <div class="study-controls" style="display: none;" id="cloze-rating-controls">
+            <button class="study-btn incorrect" onclick="rateClozeCard(false)">
+                ❌ Nie umiem
+            </button>
+            <button class="study-btn" onclick="revealAllStudyClozes()">
+                👁 Pokaż wszystkie
+            </button>
+            <button class="study-btn correct" onclick="rateClozeCard(true)">
+                ✅ Umiem
+            </button>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="study-btn" onclick="endStudySession()">
+                🏁 Zakończ sesję
+            </button>
+        </div>
+    `;
+    
+    // Add click handlers for study cloze blanks
+    sessionContainer.querySelectorAll('.study-cloze').forEach(blank => {
+        blank.addEventListener('click', () => {
+            toggleCloze(blank);
+            // Show rating controls after first reveal
+            document.getElementById('cloze-rating-controls').style.display = 'flex';
+        });
+    });
+    
+    // Render LaTeX
+    renderLatex(sessionContainer);
+}
+
+/**
+ * Reveal all clozes in study mode
+ */
+window.revealAllStudyClozes = function() {
+    document.querySelectorAll('.study-cloze').forEach(blank => {
+        const hiddenSpan = blank.querySelector('.cloze-hidden');
+        const answerSpan = blank.querySelector('.cloze-answer');
+        hiddenSpan.style.display = 'none';
+        answerSpan.style.display = 'inline';
+        blank.dataset.revealed = 'true';
+        blank.classList.add('revealed');
+    });
+    document.getElementById('cloze-rating-controls').style.display = 'flex';
+};
+
+/**
+ * Rate cloze card and move to next
+ */
+window.rateClozeCard = function(isCorrect) {
+    if (isCorrect) {
+        currentStudySession.correct++;
+    } else {
+        currentStudySession.incorrect++;
+    }
+    
+    currentStudySession.currentIndex++;
+    displayClozeStudyCard();
+};
 
 function checkQuizAnswers(questions) {
     const container = document.getElementById('lecture-quiz-content');
@@ -4273,6 +5099,399 @@ function showFactCheckResults(factCheck) {
 }
 
 // ============================================
+// POMODORO TIMER
+// ============================================
+
+const pomodoroState = {
+    isRunning: false,
+    isWorkMode: true,
+    timeRemaining: 25 * 60, // 25 minutes in seconds
+    workDuration: 25 * 60,
+    shortBreakDuration: 5 * 60,
+    longBreakDuration: 15 * 60,
+    sessionsCompleted: 0,
+    timerInterval: null
+};
+
+function initPomodoro() {
+    const startBtn = document.getElementById('pomodoro-start');
+    const pauseBtn = document.getElementById('pomodoro-pause');
+    const resetBtn = document.getElementById('pomodoro-reset');
+    const toggleBtn = document.getElementById('pomodoro-toggle');
+    const widget = document.getElementById('pomodoro-widget');
+    
+    if (!startBtn) return;
+    
+    startBtn.addEventListener('click', startPomodoro);
+    pauseBtn.addEventListener('click', pausePomodoro);
+    resetBtn.addEventListener('click', resetPomodoro);
+    toggleBtn.addEventListener('click', () => {
+        widget.classList.toggle('minimized');
+        toggleBtn.textContent = widget.classList.contains('minimized') ? '+' : '−';
+    });
+    
+    // Make widget draggable
+    makeDraggable(widget, document.getElementById('pomodoro-header'));
+    
+    updatePomodoroDisplay();
+}
+
+function startPomodoro() {
+    pomodoroState.isRunning = true;
+    document.getElementById('pomodoro-start').style.display = 'none';
+    document.getElementById('pomodoro-pause').style.display = 'inline-block';
+    
+    pomodoroState.timerInterval = setInterval(() => {
+        pomodoroState.timeRemaining--;
+        updatePomodoroDisplay();
+        
+        if (pomodoroState.timeRemaining <= 0) {
+            pomodoroComplete();
+        }
+    }, 1000);
+}
+
+function pausePomodoro() {
+    pomodoroState.isRunning = false;
+    clearInterval(pomodoroState.timerInterval);
+    document.getElementById('pomodoro-start').style.display = 'inline-block';
+    document.getElementById('pomodoro-pause').style.display = 'none';
+}
+
+function resetPomodoro() {
+    pausePomodoro();
+    pomodoroState.isWorkMode = true;
+    pomodoroState.timeRemaining = pomodoroState.workDuration;
+    updatePomodoroDisplay();
+}
+
+function pomodoroComplete() {
+    pausePomodoro();
+    
+    if (pomodoroState.isWorkMode) {
+        pomodoroState.sessionsCompleted++;
+        
+        // Play notification sound
+        playNotificationSound();
+        
+        // Show notification
+        if (Notification.permission === 'granted') {
+            new Notification('🍅 Pomodoro zakończone!', {
+                body: `Świetna robota! Czas na przerwę.`,
+                icon: '🍅'
+            });
+        }
+        
+        // Switch to break
+        pomodoroState.isWorkMode = false;
+        pomodoroState.timeRemaining = pomodoroState.sessionsCompleted % 4 === 0 
+            ? pomodoroState.longBreakDuration 
+            : pomodoroState.shortBreakDuration;
+    } else {
+        // Switch back to work
+        pomodoroState.isWorkMode = true;
+        pomodoroState.timeRemaining = pomodoroState.workDuration;
+        
+        if (Notification.permission === 'granted') {
+            new Notification('⏰ Przerwa zakończona!', {
+                body: 'Czas wracać do nauki!',
+                icon: '📚'
+            });
+        }
+    }
+    
+    updatePomodoroDisplay();
+}
+
+function updatePomodoroDisplay() {
+    const minutes = Math.floor(pomodoroState.timeRemaining / 60);
+    const seconds = pomodoroState.timeRemaining % 60;
+    
+    document.getElementById('pomodoro-timer').textContent = 
+        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    
+    const statusEl = document.getElementById('pomodoro-status');
+    statusEl.textContent = pomodoroState.isWorkMode ? 'Praca' : 'Przerwa';
+    statusEl.className = 'pomodoro-status ' + (pomodoroState.isWorkMode ? 'work' : 'break');
+    
+    document.getElementById('pomodoro-session-count').textContent = pomodoroState.sessionsCompleted;
+}
+
+function playNotificationSound() {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    gainNode.gain.value = 0.3;
+    
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.3);
+}
+
+function makeDraggable(element, handle) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    
+    handle.onmousedown = dragMouseDown;
+    
+    function dragMouseDown(e) {
+        e.preventDefault();
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+    }
+    
+    function elementDrag(e) {
+        e.preventDefault();
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        element.style.top = (element.offsetTop - pos2) + "px";
+        element.style.left = (element.offsetLeft - pos1) + "px";
+        element.style.right = 'auto';
+        element.style.bottom = 'auto';
+    }
+    
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
+}
+
+// Request notification permission
+if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+}
+
+// ============================================
+// KEYBOARD SHORTCUTS
+// ============================================
+
+function initKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        // Don't trigger shortcuts when typing in inputs
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        
+        // Check if in study mode
+        const studySession = document.getElementById('study-session');
+        const isInStudyMode = studySession && studySession.classList.contains('active');
+        
+        switch (e.key) {
+            case ' ':
+                // Space - flip flashcard
+                if (isInStudyMode) {
+                    e.preventDefault();
+                    flipStudyCard();
+                }
+                break;
+                
+            case '1':
+                // 1 - Rate Again
+                if (isInStudyMode && currentStudySession) {
+                    e.preventDefault();
+                    handleSRSRating(0);
+                }
+                break;
+                
+            case '2':
+                // 2 - Rate Hard
+                if (isInStudyMode && currentStudySession) {
+                    e.preventDefault();
+                    handleSRSRating(1);
+                }
+                break;
+                
+            case '3':
+                // 3 - Rate Good
+                if (isInStudyMode && currentStudySession) {
+                    e.preventDefault();
+                    handleSRSRating(2);
+                }
+                break;
+                
+            case '4':
+                // 4 - Rate Easy
+                if (isInStudyMode && currentStudySession) {
+                    e.preventDefault();
+                    handleSRSRating(3);
+                }
+                break;
+                
+            case '?':
+                // ? - Toggle keyboard help
+                e.preventDefault();
+                const helpModal = document.getElementById('keyboard-help');
+                helpModal.style.display = helpModal.style.display === 'none' ? 'flex' : 'none';
+                break;
+                
+            case 'Escape':
+                // Escape - Close modals or end study session
+                const keyboardHelp = document.getElementById('keyboard-help');
+                if (keyboardHelp.style.display !== 'none') {
+                    keyboardHelp.style.display = 'none';
+                } else if (isInStudyMode) {
+                    if (confirm('Czy na pewno chcesz zakończyć sesję nauki?')) {
+                        endStudySession();
+                    }
+                }
+                break;
+        }
+    });
+}
+
+// Handle SRS rating during study
+async function handleSRSRating(quality) {
+    if (!currentStudySession) return;
+    
+    const currentCard = currentStudySession.cards[currentStudySession.currentIndex];
+    if (!currentCard) return;
+    
+    // Rate the flashcard using SM-2
+    await db.rateFlashcard(currentCard.id, quality);
+    
+    // Update session stats
+    if (quality >= 2) {
+        currentStudySession.correct++;
+    } else {
+        currentStudySession.incorrect++;
+        currentStudySession.incorrectCards.push(currentCard);
+    }
+    
+    // Move to next card
+    currentStudySession.currentIndex++;
+    
+    if (currentStudySession.currentIndex >= currentStudySession.cards.length) {
+        // Check if there are incorrect cards to retry
+        if (currentStudySession.incorrectCards.length > 0) {
+            currentStudySession.cards = shuffleArray([...currentStudySession.incorrectCards]);
+            currentStudySession.incorrectCards = [];
+            currentStudySession.currentIndex = 0;
+            currentStudySession.round++;
+        } else {
+            showStudyResults();
+            return;
+        }
+    }
+    
+    // Continue with appropriate mode
+    switch (currentStudySession.mode) {
+        case 'flashcards':
+            startFlashcardModeWithSRS();
+            break;
+        default:
+            startFlashcardMode();
+    }
+}
+
+// Enhanced flashcard mode with SRS buttons
+function startFlashcardModeWithSRS() {
+    const sessionContainer = document.getElementById('study-session');
+    const session = currentStudySession;
+    const currentCard = session.cards[session.currentIndex];
+    
+    if (!sessionContainer || !currentCard) {
+        showStudyResults();
+        return;
+    }
+    
+    // Preview next intervals
+    const intervals = db.previewNextIntervals(currentCard);
+    
+    sessionContainer.innerHTML = `
+        <div class="study-progress">
+            <div class="study-progress-bar">
+                <div class="study-progress-fill" style="width: ${(session.currentIndex / session.cards.length) * 100}%"></div>
+            </div>
+            <div class="study-stats">
+                <span>Fiszka ${session.currentIndex + 1} z ${session.cards.length}</span>
+                <span>Poprawne: ${session.correct} | Błędne: ${session.incorrect}</span>
+            </div>
+        </div>
+        
+        <div class="study-flashcard" id="study-card" onclick="flipStudyCard()">
+            <div class="study-flashcard-inner">
+                <div class="study-flashcard-front">
+                    <div class="study-flashcard-content">
+                        ${currentCard.front || currentCard.question || 'Brak pytania'}
+                    </div>
+                </div>
+                <div class="study-flashcard-back">
+                    <div class="study-flashcard-content">
+                        ${currentCard.back || currentCard.answer || 'Brak odpowiedzi'}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 15px;">
+            Kliknij kartę lub naciśnij <kbd style="background: var(--bg-dark); padding: 2px 8px; border-radius: 4px;">Spacja</kbd> aby przewrócić
+        </p>
+        
+        <div class="srs-rating-buttons">
+            <button class="srs-btn again" onclick="handleSRSRating(0)">
+                Znowu
+                <span class="interval">${db.formatInterval(intervals.again.interval)}</span>
+            </button>
+            <button class="srs-btn hard" onclick="handleSRSRating(1)">
+                Trudne
+                <span class="interval">${db.formatInterval(intervals.hard.interval)}</span>
+            </button>
+            <button class="srs-btn good" onclick="handleSRSRating(2)">
+                Dobre
+                <span class="interval">${db.formatInterval(intervals.good.interval)}</span>
+            </button>
+            <button class="srs-btn easy" onclick="handleSRSRating(3)">
+                Łatwe
+                <span class="interval">${db.formatInterval(intervals.easy.interval)}</span>
+            </button>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="study-btn" onclick="endStudySession()">
+                🏁 Zakończ sesję
+            </button>
+        </div>
+    `;
+    
+    // Render LaTeX
+    renderLatex(sessionContainer);
+}
+
+// Start due cards review from dashboard
+async function startDueReview() {
+    const dueCards = await db.getDueFlashcards();
+    
+    if (dueCards.length === 0) {
+        alert('Brak fiszek do powtórki!');
+        return;
+    }
+    
+    // Initialize session with due cards
+    currentStudySession = {
+        cards: shuffleArray(dueCards),
+        currentIndex: 0,
+        mode: 'flashcards',
+        correct: 0,
+        incorrect: 0,
+        incorrectCards: [],
+        totalCards: dueCards.length,
+        round: 1,
+        startTime: Date.now()
+    };
+    
+    // Switch to study mode
+    switchTab('study-mode');
+    showStudyStep('study-session');
+    startFlashcardModeWithSRS();
+}
+
+// ============================================
 // EXPORT TO WINDOW (for inline event handlers)
 // ============================================
 
@@ -4283,10 +5502,465 @@ window.deleteSubject = async (id) => {
     await loadDashboard();
 };
 
+// ============================================
+// EXAM/KOLOKWIUM FUNCTIONS
+// ============================================
+
+/**
+ * Open modal to create a new exam/kolokwium
+ */
+window.openCreateExamModal = async function(subjectId, subjectName, subjectColor) {
+    // Get lectures for this subject
+    const lectures = await db.listLecturesBySubject(subjectId);
+    
+    if (lectures.length === 0) {
+        alert('Brak wykładów w tym przedmiocie. Najpierw dodaj wykłady.');
+        return;
+    }
+    
+    // Create modal HTML
+    const modalHtml = `
+        <div id="modal-create-exam" class="modal" style="display: flex;">
+            <div class="modal-content" style="max-width: 600px;">
+                <h3 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    <span style="width: 36px; height: 36px; border-radius: 10px; background: ${subjectColor}; display: flex; align-items: center; justify-content: center; font-size: 18px;">📝</span>
+                    Nowe kolokwium: ${subjectName}
+                </h3>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Nazwa kolokwium</label>
+                    <input type="text" id="exam-name" class="search-box" placeholder="np. Kolokwium 1 (wykłady 1-4)" style="width: 100%;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Wybierz wykłady do kolokwium</label>
+                    <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+                        💡 Zaznacz wykłady, które będą obejmowane na kolokwium
+                    </p>
+                    <div id="exam-lectures-list" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 10px;">
+                        ${lectures.map((lecture, idx) => `
+                            <label style="display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 6px; cursor: pointer; transition: background 0.2s;"
+                                   onmouseover="this.style.background='var(--bg-hover)'" 
+                                   onmouseout="this.style.background='transparent'">
+                                <input type="checkbox" class="exam-lecture-checkbox" value="${lecture.id}" 
+                                       style="width: 18px; height: 18px; accent-color: ${subjectColor};">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 500;">${idx + 1}. ${lecture.title}</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">${new Date(lecture.createdAt).toLocaleDateString('pl-PL')}</div>
+                                </div>
+                            </label>
+                        `).join('')}
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button type="button" class="btn" onclick="selectAllExamLectures(true)" style="flex: 1; padding: 8px; font-size: 13px;">
+                            ✅ Zaznacz wszystkie
+                        </button>
+                        <button type="button" class="btn" onclick="selectAllExamLectures(false)" style="flex: 1; padding: 8px; font-size: 13px;">
+                            ❌ Odznacz wszystkie
+                        </button>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Wymagania/tematy na kolokwium (opcjonalne)</label>
+                    <textarea id="exam-requirements" class="search-box" rows="3" 
+                              placeholder="np. Wzory na pochodne, całki podstawowe, definicje..."
+                              style="width: 100%;"></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button class="btn" onclick="closeExamModal()" style="background: var(--bg-card);">
+                        ✖ Anuluj
+                    </button>
+                    <button class="btn btn-primary" onclick="createExam('${subjectId}')" style="background: linear-gradient(135deg, #a855f7, #8b5cf6);">
+                        ✨ Utwórz kolokwium
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+};
+
+window.selectAllExamLectures = function(select) {
+    document.querySelectorAll('.exam-lecture-checkbox').forEach(cb => {
+        cb.checked = select;
+    });
+};
+
+window.closeExamModal = function() {
+    const modal = document.getElementById('modal-create-exam');
+    if (modal) modal.remove();
+};
+
+window.createExam = async function(subjectId) {
+    const name = document.getElementById('exam-name').value.trim();
+    const requirements = document.getElementById('exam-requirements').value.trim();
+    const selectedLectures = Array.from(document.querySelectorAll('.exam-lecture-checkbox:checked')).map(cb => cb.value);
+    
+    if (!name) {
+        alert('Wprowadź nazwę kolokwium');
+        return;
+    }
+    
+    if (selectedLectures.length === 0) {
+        alert('Wybierz przynajmniej jeden wykład');
+        return;
+    }
+    
+    try {
+        await db.createExam(subjectId, name, selectedLectures, requirements);
+        closeExamModal();
+        await loadLectures();
+        alert(`✅ Utworzono kolokwium "${name}" z ${selectedLectures.length} wykładami!`);
+    } catch (error) {
+        console.error('Error creating exam:', error);
+        alert('Błąd podczas tworzenia kolokwium');
+    }
+};
+
+window.deleteExamConfirm = async function(examId) {
+    if (confirm('Czy na pewno chcesz usunąć to kolokwium?')) {
+        try {
+            await db.deleteExam(examId);
+            await loadLectures();
+        } catch (error) {
+            console.error('Error deleting exam:', error);
+            alert('Błąd podczas usuwania kolokwium');
+        }
+    }
+};
+
+/**
+ * Open exam view - show exam materials generation page
+ */
+window.openExamView = async function(examId) {
+    const exam = await db.getExam(examId);
+    if (!exam) {
+        alert('Nie znaleziono kolokwium');
+        return;
+    }
+    
+    const subject = await db.getSubject(exam.subjectId);
+    const subjectColor = subject ? subject.color : '#a855f7';
+    
+    // Get lectures content for this exam
+    const lectureContents = [];
+    for (const lectureId of exam.lectureIds) {
+        const lecture = await db.getLecture(lectureId);
+        if (lecture) {
+            lectureContents.push({
+                title: lecture.title,
+                transcription: lecture.transcription || '',
+                notes: lecture.notes || ''
+            });
+        }
+    }
+    
+    window.currentExamId = examId;
+    
+    // Hide all content sections and show exam view
+    document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    
+    // Create or show exam view
+    let examView = document.getElementById('exam-view');
+    if (!examView) {
+        examView = document.createElement('div');
+        examView.id = 'exam-view';
+        examView.className = 'content';
+        document.querySelector('.container').appendChild(examView);
+    }
+    
+    examView.classList.add('active');
+    examView.innerHTML = `
+        <div style="margin-bottom: 20px;">
+            <button class="btn" onclick="closeExamView()" style="background: var(--bg-card);">
+                ← Powrót do wykładów
+            </button>
+        </div>
+        
+        <div class="card" style="margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <div style="width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, #a855f7, #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 24px; color: white;">
+                    📝
+                </div>
+                <div style="flex: 1;">
+                    <h2 style="margin: 0; font-size: 24px;">${exam.name}</h2>
+                    <p style="color: var(--text-secondary); margin: 4px 0 0 0;">
+                        ${subject ? subject.name : 'Przedmiot'} • ${exam.lectureIds.length} wykładów
+                    </p>
+                </div>
+            </div>
+            
+            ${exam.requirements ? `
+                <div style="padding: 12px; background: var(--bg-hover); border-radius: 8px; margin-bottom: 15px;">
+                    <strong>📋 Wymagania:</strong> ${exam.requirements}
+                </div>
+            ` : ''}
+            
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                ${lectureContents.map((l, idx) => `
+                    <span style="padding: 6px 12px; background: ${subjectColor}22; color: ${subjectColor}; border-radius: 6px; font-size: 13px;">
+                        ${idx + 1}. ${l.title}
+                    </span>
+                `).join('')}
+            </div>
+        </div>
+        
+        <!-- Material Generation Buttons -->
+        <div class="card" style="margin-bottom: 20px;">
+            <h3 style="margin-bottom: 15px;">🎯 Generuj materiały na kolokwium</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 14px;">
+                Użyj AI do wygenerowania materiałów przygotowujących do kolokwium z wybranych wykładów.
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                <button class="btn" id="btn-exam-summary" onclick="generateExamMaterial('summary')"
+                        style="padding: 20px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15)); border: 2px solid var(--primary); border-radius: 12px; text-align: left;">
+                    <div style="font-size: 24px; margin-bottom: 8px;">📋</div>
+                    <div style="font-weight: 600; margin-bottom: 4px;">Podsumowanie</div>
+                    <div style="font-size: 13px; color: var(--text-secondary);">Skondensowane informacje z wybranych wykładów</div>
+                </button>
+                <button class="btn" id="btn-exam-flashcards" onclick="generateExamMaterial('flashcards')"
+                        style="padding: 20px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.15)); border: 2px solid #10b981; border-radius: 12px; text-align: left;">
+                    <div style="font-size: 24px; margin-bottom: 8px;">🎴</div>
+                    <div style="font-weight: 600; margin-bottom: 4px;">Fiszki</div>
+                    <div style="font-size: 13px; color: var(--text-secondary);">Fiszki z kluczowych pojęć i wzorów</div>
+                </button>
+                <button class="btn" id="btn-exam-quiz" onclick="generateExamMaterial('quiz')"
+                        style="padding: 20px; background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(234, 88, 12, 0.15)); border: 2px solid #f97316; border-radius: 12px; text-align: left;">
+                    <div style="font-size: 24px; margin-bottom: 8px;">❓</div>
+                    <div style="font-weight: 600; margin-bottom: 4px;">Quiz</div>
+                    <div style="font-size: 13px; color: var(--text-secondary);">Pytania egzaminacyjne</div>
+                </button>
+                <button class="btn" id="btn-exam-cheatsheet" onclick="generateExamMaterial('cheatsheet')"
+                        style="padding: 20px; background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.15)); border: 2px solid #ef4444; border-radius: 12px; text-align: left;">
+                    <div style="font-size: 24px; margin-bottom: 8px;">📑</div>
+                    <div style="font-weight: 600; margin-bottom: 4px;">Ściągawka</div>
+                    <div style="font-size: 13px; color: var(--text-secondary);">Wzory i definicje</div>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Generated Materials Container -->
+        <div id="exam-materials-container">
+            ${renderExamMaterials(exam)}
+        </div>
+    `;
+    
+    // Render LaTeX in materials if they exist
+    setTimeout(() => renderLatex(examView), 100);
+};
+
+function renderExamMaterials(exam) {
+    if (!exam.materials) return '';
+    
+    let html = '';
+    
+    if (exam.materials.summary) {
+        html += `
+            <div class="card" style="margin-bottom: 20px;">
+                <h3 style="margin-bottom: 15px;">📋 Podsumowanie</h3>
+                <div id="exam-summary-content" class="markdown-content">${marked.parse(exam.materials.summary)}</div>
+            </div>
+        `;
+    }
+    
+    if (exam.materials.flashcards) {
+        html += `
+            <div class="card" style="margin-bottom: 20px;">
+                <h3 style="margin-bottom: 15px;">🎴 Fiszki na kolokwium</h3>
+                <div id="exam-flashcards-content">${renderExamFlashcardsList(exam.materials.flashcards)}</div>
+            </div>
+        `;
+    }
+    
+    if (exam.materials.quiz) {
+        html += `
+            <div class="card" style="margin-bottom: 20px;">
+                <h3 style="margin-bottom: 15px;">❓ Quiz egzaminacyjny</h3>
+                <div id="exam-quiz-content">${renderExamQuizList(exam.materials.quiz)}</div>
+            </div>
+        `;
+    }
+    
+    if (exam.materials.cheatsheet) {
+        html += `
+            <div class="card" style="margin-bottom: 20px;">
+                <h3 style="margin-bottom: 15px;">📑 Ściągawka</h3>
+                <div id="exam-cheatsheet-content" class="markdown-content">${marked.parse(exam.materials.cheatsheet)}</div>
+            </div>
+        `;
+    }
+    
+    return html;
+}
+
+function renderExamFlashcardsList(flashcards) {
+    if (!flashcards || flashcards.length === 0) return '<p style="color: var(--text-secondary);">Brak fiszek</p>';
+    
+    return `
+        <div style="display: grid; gap: 15px;">
+            ${flashcards.map((card, idx) => `
+                <div class="card exam-flashcard-item" style="cursor: pointer; padding: 15px;" onclick="this.classList.toggle('flipped')">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                        <span style="background: var(--primary); color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                            #${idx + 1}
+                        </span>
+                    </div>
+                    <div class="flashcard-question" style="font-weight: 600; font-size: 16px; margin-bottom: 12px;">
+                        ❓ ${card.question || card.front}
+                    </div>
+                    <div class="flashcard-answer" style="display: none; padding: 15px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1)); border-radius: 8px; border-left: 3px solid #10b981;">
+                        💡 ${card.answer || card.back}
+                    </div>
+                    <div style="text-align: center; margin-top: 10px; font-size: 13px; color: var(--text-secondary);">
+                        Kliknij, aby zobaczyć odpowiedź
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+        <style>
+            .exam-flashcard-item.flipped .flashcard-answer { display: block !important; }
+            .exam-flashcard-item.flipped .flashcard-question { color: var(--text-secondary); }
+        </style>
+    `;
+}
+
+function renderExamQuizList(questions) {
+    if (!questions || questions.length === 0) return '<p style="color: var(--text-secondary);">Brak pytań</p>';
+    
+    return `
+        <div style="display: grid; gap: 15px;">
+            ${questions.map((q, idx) => `
+                <div class="card exam-quiz-item" style="padding: 15px;" data-correct="${q.correctIndex}">
+                    <div style="display: flex; gap: 12px; margin-bottom: 15px;">
+                        <span style="flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600;">
+                            ${idx + 1}
+                        </span>
+                        <div style="flex: 1; font-weight: 600; font-size: 16px;">${q.question}</div>
+                    </div>
+                    <div style="display: grid; gap: 8px;">
+                        ${q.options.map((opt, optIdx) => `
+                            <button class="exam-quiz-option" data-idx="${optIdx}" 
+                                    style="text-align: left; padding: 12px 15px; background: var(--bg-dark); border: 2px solid transparent; border-radius: 8px; cursor: pointer; transition: all 0.2s;"
+                                    onclick="checkExamQuizAnswer(this, ${q.correctIndex})">
+                                ${opt}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+window.checkExamQuizAnswer = function(btn, correctIdx) {
+    const parent = btn.closest('.exam-quiz-item');
+    const options = parent.querySelectorAll('.exam-quiz-option');
+    const selectedIdx = parseInt(btn.dataset.idx);
+    
+    options.forEach((opt, idx) => {
+        opt.disabled = true;
+        if (idx === correctIdx) {
+            opt.style.borderColor = '#10b981';
+            opt.style.background = 'rgba(16, 185, 129, 0.2)';
+        } else if (idx === selectedIdx && idx !== correctIdx) {
+            opt.style.borderColor = '#ef4444';
+            opt.style.background = 'rgba(239, 68, 68, 0.2)';
+        }
+    });
+};
+
+window.generateExamMaterial = async function(materialType) {
+    const examId = window.currentExamId;
+    if (!examId) return;
+    
+    const exam = await db.getExam(examId);
+    if (!exam) return;
+    
+    const btn = document.getElementById(`btn-exam-${materialType}`);
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<div style="font-size: 24px; margin-bottom: 8px;">⏳</div><div style="font-weight: 600;">Generowanie...</div>';
+    
+    try {
+        // Gather lecture content
+        let combinedContent = '';
+        for (const lectureId of exam.lectureIds) {
+            const lecture = await db.getLecture(lectureId);
+            if (lecture) {
+                combinedContent += `\n\n=== ${lecture.title} ===\n`;
+                if (lecture.transcription) combinedContent += lecture.transcription;
+                if (lecture.notes) combinedContent += '\n\nNotatki:\n' + lecture.notes;
+            }
+        }
+        
+        // Build requirements - include exam requirements + lecture content
+        const requirements = exam.requirements 
+            ? `Wymagania na kolokwium: ${exam.requirements}\n\nTreść wykładów:\n${combinedContent}`
+            : `Treść wykładów:\n${combinedContent}`;
+        
+        const result = await ai.generateExamMaterials(requirements, combinedContent, materialType);
+        
+        if (result) {
+            // Extract the actual content from result
+            let content;
+            if (materialType === 'flashcards' || materialType === 'quiz') {
+                content = result.content || result;
+            } else {
+                content = result.content || result;
+            }
+            
+            await db.updateExamMaterials(examId, materialType, content);
+            // Refresh view
+            await openExamView(examId);
+        }
+    } catch (error) {
+        console.error('Error generating exam material:', error);
+        alert('Błąd podczas generowania materiałów: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+    }
+};
+
+window.closeExamView = function() {
+    window.currentExamId = null;
+    const examView = document.getElementById('exam-view');
+    if (examView) {
+        examView.classList.remove('active');
+    }
+    
+    // Return to lectures tab
+    document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('lectures').classList.add('active');
+    document.querySelector('[data-tab="lectures"]').classList.add('active');
+    
+    loadLectures();
+};
+
 // Make functions globally accessible for inline onclick handlers
 window.openStudyMode = openStudyMode;
 window.switchTab = switchTab;
 window.startRetryRound = startRetryRound;
+window.handleSRSRating = handleSRSRating;
+window.startDueReview = startDueReview;
+window.flipStudyCard = flipStudyCard;
+
+// Initialize new features
+document.addEventListener('DOMContentLoaded', () => {
+    initPomodoro();
+    initKeyboardShortcuts();
+    
+    // Due review button
+    const dueReviewBtn = document.getElementById('btn-start-due-review');
+    if (dueReviewBtn) {
+        dueReviewBtn.addEventListener('click', startDueReview);
+    }
+});
 
 // Note: Other functions (deleteSubject, toggleFlashcardSection, etc.) are already defined as window.function above
 

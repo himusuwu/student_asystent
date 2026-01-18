@@ -6,7 +6,7 @@ let dbPromise = null;
 export function openDatabase() {
     if (dbPromise) return dbPromise;
     
-    dbPromise = idb.openDB('student-asystent', 2, {
+    dbPromise = idb.openDB('student-asystent', 3, {
         upgrade(database, oldVersion) {
             // V1 - podstawowa struktura
             if (oldVersion < 1) {
@@ -36,6 +36,13 @@ export function openDatabase() {
                 
                 const chat = database.createObjectStore('chatMessages');
                 chat.createIndex('byLecture', 'lectureId');
+            }
+            
+            // V3 - Kolokwia/Egzaminy
+            if (oldVersion < 3) {
+                const exams = database.createObjectStore('exams');
+                exams.createIndex('bySubject', 'subjectId');
+                exams.createIndex('byDate', 'createdAt');
             }
         }
     });
@@ -678,4 +685,413 @@ export async function getDataStatistics() {
     }
     
     return stats;
+}
+
+// ============================================
+// SPACED REPETITION SYSTEM (SM-2 Algorithm)
+// ============================================
+
+/**
+ * SM-2 Algorithm Constants
+ */
+const SM2_CONFIG = {
+    MIN_EASE_FACTOR: 1.3,
+    DEFAULT_EASE_FACTOR: 2.5,
+    EASY_BONUS: 1.3,
+    INTERVAL_MODIFIER: 1.0
+};
+
+/**
+ * Calculate next review date based on SM-2 algorithm
+ * @param {number} quality - Rating from 0-5 (0=Again, 1-2=Hard, 3=Good, 4-5=Easy)
+ * @param {number} repetition - Current repetition count
+ * @param {number} easeFactor - Current ease factor
+ * @param {number} interval - Current interval in days
+ * @returns {Object} { interval, easeFactor, repetition, dueDate }
+ */
+export function calculateSM2(quality, repetition, easeFactor, interval) {
+    let newInterval;
+    let newEaseFactor = easeFactor;
+    let newRepetition = repetition;
+
+    // Quality mapping: 0=Again, 1=Hard, 2=Good, 3=Easy
+    // SM-2 uses 0-5, we map: 0→0, 1→2, 2→4, 3→5
+    const sm2Quality = quality === 0 ? 0 : quality === 1 ? 2 : quality === 2 ? 4 : 5;
+
+    if (sm2Quality < 3) {
+        // Failed - reset repetition
+        newRepetition = 0;
+        newInterval = 1; // Review tomorrow
+    } else {
+        // Passed
+        if (newRepetition === 0) {
+            newInterval = 1;
+        } else if (newRepetition === 1) {
+            newInterval = 6;
+        } else {
+            newInterval = Math.round(interval * newEaseFactor * SM2_CONFIG.INTERVAL_MODIFIER);
+        }
+        newRepetition++;
+    }
+
+    // Update ease factor
+    newEaseFactor = easeFactor + (0.1 - (5 - sm2Quality) * (0.08 + (5 - sm2Quality) * 0.02));
+    newEaseFactor = Math.max(SM2_CONFIG.MIN_EASE_FACTOR, newEaseFactor);
+
+    // Apply easy bonus
+    if (quality === 3) {
+        newInterval = Math.round(newInterval * SM2_CONFIG.EASY_BONUS);
+    }
+
+    // Calculate due date
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + newInterval);
+
+    return {
+        interval: newInterval,
+        easeFactor: newEaseFactor,
+        repetition: newRepetition,
+        dueDate: dueDate.toISOString()
+    };
+}
+
+/**
+ * Rate a flashcard and update its SRS data
+ * @param {string} id - Flashcard ID
+ * @param {number} quality - Rating: 0=Again, 1=Hard, 2=Good, 3=Easy
+ */
+export async function rateFlashcard(id, quality) {
+    const db = await openDatabase();
+    const flashcard = await db.get('flashcards', id);
+    if (!flashcard) throw new Error('Flashcard not found');
+
+    const currentEase = flashcard.easeFactor || SM2_CONFIG.DEFAULT_EASE_FACTOR;
+    const currentInterval = flashcard.interval || 0;
+    const currentRep = flashcard.repetition || 0;
+
+    const { interval, easeFactor, repetition, dueDate } = calculateSM2(
+        quality, currentRep, currentEase, currentInterval
+    );
+
+    const updated = {
+        ...flashcard,
+        interval,
+        easeFactor,
+        repetition,
+        dueDate,
+        lastReviewed: new Date().toISOString(),
+        reviewCount: (flashcard.reviewCount || 0) + 1
+    };
+
+    await db.put('flashcards', updated, id);
+    
+    // Record study session
+    await recordStudySession({
+        flashcardId: id,
+        quality,
+        interval,
+        timestamp: new Date().toISOString()
+    });
+
+    return updated;
+}
+
+/**
+ * Get flashcards due for review today
+ */
+export async function getDueFlashcards() {
+    const allFlashcards = await listFlashcards();
+    const now = new Date();
+    now.setHours(23, 59, 59, 999); // End of today
+
+    return allFlashcards.filter(card => {
+        if (!card.dueDate) return true; // New cards are always due
+        return new Date(card.dueDate) <= now;
+    });
+}
+
+/**
+ * Get flashcards due for review, optionally filtered
+ */
+export async function getDueFlashcardsBySubject(subjectId) {
+    const dueCards = await getDueFlashcards();
+    if (!subjectId) return dueCards;
+    return dueCards.filter(card => card.subjectId === subjectId);
+}
+
+/**
+ * Get count of cards due today
+ */
+export async function getDueCount() {
+    const dueCards = await getDueFlashcards();
+    return dueCards.length;
+}
+
+/**
+ * Get mastered flashcards (interval > 21 days)
+ */
+export async function getMasteredFlashcards() {
+    const allFlashcards = await listFlashcards();
+    return allFlashcards.filter(card => (card.interval || 0) >= 21);
+}
+
+// ============================================
+// STUDY STATISTICS & TRACKING
+// ============================================
+
+/**
+ * Record a study session
+ */
+export async function recordStudySession(sessionData) {
+    const db = await openDatabase();
+    const session = {
+        id: uid('study_'),
+        ...sessionData,
+        date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+        timestamp: new Date().toISOString()
+    };
+    
+    try {
+        await db.put('sessions', session, session.id);
+    } catch (e) {
+        // Store might not exist in older DB versions, create it in localStorage instead
+        const sessions = JSON.parse(localStorage.getItem('studySessions') || '[]');
+        sessions.push(session);
+        localStorage.setItem('studySessions', JSON.stringify(sessions));
+    }
+    
+    return session;
+}
+
+/**
+ * Get study activity for the last N days
+ */
+export async function getStudyActivity(days = 7) {
+    const sessions = JSON.parse(localStorage.getItem('studySessions') || '[]');
+    const activity = {};
+    
+    // Initialize last N days
+    for (let i = days - 1; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        activity[dateStr] = { reviewed: 0, correct: 0, incorrect: 0 };
+    }
+    
+    // Count sessions
+    sessions.forEach(session => {
+        if (activity[session.date]) {
+            activity[session.date].reviewed++;
+            if (session.quality >= 2) {
+                activity[session.date].correct++;
+            } else {
+                activity[session.date].incorrect++;
+            }
+        }
+    });
+    
+    return activity;
+}
+
+/**
+ * Get current streak (consecutive days with study activity)
+ */
+export async function getStudyStreak() {
+    const sessions = JSON.parse(localStorage.getItem('studySessions') || '[]');
+    if (sessions.length === 0) return 0;
+    
+    // Get unique dates
+    const dates = [...new Set(sessions.map(s => s.date))].sort().reverse();
+    
+    // Check if studied today
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    
+    if (dates[0] !== today && dates[0] !== yesterday) {
+        return 0; // Streak broken
+    }
+    
+    let streak = 0;
+    let currentDate = new Date(dates[0]);
+    
+    for (const dateStr of dates) {
+        const date = new Date(dateStr);
+        const expectedDate = new Date(currentDate);
+        expectedDate.setDate(expectedDate.getDate() - streak);
+        
+        if (dateStr === expectedDate.toISOString().split('T')[0]) {
+            streak++;
+        } else {
+            break;
+        }
+    }
+    
+    return streak;
+}
+
+/**
+ * Get overall study statistics
+ */
+export async function getStudyStatistics() {
+    const sessions = JSON.parse(localStorage.getItem('studySessions') || '[]');
+    const allFlashcards = await listFlashcards();
+    const masteredCards = await getMasteredFlashcards();
+    const dueCards = await getDueFlashcards();
+    const streak = await getStudyStreak();
+    
+    // Calculate accuracy
+    const recentSessions = sessions.slice(-100); // Last 100 reviews
+    const correctCount = recentSessions.filter(s => s.quality >= 2).length;
+    const accuracy = recentSessions.length > 0 
+        ? Math.round((correctCount / recentSessions.length) * 100) 
+        : 0;
+    
+    return {
+        totalFlashcards: allFlashcards.length,
+        masteredCount: masteredCards.length,
+        dueCount: dueCards.length,
+        streak,
+        accuracy,
+        totalReviews: sessions.length
+    };
+}
+
+/**
+ * Format interval for display
+ */
+export function formatInterval(days) {
+    if (days === 0) return 'Teraz';
+    if (days === 1) return '1 dzień';
+    if (days < 7) return `${days} dni`;
+    if (days < 30) return `${Math.round(days / 7)} tyg.`;
+    if (days < 365) return `${Math.round(days / 30)} mies.`;
+    return `${Math.round(days / 365)} lat`;
+}
+
+/**
+ * Preview next intervals for a flashcard
+ */
+export function previewNextIntervals(flashcard) {
+    const currentEase = flashcard.easeFactor || SM2_CONFIG.DEFAULT_EASE_FACTOR;
+    const currentInterval = flashcard.interval || 0;
+    const currentRep = flashcard.repetition || 0;
+    
+    return {
+        again: calculateSM2(0, currentRep, currentEase, currentInterval),
+        hard: calculateSM2(1, currentRep, currentEase, currentInterval),
+        good: calculateSM2(2, currentRep, currentEase, currentInterval),
+        easy: calculateSM2(3, currentRep, currentEase, currentInterval)
+    };
+}
+
+// ============================================
+// EXAM/KOLOKWIUM Operations
+// ============================================
+
+/**
+ * Create a new exam/kolokwium
+ * @param {string} subjectId - Subject ID
+ * @param {string} name - Exam name
+ * @param {string[]} lectureIds - Array of lecture IDs included in this exam
+ * @param {string} requirements - Exam requirements/topics (optional)
+ */
+export async function createExam(subjectId, name, lectureIds, requirements = '') {
+    const db = await openDatabase();
+    const exam = {
+        id: uid('exam_'),
+        subjectId,
+        name,
+        lectureIds: lectureIds || [],
+        requirements,
+        materials: {
+            summary: null,
+            flashcards: null,
+            quiz: null,
+            cheatsheet: null
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    };
+    await db.put('exams', exam, exam.id);
+    return exam;
+}
+
+/**
+ * Get exam by ID
+ */
+export async function getExam(id) {
+    const db = await openDatabase();
+    return await db.get('exams', id);
+}
+
+/**
+ * List all exams
+ */
+export async function listExams() {
+    const db = await openDatabase();
+    const tx = db.transaction('exams');
+    const store = tx.objectStore('exams');
+    const exams = [];
+    let cursor = await store.openCursor();
+    while (cursor) {
+        exams.push(cursor.value);
+        cursor = await cursor.continue();
+    }
+    return exams.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+/**
+ * List exams by subject
+ */
+export async function listExamsBySubject(subjectId) {
+    const db = await openDatabase();
+    const index = db.transaction('exams').store.index('bySubject');
+    const exams = [];
+    let cursor = await index.openCursor(IDBKeyRange.only(subjectId));
+    while (cursor) {
+        exams.push(cursor.value);
+        cursor = await cursor.continue();
+    }
+    return exams.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+/**
+ * Update exam
+ */
+export async function updateExam(id, updates) {
+    const db = await openDatabase();
+    const exam = await db.get('exams', id);
+    if (!exam) throw new Error('Exam not found');
+    
+    const updated = {
+        ...exam,
+        ...updates,
+        updatedAt: new Date().toISOString()
+    };
+    await db.put('exams', updated, id);
+    return updated;
+}
+
+/**
+ * Update exam materials (summary, flashcards, quiz, cheatsheet)
+ */
+export async function updateExamMaterials(id, materialType, content) {
+    const db = await openDatabase();
+    const exam = await db.get('exams', id);
+    if (!exam) throw new Error('Exam not found');
+    
+    exam.materials = exam.materials || {};
+    exam.materials[materialType] = content;
+    exam.updatedAt = new Date().toISOString();
+    
+    await db.put('exams', exam, id);
+    return exam;
+}
+
+/**
+ * Delete exam
+ */
+export async function deleteExam(id) {
+    const db = await openDatabase();
+    await db.delete('exams', id);
 }

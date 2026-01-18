@@ -208,6 +208,119 @@ export async function generateFlashcards(transcription, onProgress = null) {
 }
 
 /**
+ * Generate CLOZE flashcards (fill-in-blank) from transcription using AI
+ * @param {string} transcription - The lecture transcription text
+ * @param {Function} onProgress - Progress callback (percent, message)
+ * @returns {Promise<Array>} Generated cloze cards [{ text, clozes, category, difficulty }]
+ */
+export async function generateClozeFlashcards(transcription, onProgress = null) {
+    if (!transcription || transcription.trim().length === 0) {
+        throw new Error('Brak transkrypcji do przetworzenia');
+    }
+    
+    const settings = getSettings();
+    const backendUrl = settings.backendUrl || 'http://localhost:3001';
+    const aiParams = getAIParams();
+    
+    try {
+        console.log(`🤖 Generowanie fiszek CLOZE z ${transcription.length} znaków (${aiParams.aiProvider})...`);
+        if (onProgress) onProgress(10, `Wysyłanie do AI (${aiParams.aiProvider})...`);
+        
+        const response = await fetch(`${backendUrl}/generate-cloze-flashcards`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                transcription,
+                ...aiParams
+            })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Backend error: ${response.status} - ${errorText}`);
+        }
+        
+        if (onProgress) onProgress(90, 'Parsowanie fiszek cloze...');
+        
+        const result = await response.json();
+        
+        if (onProgress) onProgress(100, 'Gotowe!');
+        
+        console.log(`✅ Wygenerowano ${result.clozeCards.length} fiszek cloze w ${(result.duration / 1000).toFixed(1)}s`);
+        
+        return result.clozeCards || [];
+        
+    } catch (error) {
+        console.error('❌ Błąd generowania fiszek cloze:', error);
+        throw error;
+    }
+}
+
+/**
+ * Generate exam/kolokwium materials based on professor's requirements
+ * @param {string} examRequirements - What professor said will be on the exam
+ * @param {string} transcription - Optional lecture transcription for context
+ * @param {string} materialType - Type: 'summary', 'flashcards', 'quiz', 'cheatsheet'
+ * @param {Function} onProgress - Progress callback (percent, message)
+ * @returns {Promise<Object>} Generated exam materials
+ */
+export async function generateExamMaterials(examRequirements, transcription = '', materialType = 'summary', onProgress = null) {
+    if (!examRequirements || examRequirements.trim().length === 0) {
+        throw new Error('Brak wymagań na kolokwium');
+    }
+    
+    const settings = getSettings();
+    const backendUrl = settings.backendUrl || 'http://localhost:3001';
+    const aiParams = getAIParams();
+    
+    const typeLabels = {
+        summary: 'podsumowania',
+        flashcards: 'fiszek',
+        quiz: 'quizu',
+        cheatsheet: 'ściągawki'
+    };
+    
+    try {
+        console.log(`🎓 Generowanie ${typeLabels[materialType]} na kolokwium (${aiParams.aiProvider})...`);
+        if (onProgress) onProgress(10, `Generowanie ${typeLabels[materialType]}...`);
+        
+        const response = await fetch(`${backendUrl}/generate-exam-materials`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                examRequirements,
+                transcription,
+                materialType,
+                ...aiParams
+            })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Backend error: ${response.status} - ${errorText}`);
+        }
+        
+        if (onProgress) onProgress(90, 'Przetwarzanie...');
+        
+        const result = await response.json();
+        
+        if (onProgress) onProgress(100, 'Gotowe!');
+        
+        console.log(`✅ Wygenerowano ${typeLabels[materialType]} na kolokwium w ${(result.duration / 1000).toFixed(1)}s`);
+        
+        return result;
+        
+    } catch (error) {
+        console.error('❌ Błąd generowania materiałów na kolokwium:', error);
+        throw error;
+    }
+}
+
+/**
  * Generate detailed notes from transcription using AI
  * @param {string} transcription - The lecture transcription text
  * @param {Function} onProgress - Progress callback (percent, message)
