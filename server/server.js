@@ -1451,7 +1451,30 @@ WAŻNE:
       throw new Error('Brak JSON array w odpowiedzi');
     }
     
-    let clozeCards = JSON.parse(jsonMatch[0]);
+    // Napraw częste problemy z JSON od AI
+    let cleanedJson = jsonMatch[0]
+      // Napraw nieprawidłowe escape'y
+      .replace(/\\(?!["\\/bfnrtu])/g, '\\\\')
+      // Usuń znaki kontrolne
+      .replace(/[\x00-\x1F\x7F]/g, (char) => {
+        if (char === '\n') return '\\n';
+        if (char === '\r') return '\\r';
+        if (char === '\t') return '\\t';
+        return '';
+      });
+    
+    let clozeCards;
+    try {
+      clozeCards = JSON.parse(cleanedJson);
+    } catch (parseError) {
+      console.error('[GenerateCloze] Błąd parsowania JSON:', parseError.message);
+      console.error('[GenerateCloze] Próba naprawy JSON...');
+      // Ostatnia próba - usuń problematyczne fragmenty
+      cleanedJson = cleanedJson
+        .replace(/,\s*}/g, '}')
+        .replace(/,\s*\]/g, ']');
+      clozeCards = JSON.parse(cleanedJson);
+    }
     
     const duration = Date.now() - startTime;
     
