@@ -4036,6 +4036,15 @@ window.revealAllStudyClozes = function() {
  */
 window.rateClozeCard = async function(isCorrect) {
     const currentCard = currentStudySession.cards[currentStudySession.currentIndex];
+    const quality = isCorrect ? 3 : 1; // SM2 quality: 3=good, 1=bad
+    
+    // Record study session for accuracy tracking
+    await db.recordStudySession({
+        flashcardId: currentCard?.id,
+        type: 'cloze',
+        quality: quality,
+        isCorrect: isCorrect
+    });
     
     if (isCorrect) {
         currentStudySession.correct++;
@@ -4044,7 +4053,6 @@ window.rateClozeCard = async function(isCorrect) {
         
         // Update flashcard progress in database (SM2-like)
         if (currentCard && currentCard.id) {
-            const quality = 3; // Good answer
             const currentRep = (currentCard.repetition || 0) + 1;
             const currentEase = currentCard.easeFactor || 2.5;
             const currentInterval = currentCard.interval || 0;
@@ -5079,8 +5087,17 @@ window.flipStudyCard = function() {
 window.markCard = async function(isCorrect) {
     const session = currentStudySession;
     const currentCard = session.cards[session.currentIndex];
+    const quality = isCorrect ? 3 : 1; // SM2 quality: 3=good, 1=bad
     
     console.log('markCard called:', isCorrect ? 'correct' : 'incorrect', 'card:', currentCard);
+    
+    // Record study session for accuracy tracking
+    await db.recordStudySession({
+        flashcardId: currentCard?.id,
+        type: 'flashcard',
+        quality: quality,
+        isCorrect: isCorrect
+    });
     
     if (isCorrect) {
         session.correct++;
