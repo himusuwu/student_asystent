@@ -3721,7 +3721,7 @@ function startClozeStudyMode(clozeCards) {
         incorrect: 0
     };
     
-    showView('study');
+    switchTab('study-mode');
     document.getElementById('study-mode-title').textContent = '🔲 Nauka fiszek Cloze';
     
     displayClozeStudyCard();
