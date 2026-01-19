@@ -4,7 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="StudyFlow - Inteligentny asystent studenta z transkrypcją AI, fiszkami SRS i zarządzaniem notatkami">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="StudyFlow">
     <title>StudyFlow - Twój Inteligentny Asystent</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="./frontend/assets/icons/icon-192.png">
     
     <!-- Styles -->
     <link rel="stylesheet" href="./frontend/css/main.css">
@@ -41,6 +49,10 @@
                 <span>StudyFlow</span>
             </div>
             <div class="user-info">
+                <button class="theme-toggle" id="theme-toggle" title="Zmień motyw (Ctrl+Shift+T)">
+                    <span class="theme-icon theme-icon-dark">🌙</span>
+                    <span class="theme-icon theme-icon-light">☀️</span>
+                </button>
                 <div class="avatar">U</div>
                 <span id="username">Student</span>
             </div>
@@ -58,6 +70,34 @@
 
         <!-- Dashboard -->
         <div class="content active" id="dashboard">
+            <!-- Motivational Tip -->
+            <div class="tip-widget" id="tip-widget">
+                <div class="tip-icon" id="tip-icon">💡</div>
+                <div class="tip-content">
+                    <div class="tip-text" id="tip-text">Regularność jest ważniejsza niż intensywność. 15 minut dziennie daje lepsze efekty niż 2 godziny raz w tygodniu.</div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <button class="quick-action-btn" onclick="switchTab('flashcards'); setTimeout(() => document.getElementById('btn-study-flashcards')?.click(), 100)">
+                    <div class="action-icon">🎯</div>
+                    <div class="action-label">Ucz się</div>
+                </button>
+                <button class="quick-action-btn" onclick="openModal('modal-flashcard')">
+                    <div class="action-icon">➕</div>
+                    <div class="action-label">Nowa fiszka</div>
+                </button>
+                <button class="quick-action-btn" onclick="switchTab('new-lecture')">
+                    <div class="action-icon">📝</div>
+                    <div class="action-label">Nowy wykład</div>
+                </button>
+                <button class="quick-action-btn" onclick="switchTab('schedule')">
+                    <div class="action-icon">📅</div>
+                    <div class="action-label">Plan zajęć</div>
+                </button>
+            </div>
+
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-value" id="stat-due-today">0</div>
@@ -87,6 +127,16 @@
                     <button class="btn btn-primary" id="btn-start-due-review" style="padding: 10px 20px;">
                         🎯 Zacznij powtórkę
                     </button>
+                </div>
+            </div>
+
+            <!-- Subject Progress -->
+            <div class="goals-widget" id="subject-progress-widget">
+                <div class="goals-header">
+                    <h3 class="goals-title">📊 Postęp w przedmiotach</h3>
+                </div>
+                <div id="subject-progress-list">
+                    <!-- Dynamic subject progress bars -->
                 </div>
             </div>
 
@@ -1327,6 +1377,6 @@
     </div>
 
     <!-- Main App Script -->
-    <script type="module" src="./frontend/js/app.js?v=20260118-002"></script>
+    <script type="module" src="./frontend/js/app.js?v=20260119-003"></script>
 </body>
 </html>

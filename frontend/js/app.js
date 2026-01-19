@@ -102,6 +102,30 @@ let quizState = {
 };
 
 // ============================================
+// MOTIVATIONAL TIPS (must be before loadDashboard)
+// ============================================
+
+const STUDY_TIPS = [
+    { text: "Regularność jest ważniejsza niż intensywność. 15 minut dziennie daje lepsze efekty niż 2 godziny raz w tygodniu.", icon: "💡" },
+    { text: "Technika Pomodoro: 25 minut skupienia, 5 minut przerwy. Po 4 cyklach zrób dłuższą przerwę.", icon: "🍅" },
+    { text: "Aktywne przypominanie (fiszki) jest 2-3x skuteczniejsze niż bierne czytanie notatek.", icon: "🧠" },
+    { text: "Sen jest kluczowy dla konsolidacji pamięci. Staraj się spać 7-8 godzin.", icon: "😴" },
+    { text: "Ucz innych tego, czego się uczysz. To najlepszy sposób na utrwalenie wiedzy.", icon: "👥" },
+    { text: "Rób notatki własnymi słowami, nie kopiuj dosłownie. Przetwarzanie informacji pomaga w zapamiętywaniu.", icon: "✍️" },
+    { text: "Łącz nową wiedzę z tym, co już znasz. Tworzenie połączeń wzmacnia pamięć.", icon: "🔗" },
+    { text: "Ćwicz w różnych miejscach i o różnych porach. Zróżnicowane konteksty poprawiają przypominanie.", icon: "🌍" },
+    { text: "Rozłóż naukę w czasie (spaced repetition). Algorytm SM-2 w fiszkach robi to automatycznie!", icon: "📅" },
+    { text: "Zacznij od najtrudniejszych tematów, gdy masz najwięcej energii.", icon: "⚡" }
+];
+
+function getRandomTip() {
+    return STUDY_TIPS[Math.floor(Math.random() * STUDY_TIPS.length)];
+}
+
+// Make tips available globally
+window.getRandomTip = getRandomTip;
+
+// ============================================
 // MODAL HELPERS
 // ============================================
 
@@ -649,6 +673,12 @@ async function loadDashboard() {
         dueAlert.style.display = 'none';
     }
     
+    // Load motivational tip
+    loadRandomTip();
+    
+    // Load subject progress
+    await loadSubjectProgress(subjects);
+    
     // Load charts
     await loadDashboardCharts();
     
@@ -672,6 +702,56 @@ async function loadDashboard() {
     }).join('');
     
     document.getElementById('recent-activity').innerHTML = activityHTML || '<p style="text-align: center; color: var(--text-secondary);">Brak ostatniej aktywności</p>';
+}
+
+// Load random motivational tip
+function loadRandomTip() {
+    const tip = getRandomTip();
+    const tipIcon = document.getElementById('tip-icon');
+    const tipText = document.getElementById('tip-text');
+    
+    if (tipIcon && tipText && tip) {
+        tipIcon.textContent = tip.icon;
+        tipText.textContent = tip.text;
+    }
+}
+
+// Load subject progress bars
+async function loadSubjectProgress(subjects) {
+    const flashcards = await db.listFlashcards();
+    const progressList = document.getElementById('subject-progress-list');
+    
+    if (!progressList || subjects.length === 0) {
+        if (progressList) {
+            progressList.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 20px;">Dodaj przedmioty aby śledzić postęp</p>';
+        }
+        return;
+    }
+    
+    const progressHTML = subjects.map(subject => {
+        const subjectFlashcards = flashcards.filter(f => f.subjectId === subject.id);
+        const total = subjectFlashcards.length;
+        const mastered = subjectFlashcards.filter(f => f.repetitions >= 5).length;
+        const percent = total > 0 ? Math.round((mastered / total) * 100) : 0;
+        
+        return `
+            <div class="subject-progress-card">
+                <div class="subject-progress-header">
+                    <div class="subject-progress-color" style="background: ${subject.color || '#6366f1'}"></div>
+                    <div class="subject-progress-name">${subject.name}</div>
+                    <div class="subject-progress-percent">${percent}%</div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar" style="width: ${percent}%; background: ${subject.color || 'var(--gradient-primary)'}"></div>
+                </div>
+                <div class="progress-label">
+                    <span>${mastered} / ${total} fiszek opanowanych</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    progressList.innerHTML = progressHTML;
 }
 
 // Dashboard Charts
@@ -6056,10 +6136,399 @@ window.handleSRSRating = handleSRSRating;
 window.startDueReview = startDueReview;
 window.flipStudyCard = flipStudyCard;
 
+// ============================================
+// THEME MANAGEMENT
+// ============================================
+
+function initTheme() {
+    const savedTheme = localStorage.getItem('studyflow-theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    // Set initial theme
+    const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+    
+    // Theme toggle button
+    const toggleBtn = document.getElementById('theme-toggle');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', toggleTheme);
+    }
+    
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+        if (!localStorage.getItem('studyflow-theme')) {
+            document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+        }
+    });
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('studyflow-theme', newTheme);
+    
+    // Update meta theme-color for mobile browsers
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+        metaTheme.setAttribute('content', newTheme === 'dark' ? '#0f0f1e' : '#f8fafc');
+    }
+}
+
+// ============================================
+// SERVICE WORKER REGISTRATION
+// ============================================
+
+async function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        try {
+            const registration = await navigator.serviceWorker.register('/service-worker.js');
+            console.log('✅ Service Worker registered:', registration.scope);
+            
+            // Check for updates
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        // New version available
+                        showUpdateNotification();
+                    }
+                });
+            });
+        } catch (error) {
+            console.warn('Service Worker registration failed:', error);
+        }
+    }
+}
+
+function showUpdateNotification() {
+    const notification = document.createElement('div');
+    notification.className = 'update-notification';
+    notification.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span>🔄</span>
+            <span>Dostępna nowa wersja!</span>
+            <button onclick="location.reload()" class="btn btn-primary" style="padding: 8px 16px;">
+                Odśwież
+            </button>
+        </div>
+    `;
+    notification.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--bg-card);
+        border: 1px solid var(--primary);
+        padding: 16px 24px;
+        border-radius: 12px;
+        z-index: 10000;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    `;
+    document.body.appendChild(notification);
+}
+
+// ============================================
+// ACHIEVEMENT SYSTEM
+// ============================================
+
+const ACHIEVEMENTS = {
+    'first-flashcard': { icon: '🎴', title: 'Pierwsza fiszka!', desc: 'Utworzyłeś swoją pierwszą fiszkę' },
+    'streak-7': { icon: '🔥', title: '7-dniowy streak!', desc: 'Uczysz się przez 7 dni z rzędu' },
+    'streak-30': { icon: '🏆', title: 'Miesiąc nauki!', desc: '30 dni nieprzerwanej nauki' },
+    'flashcards-100': { icon: '💯', title: '100 fiszek!', desc: 'Masz już 100 fiszek w bazie' },
+    'flashcards-mastered-50': { icon: '🧠', title: 'Mistrz fiszek!', desc: 'Opanowałeś 50 fiszek' },
+    'pomodoro-10': { icon: '🍅', title: 'Tomato Master!', desc: 'Ukończyłeś 10 sesji Pomodoro' },
+    'perfect-session': { icon: '⭐', title: 'Perfekcyjna sesja!', desc: '100% poprawnych odpowiedzi w sesji' },
+    'night-owl': { icon: '🦉', title: 'Nocna sowa!', desc: 'Uczysz się po północy' },
+    'early-bird': { icon: '🐦', title: 'Ranny ptaszek!', desc: 'Uczysz się przed 6:00' }
+};
+
+function checkAndUnlockAchievement(achievementId) {
+    const unlockedAchievements = JSON.parse(localStorage.getItem('studyflow-achievements') || '[]');
+    
+    if (unlockedAchievements.includes(achievementId)) return;
+    
+    const achievement = ACHIEVEMENTS[achievementId];
+    if (!achievement) return;
+    
+    // Save achievement
+    unlockedAchievements.push(achievementId);
+    localStorage.setItem('studyflow-achievements', JSON.stringify(unlockedAchievements));
+    
+    // Show notification
+    showAchievementNotification(achievement);
+    
+    // Trigger confetti
+    triggerConfetti();
+}
+
+function showAchievementNotification(achievement) {
+    const notification = document.createElement('div');
+    notification.className = 'achievement-notification';
+    notification.innerHTML = `
+        <div class="achievement-icon">${achievement.icon}</div>
+        <div class="achievement-title">${achievement.title}</div>
+        <div class="achievement-desc">${achievement.desc}</div>
+    `;
+    document.body.appendChild(notification);
+    
+    // Remove after animation
+    setTimeout(() => notification.remove(), 4000);
+}
+
+function triggerConfetti() {
+    const container = document.createElement('div');
+    container.className = 'confetti-container';
+    document.body.appendChild(container);
+    
+    const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'];
+    
+    for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.animationDelay = Math.random() * 0.5 + 's';
+        confetti.style.animationDuration = (2 + Math.random()) + 's';
+        container.appendChild(confetti);
+    }
+    
+    setTimeout(() => container.remove(), 4000);
+}
+
+// Check achievements based on current state
+async function checkAchievements() {
+    const flashcards = await db.listFlashcards();
+    const stats = JSON.parse(localStorage.getItem('studyflow-stats') || '{}');
+    const hour = new Date().getHours();
+    
+    // Flashcard count achievements
+    if (flashcards.length >= 1) checkAndUnlockAchievement('first-flashcard');
+    if (flashcards.length >= 100) checkAndUnlockAchievement('flashcards-100');
+    
+    // Mastered flashcards
+    const mastered = flashcards.filter(f => f.repetitions >= 5).length;
+    if (mastered >= 50) checkAndUnlockAchievement('flashcards-mastered-50');
+    
+    // Streak achievements
+    const streak = stats.streak || 0;
+    if (streak >= 7) checkAndUnlockAchievement('streak-7');
+    if (streak >= 30) checkAndUnlockAchievement('streak-30');
+    
+    // Time-based achievements
+    if (hour >= 0 && hour < 5) checkAndUnlockAchievement('night-owl');
+    if (hour >= 4 && hour < 6) checkAndUnlockAchievement('early-bird');
+    
+    // Pomodoro sessions
+    const pomodoroSessions = parseInt(localStorage.getItem('studyflow-pomodoro-total') || '0');
+    if (pomodoroSessions >= 10) checkAndUnlockAchievement('pomodoro-10');
+}
+
+// Make achievement functions global
+window.checkAndUnlockAchievement = checkAndUnlockAchievement;
+window.triggerConfetti = triggerConfetti;
+
+// ============================================
+// COMMAND PALETTE (Cmd+K)
+// ============================================
+
+const COMMANDS = [
+    { id: 'dashboard', icon: '📊', label: 'Dashboard', shortcut: ['Alt', '1'], action: () => switchTab('dashboard') },
+    { id: 'flashcards', icon: '🎴', label: 'Fiszki', shortcut: ['Alt', '2'], action: () => switchTab('flashcards') },
+    { id: 'lectures', icon: '📖', label: 'Wykłady', shortcut: ['Alt', '3'], action: () => switchTab('lectures') },
+    { id: 'new-lecture', icon: '✨', label: 'Nowy wykład', shortcut: ['Alt', '4'], action: () => switchTab('new-lecture') },
+    { id: 'subjects', icon: '📚', label: 'Przedmioty', shortcut: ['Alt', '5'], action: () => switchTab('subjects') },
+    { id: 'schedule', icon: '📅', label: 'Plan zajęć', shortcut: ['Alt', '6'], action: () => switchTab('schedule') },
+    { id: 'settings', icon: '⚙️', label: 'Ustawienia', shortcut: ['Alt', '7'], action: () => switchTab('settings') },
+    { id: 'study', icon: '🎯', label: 'Rozpocznij naukę', action: () => { switchTab('study-mode'); } },
+    { id: 'add-flashcard', icon: '➕', label: 'Dodaj fiszkę', action: () => openModal('modal-flashcard') },
+    { id: 'add-subject', icon: '📁', label: 'Dodaj przedmiot', action: () => openModal('modal-subject') },
+    { id: 'toggle-theme', icon: '🌓', label: 'Zmień motyw', shortcut: ['Ctrl', 'Shift', 'T'], action: toggleTheme },
+    { id: 'help', icon: '❓', label: 'Skróty klawiszowe', shortcut: ['?'], action: () => toggleKeyboardHelp() }
+];
+
+let commandPaletteVisible = false;
+let selectedCommandIndex = 0;
+
+function initCommandPalette() {
+    // Create command palette HTML
+    const palette = document.createElement('div');
+    palette.id = 'command-palette';
+    palette.className = 'command-palette';
+    palette.innerHTML = `
+        <div class="command-palette-box">
+            <input type="text" class="command-palette-input" placeholder="Wpisz polecenie..." id="command-input">
+            <div class="command-palette-results" id="command-results"></div>
+        </div>
+    `;
+    document.body.appendChild(palette);
+    
+    // Event listeners
+    const input = document.getElementById('command-input');
+    input.addEventListener('input', filterCommands);
+    input.addEventListener('keydown', handleCommandKeydown);
+    
+    palette.addEventListener('click', (e) => {
+        if (e.target === palette) closeCommandPalette();
+    });
+    
+    // Render initial commands
+    renderCommands(COMMANDS);
+}
+
+function openCommandPalette() {
+    const palette = document.getElementById('command-palette');
+    const input = document.getElementById('command-input');
+    
+    palette.classList.add('active');
+    commandPaletteVisible = true;
+    selectedCommandIndex = 0;
+    input.value = '';
+    input.focus();
+    renderCommands(COMMANDS);
+}
+
+function closeCommandPalette() {
+    const palette = document.getElementById('command-palette');
+    palette.classList.remove('active');
+    commandPaletteVisible = false;
+}
+
+function filterCommands() {
+    const query = document.getElementById('command-input').value.toLowerCase();
+    const filtered = COMMANDS.filter(cmd => 
+        cmd.label.toLowerCase().includes(query) || cmd.id.includes(query)
+    );
+    selectedCommandIndex = 0;
+    renderCommands(filtered);
+}
+
+function renderCommands(commands) {
+    const results = document.getElementById('command-results');
+    results.innerHTML = commands.map((cmd, i) => `
+        <div class="command-item ${i === selectedCommandIndex ? 'selected' : ''}" data-index="${i}">
+            <div class="command-item-icon">${cmd.icon}</div>
+            <div class="command-item-label">${cmd.label}</div>
+            ${cmd.shortcut ? `
+                <div class="command-item-shortcut">
+                    ${cmd.shortcut.map(k => `<kbd>${k}</kbd>`).join('')}
+                </div>
+            ` : ''}
+        </div>
+    `).join('');
+    
+    // Click handlers
+    results.querySelectorAll('.command-item').forEach((item, i) => {
+        item.addEventListener('click', () => executeCommand(commands[i]));
+    });
+}
+
+function handleCommandKeydown(e) {
+    const results = document.querySelectorAll('.command-item');
+    
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectedCommandIndex = Math.min(selectedCommandIndex + 1, results.length - 1);
+        updateSelectedCommand();
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedCommandIndex = Math.max(selectedCommandIndex - 1, 0);
+        updateSelectedCommand();
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const filtered = COMMANDS.filter(cmd => {
+            const query = document.getElementById('command-input').value.toLowerCase();
+            return cmd.label.toLowerCase().includes(query) || cmd.id.includes(query);
+        });
+        if (filtered[selectedCommandIndex]) {
+            executeCommand(filtered[selectedCommandIndex]);
+        }
+    } else if (e.key === 'Escape') {
+        closeCommandPalette();
+    }
+}
+
+function updateSelectedCommand() {
+    document.querySelectorAll('.command-item').forEach((item, i) => {
+        item.classList.toggle('selected', i === selectedCommandIndex);
+    });
+}
+
+function executeCommand(cmd) {
+    closeCommandPalette();
+    cmd.action();
+}
+
+function toggleKeyboardHelp() {
+    const help = document.getElementById('keyboard-help');
+    if (help) {
+        help.style.display = help.style.display === 'none' ? 'flex' : 'none';
+    }
+}
+
+// ============================================
+// ENHANCED KEYBOARD SHORTCUTS
+// ============================================
+
+function initEnhancedKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        // Command palette: Cmd/Ctrl + K
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            if (commandPaletteVisible) {
+                closeCommandPalette();
+            } else {
+                openCommandPalette();
+            }
+            return;
+        }
+        
+        // Theme toggle: Ctrl + Shift + T
+        if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+            e.preventDefault();
+            toggleTheme();
+            return;
+        }
+        
+        // Quick navigation: Alt + 1-7
+        if (e.altKey && e.key >= '1' && e.key <= '7') {
+            e.preventDefault();
+            const tabs = ['dashboard', 'flashcards', 'lectures', 'new-lecture', 'subjects', 'schedule', 'settings'];
+            const tabIndex = parseInt(e.key) - 1;
+            if (tabs[tabIndex]) {
+                switchTab(tabs[tabIndex]);
+            }
+            return;
+        }
+        
+        // Keyboard help: ?
+        if (e.key === '?' && !e.target.matches('input, textarea')) {
+            e.preventDefault();
+            toggleKeyboardHelp();
+        }
+        
+        // Close modals: Escape
+        if (e.key === 'Escape') {
+            if (commandPaletteVisible) {
+                closeCommandPalette();
+            }
+        }
+    });
+}
+
 // Initialize new features
 document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
     initPomodoro();
     initKeyboardShortcuts();
+    initCommandPalette();
+    initEnhancedKeyboardShortcuts();
+    registerServiceWorker();
+    
+    // Check achievements on load
+    setTimeout(checkAchievements, 2000);
     
     // Due review button
     const dueReviewBtn = document.getElementById('btn-start-due-review');
