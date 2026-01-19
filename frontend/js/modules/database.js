@@ -1255,14 +1255,15 @@ export async function getTotalActivityPoints() {
 }
 
 /**
- * Get activity level based on points
+ * Get activity level based on points (daily)
+ * More rigorous thresholds for meaningful progression
  */
 export function getActivityLevel(points) {
-    if (points >= 500) return { level: 'Mistrz', emoji: '👑', color: '#ffd700' };
-    if (points >= 300) return { level: 'Ekspert', emoji: '🌟', color: '#a855f7' };
-    if (points >= 150) return { level: 'Zaawansowany', emoji: '🔥', color: '#ef4444' };
-    if (points >= 75) return { level: 'Średni', emoji: '💪', color: '#3b82f6' };
-    if (points >= 25) return { level: 'Początkujący', emoji: '🌱', color: '#10b981' };
+    if (points >= 2000) return { level: 'Mistrz', emoji: '👑', color: '#ffd700' };
+    if (points >= 1000) return { level: 'Ekspert', emoji: '🌟', color: '#a855f7' };
+    if (points >= 500) return { level: 'Zaawansowany', emoji: '🔥', color: '#ef4444' };
+    if (points >= 200) return { level: 'Średni', emoji: '💪', color: '#3b82f6' };
+    if (points >= 50) return { level: 'Początkujący', emoji: '🌱', color: '#10b981' };
     return { level: 'Nowicjusz', emoji: '📚', color: '#6b7280' };
 }
 

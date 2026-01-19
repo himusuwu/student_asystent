@@ -875,7 +875,8 @@ async function loadSubjectProgress(subjects) {
     const progressHTML = subjects.map(subject => {
         const subjectFlashcards = flashcards.filter(f => f.subjectId === subject.id);
         const total = subjectFlashcards.length;
-        const mastered = subjectFlashcards.filter(f => f.repetitions >= 5).length;
+        // Use interval >= 21 for mastered (consistent with database.js getMasteredFlashcards)
+        const mastered = subjectFlashcards.filter(f => (f.interval || 0) >= 21).length;
         const percent = total > 0 ? Math.round((mastered / total) * 100) : 0;
         
         return `
@@ -903,12 +904,12 @@ let activityChart = null;
 let accuracyChart = null;
 
 async function loadDashboardCharts() {
-    const activity = await db.getStudyActivity(7);
-    const dates = Object.keys(activity);
-    const reviewedData = dates.map(d => activity[d].reviewed);
-    const correctData = dates.map(d => activity[d].correct);
+    // Use new activity points system instead of old studySessions
+    const activityPoints = await db.getActivityPoints(7);
+    const dates = Object.keys(activityPoints);
+    const pointsData = dates.map(d => activityPoints[d].totalPoints || 0);
     
-    // Activity Chart
+    // Activity Chart - now shows activity points
     const activityCtx = document.getElementById('activity-chart');
     if (activityCtx) {
         if (activityChart) activityChart.destroy();
@@ -920,10 +921,10 @@ async function loadDashboardCharts() {
                     return date.toLocaleDateString('pl-PL', { weekday: 'short' });
                 }),
                 datasets: [{
-                    label: 'Powtórzone fiszki',
-                    data: reviewedData,
-                    backgroundColor: 'rgba(99, 102, 241, 0.6)',
-                    borderColor: '#6366f1',
+                    label: 'Punkty aktywności',
+                    data: pointsData,
+                    backgroundColor: 'rgba(168, 85, 247, 0.6)',
+                    borderColor: '#a855f7',
                     borderWidth: 1,
                     borderRadius: 6
                 }]
@@ -932,7 +933,14 @@ async function loadDashboardCharts() {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false }
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.raw} pkt`;
+                            }
+                        }
+                    }
                 },
                 scales: {
                     y: {
@@ -4033,10 +4041,60 @@ window.rateClozeCard = async function(isCorrect) {
         currentStudySession.correct++;
         // Award points for correct answer
         await recordActivity('cloze_correct');
+        
+        // Update flashcard progress in database (SM2-like)
+        if (currentCard && currentCard.id) {
+            const quality = 3; // Good answer
+            const currentRep = (currentCard.repetition || 0) + 1;
+            const currentEase = currentCard.easeFactor || 2.5;
+            const currentInterval = currentCard.interval || 0;
+            
+            // Calculate new interval
+            let newInterval;
+            if (currentRep === 1) {
+                newInterval = 1;
+            } else if (currentRep === 2) {
+                newInterval = 6;
+            } else {
+                newInterval = Math.round(currentInterval * currentEase);
+            }
+            
+            // Calculate new due date
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + newInterval);
+            
+            try {
+                await db.updateFlashcard(currentCard.id, {
+                    repetition: currentRep,
+                    interval: newInterval,
+                    easeFactor: Math.max(1.3, currentEase + 0.1),
+                    dueDate: dueDate.toISOString(),
+                    lastReviewed: new Date().toISOString()
+                });
+            } catch (e) {
+                console.warn('Could not update cloze card progress:', e);
+            }
+        }
     } else {
         currentStudySession.incorrect++;
         // Award points for incorrect (still learning!)
         await recordActivity('cloze_incorrect', false);
+        
+        // Reset card progress on incorrect
+        if (currentCard && currentCard.id) {
+            try {
+                await db.updateFlashcard(currentCard.id, {
+                    repetition: 0,
+                    interval: 0,
+                    easeFactor: Math.max(1.3, (currentCard.easeFactor || 2.5) - 0.2),
+                    dueDate: new Date().toISOString(),
+                    lastReviewed: new Date().toISOString()
+                });
+            } catch (e) {
+                console.warn('Could not reset cloze card progress:', e);
+            }
+        }
+        
         // Add card to incorrect list for potential replay
         if (currentCard && !currentStudySession.incorrectCards.find(c => c.text === currentCard.text)) {
             currentStudySession.incorrectCards.push(currentCard);
