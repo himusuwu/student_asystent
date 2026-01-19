@@ -1451,29 +1451,47 @@ WAŻNE:
       throw new Error('Brak JSON array w odpowiedzi');
     }
     
-    // Napraw częste problemy z JSON od AI
-    let cleanedJson = jsonMatch[0]
-      // Napraw nieprawidłowe escape'y
-      .replace(/\\(?!["\\/bfnrtu])/g, '\\\\')
-      // Usuń znaki kontrolne
-      .replace(/[\x00-\x1F\x7F]/g, (char) => {
-        if (char === '\n') return '\\n';
-        if (char === '\r') return '\\r';
-        if (char === '\t') return '\\t';
-        return '';
+    // Funkcja do bezpiecznego parsowania JSON od AI
+    function safeParseJSON(jsonString) {
+      // Krok 1: Zachowaj prawidłowe newlines w stringach jako \n
+      let cleaned = jsonString;
+      
+      // Krok 2: Napraw problematyczne escape sequences w LaTeX
+      // AI często generuje \frac, \sqrt, \alpha itp. które nie są prawidłowe w JSON
+      // Musimy je zamienić na \\frac, \\sqrt, \\alpha
+      cleaned = cleaned.replace(/"([^"]*?)"/g, (match, content) => {
+        // Wewnątrz stringów, zamień pojedyncze \ (nie poprzedzone \) na \\
+        // ale zachowaj prawidłowe sekwencje jak \n, \t, \", \\
+        const fixedContent = content.replace(/\\(?!["\\\/bfnrtu])/g, '\\\\');
+        return `"${fixedContent}"`;
       });
+      
+      // Krok 3: Usuń trailing commas
+      cleaned = cleaned
+        .replace(/,(\s*[}\]])/g, '$1');
+      
+      return JSON.parse(cleaned);
+    }
     
     let clozeCards;
     try {
-      clozeCards = JSON.parse(cleanedJson);
+      clozeCards = safeParseJSON(jsonMatch[0]);
     } catch (parseError) {
       console.error('[GenerateCloze] Błąd parsowania JSON:', parseError.message);
-      console.error('[GenerateCloze] Próba naprawy JSON...');
-      // Ostatnia próba - usuń problematyczne fragmenty
-      cleanedJson = cleanedJson
-        .replace(/,\s*}/g, '}')
-        .replace(/,\s*\]/g, ']');
-      clozeCards = JSON.parse(cleanedJson);
+      console.error('[GenerateCloze] Fragment JSON:', jsonMatch[0].substring(0, 300));
+      
+      // Ostatnia próba - bardziej agresywne czyszczenie
+      try {
+        let lastResort = jsonMatch[0]
+          // Usuń wszystkie backslashe przed literami (oprócz prawidłowych escape)
+          .replace(/\\([^"\\\/bfnrtu\d])/g, '\\\\$1')
+          // Usuń trailing commas
+          .replace(/,(\s*[}\]])/g, '$1');
+        clozeCards = JSON.parse(lastResort);
+      } catch (finalError) {
+        console.error('[GenerateCloze] Ostateczny błąd:', finalError.message);
+        throw new Error('Nie udało się sparsować odpowiedzi AI. Spróbuj ponownie.');
+      }
     }
     
     const duration = Date.now() - startTime;
