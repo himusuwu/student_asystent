@@ -1103,3 +1103,153 @@ export async function deleteExam(id) {
     const db = await openDatabase();
     await db.delete('exams', id);
 }
+
+// ============================================
+// ACTIVITY POINTS SYSTEM
+// ============================================
+
+/**
+ * Activity point values for different actions
+ */
+const ACTIVITY_POINTS = {
+    // Fiszki
+    flashcard_correct: 10,      // Poprawna odpowiedź na fiszkę
+    flashcard_incorrect: 3,     // Błędna odpowiedź (nadal się uczysz!)
+    flashcard_created: 5,       // Utworzenie fiszki
+    
+    // Fiszki Cloze
+    cloze_correct: 12,          // Poprawna odpowiedź Cloze (trudniejsze)
+    cloze_incorrect: 4,         // Błędna odpowiedź Cloze
+    cloze_generated: 8,         // Wygenerowanie zestawu Cloze
+    
+    // Nauka
+    study_session_complete: 25, // Ukończenie sesji nauki
+    study_round_complete: 15,   // Ukończenie rundy nauki
+    all_cards_mastered: 50,     // Opanowanie wszystkich kart w sesji
+    
+    // Notatki i materiały
+    notes_read: 8,              // Przeczytanie notatek
+    notes_generated: 15,        // Wygenerowanie notatek AI
+    transcription_complete: 20, // Ukończenie transkrypcji
+    
+    // Quiz
+    quiz_correct: 8,            // Poprawna odpowiedź w quizie
+    quiz_incorrect: 2,          // Błędna odpowiedź w quizie
+    quiz_complete: 20,          // Ukończenie quizu
+    
+    // Inne
+    lecture_created: 10,        // Utworzenie wykładu
+    subject_created: 5,         // Utworzenie przedmiotu
+    daily_login: 5,             // Bonus za codzienne logowanie
+    streak_bonus: 10            // Bonus za każdy dzień serii
+};
+
+/**
+ * Record activity points
+ * @param {string} actionType - Type of action from ACTIVITY_POINTS
+ * @param {number} customPoints - Optional custom points override
+ * @param {object} metadata - Additional data about the action
+ */
+export async function recordActivityPoints(actionType, customPoints = null, metadata = {}) {
+    const points = customPoints !== null ? customPoints : (ACTIVITY_POINTS[actionType] || 0);
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Get existing activity data
+    const activityData = JSON.parse(localStorage.getItem('activityPoints') || '{}');
+    
+    // Initialize today's data if not exists
+    if (!activityData[today]) {
+        activityData[today] = {
+            totalPoints: 0,
+            actions: [],
+            breakdown: {}
+        };
+    }
+    
+    // Update points
+    activityData[today].totalPoints += points;
+    
+    // Track action breakdown
+    if (!activityData[today].breakdown[actionType]) {
+        activityData[today].breakdown[actionType] = { count: 0, points: 0 };
+    }
+    activityData[today].breakdown[actionType].count++;
+    activityData[today].breakdown[actionType].points += points;
+    
+    // Store action log (limit to last 50 for performance)
+    activityData[today].actions.push({
+        type: actionType,
+        points: points,
+        timestamp: new Date().toISOString(),
+        ...metadata
+    });
+    if (activityData[today].actions.length > 50) {
+        activityData[today].actions = activityData[today].actions.slice(-50);
+    }
+    
+    localStorage.setItem('activityPoints', JSON.stringify(activityData));
+    
+    return { points, totalToday: activityData[today].totalPoints };
+}
+
+/**
+ * Get activity points for specified days
+ * @param {number} days - Number of days to retrieve
+ */
+export async function getActivityPoints(days = 7) {
+    const activityData = JSON.parse(localStorage.getItem('activityPoints') || '{}');
+    const result = {};
+    
+    // Initialize last N days
+    for (let i = days - 1; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        result[dateStr] = activityData[dateStr] || { totalPoints: 0, actions: [], breakdown: {} };
+    }
+    
+    return result;
+}
+
+/**
+ * Get today's activity summary
+ */
+export async function getTodayActivitySummary() {
+    const today = new Date().toISOString().split('T')[0];
+    const activityData = JSON.parse(localStorage.getItem('activityPoints') || '{}');
+    
+    return activityData[today] || { totalPoints: 0, actions: [], breakdown: {} };
+}
+
+/**
+ * Get total activity points (all time)
+ */
+export async function getTotalActivityPoints() {
+    const activityData = JSON.parse(localStorage.getItem('activityPoints') || '{}');
+    let total = 0;
+    
+    Object.values(activityData).forEach(day => {
+        total += day.totalPoints || 0;
+    });
+    
+    return total;
+}
+
+/**
+ * Get activity level based on points
+ */
+export function getActivityLevel(points) {
+    if (points >= 500) return { level: 'Mistrz', emoji: '👑', color: '#ffd700' };
+    if (points >= 300) return { level: 'Ekspert', emoji: '🌟', color: '#a855f7' };
+    if (points >= 150) return { level: 'Zaawansowany', emoji: '🔥', color: '#ef4444' };
+    if (points >= 75) return { level: 'Średni', emoji: '💪', color: '#3b82f6' };
+    if (points >= 25) return { level: 'Początkujący', emoji: '🌱', color: '#10b981' };
+    return { level: 'Nowicjusz', emoji: '📚', color: '#6b7280' };
+}
+
+/**
+ * Get the ACTIVITY_POINTS config (for reference in UI)
+ */
+export function getActivityPointsConfig() {
+    return ACTIVITY_POINTS;
+}

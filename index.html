@@ -99,6 +99,11 @@
             </div>
 
             <div class="stats-grid">
+                <div class="stat-card activity-points-card" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(236, 72, 153, 0.1)); border: 1px solid rgba(168, 85, 247, 0.3);">
+                    <div class="stat-value" id="stat-today-points" style="color: var(--accent);">0</div>
+                    <div class="stat-label">⚡ Punkty dziś</div>
+                    <div class="activity-level" id="activity-level" style="font-size: 12px; margin-top: 5px;"></div>
+                </div>
                 <div class="stat-card">
                     <div class="stat-value" id="stat-due-today">0</div>
                     <div class="stat-label">Do powtórki dziś</div>
@@ -355,6 +360,12 @@
                                 Brak notatek. Użyj przycisku "Generuj z AI" aby stworzyć notatki automatycznie.
                             </p>
                         </div>
+                        <div class="mark-read-container" id="mark-notes-read" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color); text-align: center;">
+                            <button class="btn btn-success mark-read-btn" onclick="markContentAsRead('notes')">
+                                ✅ Przeczytane (+8 pkt)
+                            </button>
+                            <span class="read-status" style="display: none; color: var(--success); margin-left: 10px;">✓ Oznaczono jako przeczytane!</span>
+                        </div>
                     </div>
                 </div>
 
@@ -389,6 +400,12 @@
                                 Brak szczegółowej notatki. Użyj przycisku "Generuj z AI".
                             </p>
                         </div>
+                        <div class="mark-read-container" id="mark-detailed-read" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color); text-align: center;">
+                            <button class="btn btn-success mark-read-btn" onclick="markContentAsRead('detailed')">
+                                ✅ Przeczytane (+8 pkt)
+                            </button>
+                            <span class="read-status" style="display: none; color: var(--success); margin-left: 10px;">✓ Oznaczono jako przeczytane!</span>
+                        </div>
                     </div>
                 </div>
 
@@ -406,6 +423,12 @@
                                 Brak krótkiej notatki. Użyj przycisku "Generuj z AI".
                             </p>
                         </div>
+                        <div class="mark-read-container" id="mark-short-read" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color); text-align: center;">
+                            <button class="btn btn-success mark-read-btn" onclick="markContentAsRead('short')">
+                                ✅ Przeczytane (+8 pkt)
+                            </button>
+                            <span class="read-status" style="display: none; color: var(--success); margin-left: 10px;">✓ Oznaczono jako przeczytane!</span>
+                        </div>
                     </div>
                 </div>
 
@@ -422,6 +445,12 @@
                             <p style="color: var(--text-secondary); text-align: center; padding: 40px;">
                                 Brak kluczowych punktów. Użyj przycisku "Generuj z AI".
                             </p>
+                        </div>
+                        <div class="mark-read-container" id="mark-keypoints-read" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color); text-align: center;">
+                            <button class="btn btn-success mark-read-btn" onclick="markContentAsRead('keypoints')">
+                                ✅ Przeczytane (+8 pkt)
+                            </button>
+                            <span class="read-status" style="display: none; color: var(--success); margin-left: 10px;">✓ Oznaczono jako przeczytane!</span>
                         </div>
                     </div>
                 </div>
@@ -1382,6 +1411,6 @@
     </div>
 
     <!-- Main App Script -->
-    <script type="module" src="./frontend/js/app.js?v=20260119-007"></script>
+    <script type="module" src="./frontend/js/app.js?v=20260119-008"></script>
 </body>
 </html>

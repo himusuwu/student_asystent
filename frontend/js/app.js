@@ -13,6 +13,147 @@ import { generateLectureTitle } from './modules/ai.js';
 window.currentExamId = null;
 
 // ============================================
+// ACTIVITY POINTS SYSTEM HELPERS
+// ============================================
+
+/**
+ * Record activity and show notification
+ */
+async function recordActivity(actionType, showNotification = true) {
+    const result = await db.recordActivityPoints(actionType);
+    if (showNotification && result.points > 0) {
+        showActivityNotification(actionType, result.points, result.totalToday);
+    }
+    await updateActivityDisplay();
+    return result;
+}
+
+/**
+ * Show activity point notification
+ */
+function showActivityNotification(actionType, points, totalToday) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = 'activity-notification';
+    notification.innerHTML = `
+        <span class="activity-points-earned">+${points} pkt</span>
+        <span class="activity-total">Dziś: ${totalToday} pkt</span>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => notification.classList.add('show'), 10);
+    
+    // Remove after animation
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 2000);
+}
+
+/**
+ * Update activity display on dashboard
+ */
+async function updateActivityDisplay() {
+    const todaySummary = await db.getTodayActivitySummary();
+    const pointsEl = document.getElementById('stat-today-points');
+    const levelEl = document.getElementById('activity-level');
+    
+    if (pointsEl) {
+        pointsEl.textContent = todaySummary.totalPoints;
+    }
+    
+    if (levelEl) {
+        const level = db.getActivityLevel(todaySummary.totalPoints);
+        levelEl.innerHTML = `${level.emoji} ${level.level}`;
+        levelEl.style.color = level.color;
+    }
+}
+
+/**
+ * Mark content as read and award points
+ */
+window.markContentAsRead = async function(contentType) {
+    const lectureId = window.currentLectureId;
+    if (!lectureId) return;
+    
+    // Check if already read today
+    const readKey = `read_${contentType}_${lectureId}_${new Date().toISOString().split('T')[0]}`;
+    if (localStorage.getItem(readKey)) {
+        // Already read today
+        const container = document.getElementById(`mark-${contentType}-read`);
+        if (container) {
+            const status = container.querySelector('.read-status');
+            status.textContent = '✓ Już przeczytane dziś!';
+            status.style.display = 'inline';
+        }
+        return;
+    }
+    
+    // Record activity
+    await recordActivity('notes_read');
+    
+    // Mark as read
+    localStorage.setItem(readKey, 'true');
+    
+    // Update UI
+    const container = document.getElementById(`mark-${contentType}-read`);
+    if (container) {
+        const btn = container.querySelector('.mark-read-btn');
+        const status = container.querySelector('.read-status');
+        btn.style.display = 'none';
+        status.style.display = 'inline';
+    }
+    
+    // Check for achievement
+    checkAndUnlockAchievement('dedicated_learner');
+};
+
+/**
+ * Update read buttons visibility based on lecture content
+ */
+function updateReadButtons(lecture) {
+    const today = new Date().toISOString().split('T')[0];
+    const lectureId = lecture.id;
+    
+    const contentTypes = [
+        { type: 'notes', hasContent: !!lecture.notes },
+        { type: 'detailed', hasContent: !!lecture.detailedNote },
+        { type: 'short', hasContent: !!lecture.shortNote },
+        { type: 'keypoints', hasContent: !!lecture.keyPoints }
+    ];
+    
+    contentTypes.forEach(({ type, hasContent }) => {
+        const container = document.getElementById(`mark-${type}-read`);
+        if (!container) return;
+        
+        if (hasContent) {
+            container.style.display = 'block';
+            
+            // Check if already read today
+            const readKey = `read_${type}_${lectureId}_${today}`;
+            if (localStorage.getItem(readKey)) {
+                const btn = container.querySelector('.mark-read-btn');
+                const status = container.querySelector('.read-status');
+                if (btn) btn.style.display = 'none';
+                if (status) {
+                    status.textContent = '✓ Przeczytane dziś';
+                    status.style.display = 'inline';
+                }
+            } else {
+                const btn = container.querySelector('.mark-read-btn');
+                const status = container.querySelector('.read-status');
+                if (btn) btn.style.display = 'inline-block';
+                if (status) status.style.display = 'none';
+            }
+        } else {
+            container.style.display = 'none';
+        }
+    });
+}
+
+// ============================================
 // LATEX RENDERING HELPERS
 // ============================================
 
@@ -663,6 +804,9 @@ async function loadDashboard() {
     document.getElementById('stat-flashcards').textContent = stats.masteredCount;
     document.getElementById('stat-accuracy').textContent = stats.accuracy + '%';
     document.getElementById('stat-streak').textContent = stats.streak;
+    
+    // Update activity points display
+    await updateActivityDisplay();
     
     // Show/hide due cards alert
     const dueAlert = document.getElementById('due-cards-alert');
@@ -2761,6 +2905,9 @@ async function openLectureView(lectureId) {
             ? renderMarkdownWithLatex(lecture.keyPoints)
             : '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">Brak kluczowych punktów. Użyj przycisku "Generuj z AI".</p>');
         
+        // Show/hide "Mark as read" buttons based on content availability
+        updateReadButtons(lecture);
+        
         // Load transcription
         document.getElementById('lecture-transcription-content').innerHTML = lecture.transcription
             ? `<div style="white-space: pre-wrap;">${lecture.transcription}</div>`
@@ -3860,13 +4007,17 @@ window.revealAllStudyClozes = function() {
 /**
  * Rate cloze card and move to next
  */
-window.rateClozeCard = function(isCorrect) {
+window.rateClozeCard = async function(isCorrect) {
     const currentCard = currentStudySession.cards[currentStudySession.currentIndex];
     
     if (isCorrect) {
         currentStudySession.correct++;
+        // Award points for correct answer
+        await recordActivity('cloze_correct');
     } else {
         currentStudySession.incorrect++;
+        // Award points for incorrect (still learning!)
+        await recordActivity('cloze_incorrect', false);
         // Add card to incorrect list for potential replay
         if (currentCard && !currentStudySession.incorrectCards.find(c => c.text === currentCard.text)) {
             currentStudySession.incorrectCards.push(currentCard);
@@ -4848,7 +4999,7 @@ window.flipStudyCard = function() {
     }
 };
 
-window.markCard = function(isCorrect) {
+window.markCard = async function(isCorrect) {
     const session = currentStudySession;
     const currentCard = session.cards[session.currentIndex];
     
@@ -4856,8 +5007,12 @@ window.markCard = function(isCorrect) {
     
     if (isCorrect) {
         session.correct++;
+        // Award points for correct flashcard
+        await recordActivity('flashcard_correct');
     } else {
         session.incorrect++;
+        // Award points for trying (smaller amount)
+        await recordActivity('flashcard_incorrect', false);
         // Dodaj fiszkę do listy błędnych (sprawdzaj po content zamiast ID)
         const cardExists = session.incorrectCards.find(card => 
             (card.front === currentCard.front && card.back === currentCard.back) ||
@@ -5100,7 +5255,7 @@ function startRetryRound() {
 }
 
 // Show study results
-function showStudyResults() {
+async function showStudyResults() {
     const session = currentStudySession;
     const totalCorrect = session.correct;
     const totalIncorrect = session.incorrect;
@@ -5108,6 +5263,20 @@ function showStudyResults() {
     const duration = Math.round((Date.now() - session.startTime) / 1000);
     const masteredCards = session.totalCards - session.incorrectCards.length;
     const roundsCompleted = session.round;
+    
+    // Award points for completing study session
+    await recordActivity('study_session_complete');
+    
+    // Bonus for mastering all cards
+    if (session.incorrectCards.length === 0 && session.totalCards > 0) {
+        await recordActivity('all_cards_mastered');
+        checkAndUnlockAchievement('perfectionist');
+    }
+    
+    // Check for study achievements
+    if (roundsCompleted >= 3) {
+        checkAndUnlockAchievement('persistent');
+    }
     
     showStudyStep('study-results');
     

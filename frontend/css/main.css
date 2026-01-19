@@ -2660,3 +2660,106 @@ kbd {
     border-radius: 4px;
     border: 1px solid var(--border);
 }
+
+/* ============================================
+   ACTIVITY POINTS SYSTEM
+   ============================================ */
+
+/* Activity notification popup */
+.activity-notification {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    background: linear-gradient(135deg, var(--secondary), var(--accent));
+    color: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+    box-shadow: 0 8px 30px rgba(168, 85, 247, 0.4);
+    z-index: 10001;
+    transform: translateX(120%);
+    transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.activity-notification.show {
+    transform: translateX(0);
+}
+
+.activity-points-earned {
+    font-size: 18px;
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.activity-total {
+    font-size: 13px;
+    opacity: 0.9;
+}
+
+/* Success button style */
+.btn-success {
+    background: linear-gradient(135deg, var(--success), #059669);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+}
+
+/* Mark as read container */
+.mark-read-container {
+    animation: fadeIn 0.3s ease;
+}
+
+.mark-read-btn {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+    }
+}
+
+/* Activity points card enhancement */
+.activity-points-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.activity-points-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.1) 0%, transparent 70%);
+    animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+    50% {
+        transform: rotate(180deg);
+    }
+}
+
+.activity-level {
+    font-weight: 600;
+}
