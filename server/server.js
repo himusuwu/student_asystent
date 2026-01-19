@@ -36,7 +36,8 @@ console.log(`[Server] Apple Silicon optimized: ${cpuCores} threads, SIMD enabled
 
 // Middleware
 app.use(cors())
-app.use(express.json())
+app.use(express.json({ limit: '100mb' }))
+app.use(express.urlencoded({ limit: '100mb', extended: true }))
 
 // Multer dla upload plików - zwiększony limit dla długich nagrań
 const upload = multer({ 
