@@ -1435,9 +1435,19 @@ WAŻNE:
       maxTokens: 8192
     });
     
-    // Parsuj JSON array
-    const jsonMatch = response.match(/\\[[\s\S]*\\]/);
+    // Parsuj JSON array - obsługa różnych formatów odpowiedzi
+    let jsonStr = response;
+    
+    // Usuń markdown code blocks jeśli istnieją
+    const codeBlockMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (codeBlockMatch) {
+      jsonStr = codeBlockMatch[1].trim();
+    }
+    
+    // Znajdź tablicę JSON
+    const jsonMatch = jsonStr.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
+      console.error('[GenerateCloze] Nie znaleziono JSON array. Odpowiedź:', response.substring(0, 500));
       throw new Error('Brak JSON array w odpowiedzi');
     }
     
