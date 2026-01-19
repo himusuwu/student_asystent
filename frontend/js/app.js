@@ -3715,10 +3715,15 @@ function startClozeStudyMode(clozeCards) {
     // Initialize study session for cloze cards
     currentStudySession = {
         type: 'cloze',
+        mode: 'cloze',
         cards: clozeCards,
         currentIndex: 0,
         correct: 0,
-        incorrect: 0
+        incorrect: 0,
+        incorrectCards: [],
+        totalCards: clozeCards.length,
+        round: 1,
+        startTime: Date.now()
     };
     
     switchTab('study-mode');
@@ -3826,10 +3831,16 @@ window.revealAllStudyClozes = function() {
  * Rate cloze card and move to next
  */
 window.rateClozeCard = function(isCorrect) {
+    const currentCard = currentStudySession.cards[currentStudySession.currentIndex];
+    
     if (isCorrect) {
         currentStudySession.correct++;
     } else {
         currentStudySession.incorrect++;
+        // Add card to incorrect list for potential replay
+        if (currentCard && !currentStudySession.incorrectCards.find(c => c.text === currentCard.text)) {
+            currentStudySession.incorrectCards.push(currentCard);
+        }
     }
     
     currentStudySession.currentIndex++;
@@ -4799,7 +4810,9 @@ function startTypingMode() {
 // Global functions for study interactions
 window.flipStudyCard = function() {
     const card = document.getElementById('study-card');
-    card.classList.toggle('flipped');
+    if (card) {
+        card.classList.toggle('flipped');
+    }
 };
 
 window.markCard = function(isCorrect) {
