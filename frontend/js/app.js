@@ -3740,9 +3740,39 @@ function displayClozeStudyCard() {
     const session = currentStudySession;
     const sessionContainer = document.getElementById('study-session');
     
+    // Check if we've gone through all cards in this round
     if (session.currentIndex >= session.cards.length) {
-        showStudyResults();
-        return;
+        // Check if there are incorrect cards to repeat
+        if (session.incorrectCards.length > 0) {
+            // Start new round with only incorrect cards
+            session.round++;
+            session.cards = [...session.incorrectCards];
+            session.incorrectCards = [];
+            session.currentIndex = 0;
+            // Shuffle cards for new round
+            session.cards = shuffleArray(session.cards);
+            
+            // Show round transition message
+            sessionContainer.innerHTML = `
+                <div class="card" style="padding: 40px; text-align: center;">
+                    <h2 style="color: var(--primary); margin-bottom: 20px;">🔄 Runda ${session.round}</h2>
+                    <p style="font-size: 18px; margin-bottom: 15px;">
+                        Pozostało <strong>${session.cards.length}</strong> fiszek do opanowania
+                    </p>
+                    <p style="color: var(--text-secondary); margin-bottom: 30px;">
+                        Powtórzmy te, które sprawiły trudność!
+                    </p>
+                    <button class="btn btn-primary" onclick="displayClozeStudyCard()">
+                        Kontynuuj naukę
+                    </button>
+                </div>
+            `;
+            return;
+        } else {
+            // All cards mastered - show results
+            showStudyResults();
+            return;
+        }
     }
     
     const currentCard = session.cards[session.currentIndex];
@@ -3846,6 +3876,9 @@ window.rateClozeCard = function(isCorrect) {
     currentStudySession.currentIndex++;
     displayClozeStudyCard();
 };
+
+// Export displayClozeStudyCard for round transition button
+window.displayClozeStudyCard = displayClozeStudyCard;
 
 function checkQuizAnswers(questions) {
     const container = document.getElementById('lecture-quiz-content');
