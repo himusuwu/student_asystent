@@ -346,6 +346,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadSchedule();
     await loadSettings();
     
+    // Check for saved study session
+    const resumed = await checkForSavedSession();
+    if (resumed) {
+        console.log('✅ Resumed saved study session');
+    }
+    
     console.log('🚀 ========================================');
     console.log('✅ Application ready!');
     console.log('🚀 ========================================');
@@ -4110,6 +4116,7 @@ window.rateClozeCard = async function(isCorrect) {
     }
     
     currentStudySession.currentIndex++;
+    saveStudySession(); // Save progress
     displayClozeStudyCard();
 };
 
@@ -4694,6 +4701,94 @@ let currentStudySession = {
     startTime: null
 };
 
+// Save session to localStorage for persistence
+function saveStudySession() {
+    if (currentStudySession.cards.length > 0) {
+        localStorage.setItem('activeStudySession', JSON.stringify({
+            ...currentStudySession,
+            savedAt: new Date().toISOString()
+        }));
+    }
+}
+
+// Clear saved session
+function clearSavedStudySession() {
+    localStorage.removeItem('activeStudySession');
+}
+
+// Check for saved session and offer to resume
+async function checkForSavedSession() {
+    const savedSession = localStorage.getItem('activeStudySession');
+    if (!savedSession) return false;
+    
+    try {
+        const session = JSON.parse(savedSession);
+        
+        // Check if session is less than 24 hours old
+        const savedAt = new Date(session.savedAt);
+        const now = new Date();
+        const hoursDiff = (now - savedAt) / (1000 * 60 * 60);
+        
+        if (hoursDiff > 24) {
+            clearSavedStudySession();
+            return false;
+        }
+        
+        // Show resume dialog
+        const remainingCards = session.cards.length - session.currentIndex;
+        const modeNames = {
+            'flashcards': 'Fiszki',
+            'quiz': 'Quiz',
+            'memory': 'Pamięć',
+            'typing': 'Pisanie',
+            'cloze': 'Cloze'
+        };
+        
+        const resume = confirm(
+            `🔄 Masz niezakończoną sesję nauki!\n\n` +
+            `Tryb: ${modeNames[session.mode] || session.mode}\n` +
+            `Runda: ${session.round}\n` +
+            `Pozostało: ${remainingCards} fiszek\n` +
+            `Poprawne: ${session.correct} | Błędne: ${session.incorrect}\n\n` +
+            `Czy chcesz kontynuować?`
+        );
+        
+        if (resume) {
+            currentStudySession = session;
+            switchTab('study-mode');
+            showStudyStep('study-session');
+            
+            // Resume based on mode
+            if (session.mode === 'cloze' || session.type === 'cloze') {
+                displayClozeStudyCard();
+            } else {
+                switch (session.mode) {
+                    case 'flashcards':
+                        startFlashcardMode();
+                        break;
+                    case 'quiz':
+                        startQuizMode();
+                        break;
+                    case 'memory':
+                    case 'typing':
+                        startMemoryMode();
+                        break;
+                    default:
+                        displayStudyCard();
+                }
+            }
+            return true;
+        } else {
+            clearSavedStudySession();
+            return false;
+        }
+    } catch (e) {
+        console.error('Error parsing saved session:', e);
+        clearSavedStudySession();
+        return false;
+    }
+}
+
 // Open study mode and initialize selection
 async function openStudyMode() {
     switchTab('study-mode');
@@ -5122,6 +5217,7 @@ window.markCard = async function(isCorrect) {
         }
     }
     
+    saveStudySession(); // Save progress
     nextCard();
 };
 
@@ -5190,6 +5286,7 @@ window.checkMemoryAnswer = function() {
 };
 
 window.endStudySession = function() {
+    clearSavedStudySession(); // Clear saved session when manually ending
     showStudyResults();
 };
 
@@ -5357,6 +5454,9 @@ async function showStudyResults() {
     const duration = Math.round((Date.now() - session.startTime) / 1000);
     const masteredCards = session.totalCards - session.incorrectCards.length;
     const roundsCompleted = session.round;
+    
+    // Clear saved session - study is complete
+    clearSavedStudySession();
     
     // Award points for completing study session
     await recordActivity('study_session_complete');
