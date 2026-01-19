@@ -1453,22 +1453,32 @@ WAŻNE:
     
     // Funkcja do bezpiecznego parsowania JSON od AI
     function safeParseJSON(jsonString) {
-      // Krok 1: Zachowaj prawidłowe newlines w stringach jako \n
+      // Podejście: najpierw escape'uj WSZYSTKIE backslashe, 
+      // potem przywróć te które są prawidłowymi sekwencjami JSON
       let cleaned = jsonString;
       
-      // Krok 2: Napraw problematyczne escape sequences w LaTeX
-      // AI często generuje \frac, \sqrt, \alpha itp. które nie są prawidłowe w JSON
-      // Musimy je zamienić na \\frac, \\sqrt, \\alpha
-      cleaned = cleaned.replace(/"([^"]*?)"/g, (match, content) => {
-        // Wewnątrz stringów, zamień pojedyncze \ (nie poprzedzone \) na \\
-        // ale zachowaj prawidłowe sekwencje jak \n, \t, \", \\
-        const fixedContent = content.replace(/\\(?!["\\\/bfnrtu])/g, '\\\\');
-        return `"${fixedContent}"`;
-      });
+      // Krok 1: Zamień wszystkie \ na placeholder
+      const PLACEHOLDER = '___BACKSLASH___';
+      cleaned = cleaned.replace(/\\/g, PLACEHOLDER);
       
-      // Krok 3: Usuń trailing commas
+      // Krok 2: Przywróć prawidłowe sekwencje escape JSON
+      // \", \\, \/, \b, \f, \n, \r, \t, \uXXXX
       cleaned = cleaned
-        .replace(/,(\s*[}\]])/g, '$1');
+        .replace(new RegExp(PLACEHOLDER + '"', 'g'), '\\"')
+        .replace(new RegExp(PLACEHOLDER + PLACEHOLDER, 'g'), '\\\\')
+        .replace(new RegExp(PLACEHOLDER + '/', 'g'), '\\/')
+        .replace(new RegExp(PLACEHOLDER + 'b', 'g'), '\\b')
+        .replace(new RegExp(PLACEHOLDER + 'f', 'g'), '\\f')
+        .replace(new RegExp(PLACEHOLDER + 'n', 'g'), '\\n')
+        .replace(new RegExp(PLACEHOLDER + 'r', 'g'), '\\r')
+        .replace(new RegExp(PLACEHOLDER + 't', 'g'), '\\t')
+        .replace(new RegExp(PLACEHOLDER + 'u([0-9a-fA-F]{4})', 'g'), '\\u$1');
+      
+      // Krok 3: Wszystkie pozostałe backslashe (np. LaTeX \frac, \alpha) zamień na \\
+      cleaned = cleaned.replace(new RegExp(PLACEHOLDER, 'g'), '\\\\');
+      
+      // Krok 4: Usuń trailing commas
+      cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
       
       return JSON.parse(cleaned);
     }
@@ -1478,20 +1488,8 @@ WAŻNE:
       clozeCards = safeParseJSON(jsonMatch[0]);
     } catch (parseError) {
       console.error('[GenerateCloze] Błąd parsowania JSON:', parseError.message);
-      console.error('[GenerateCloze] Fragment JSON:', jsonMatch[0].substring(0, 300));
-      
-      // Ostatnia próba - bardziej agresywne czyszczenie
-      try {
-        let lastResort = jsonMatch[0]
-          // Usuń wszystkie backslashe przed literami (oprócz prawidłowych escape)
-          .replace(/\\([^"\\\/bfnrtu\d])/g, '\\\\$1')
-          // Usuń trailing commas
-          .replace(/,(\s*[}\]])/g, '$1');
-        clozeCards = JSON.parse(lastResort);
-      } catch (finalError) {
-        console.error('[GenerateCloze] Ostateczny błąd:', finalError.message);
-        throw new Error('Nie udało się sparsować odpowiedzi AI. Spróbuj ponownie.');
-      }
+      console.error('[GenerateCloze] Fragment JSON:', jsonMatch[0].substring(0, 500));
+      throw new Error('Nie udało się sparsować odpowiedzi AI: ' + parseError.message);
     }
     
     const duration = Date.now() - startTime;
