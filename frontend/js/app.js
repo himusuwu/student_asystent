@@ -4540,8 +4540,26 @@ async function startStudySession() {
         );
     }
     
+    // Separate regular flashcards from cloze flashcards
+    const regularCards = studyCards.filter(card => card.type !== 'cloze');
+    const clozeCards = studyCards.filter(card => card.type === 'cloze');
+    
+    // For cloze mode, use cloze cards; for other modes, use regular cards
+    if (mode === 'cloze') {
+        if (clozeCards.length === 0) {
+            alert('Brak fiszek Cloze do nauki! Wygeneruj najpierw fiszki Cloze w widoku wykładu.');
+            return;
+        }
+        // Use the dedicated cloze study mode
+        startClozeStudyMode(clozeCards);
+        return;
+    }
+    
+    // For regular modes, use only regular flashcards
+    studyCards = regularCards;
+    
     if (studyCards.length === 0) {
-        alert('Brak fiszek do nauki dla wybranego materiału!');
+        alert('Brak zwykłych fiszek do nauki dla wybranego materiału! Dostępne są tylko fiszki Cloze.');
         return;
     }
     

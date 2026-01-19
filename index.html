@@ -231,7 +231,7 @@
 
                         <div style="margin-bottom: 30px;">
                             <label style="display: block; margin-bottom: 10px; font-weight: 600;">Tryb nauki:</label>
-                            <div class="study-mode-options" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div class="study-mode-options" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
                                 <button class="study-mode-btn" data-mode="flashcards">
                                     <div style="font-size: 24px; margin-bottom: 8px;">🎴</div>
                                     <div style="font-weight: 600;">Fiszki</div>
@@ -241,6 +241,11 @@
                                     <div style="font-size: 24px; margin-bottom: 8px;">❓</div>
                                     <div style="font-weight: 600;">Quiz</div>
                                     <div style="font-size: 13px; color: var(--text-secondary);">Pytania z wieloma odpowiedziami</div>
+                                </button>
+                                <button class="study-mode-btn" data-mode="cloze">
+                                    <div style="font-size: 24px; margin-bottom: 8px;">🔲</div>
+                                    <div style="font-weight: 600;">Cloze</div>
+                                    <div style="font-size: 13px; color: var(--text-secondary);">Uzupełnianie luk</div>
                                 </button>
                                 <button class="study-mode-btn" data-mode="memory">
                                     <div style="font-size: 24px; margin-bottom: 8px;">🧠</div>
@@ -1377,6 +1382,6 @@
     </div>
 
     <!-- Main App Script -->
-    <script type="module" src="./frontend/js/app.js?v=20260119-003"></script>
+    <script type="module" src="./frontend/js/app.js?v=20260119-004"></script>
 </body>
 </html>
