@@ -3722,7 +3722,8 @@ function startClozeStudyMode(clozeCards) {
     };
     
     switchTab('study-mode');
-    document.getElementById('study-mode-title').textContent = '🔲 Nauka fiszek Cloze';
+    // Show study session step
+    showStudyStep('study-session');
     
     displayClozeStudyCard();
 }
