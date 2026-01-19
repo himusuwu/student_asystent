@@ -947,6 +947,14 @@ export async function getStudyStatistics() {
     const dueCards = await getDueFlashcards();
     const streak = await getStudyStreak();
     
+    // Separate regular and cloze flashcards
+    const regularFlashcards = allFlashcards.filter(card => card.type !== 'cloze');
+    const clozeFlashcards = allFlashcards.filter(card => card.type === 'cloze');
+    
+    // Calculate mastered for each type
+    const masteredRegular = masteredCards.filter(card => card.type !== 'cloze');
+    const masteredCloze = masteredCards.filter(card => card.type === 'cloze');
+    
     // Calculate accuracy
     const recentSessions = sessions.slice(-100); // Last 100 reviews
     const correctCount = recentSessions.filter(s => s.quality >= 2).length;
@@ -960,7 +968,18 @@ export async function getStudyStatistics() {
         dueCount: dueCards.length,
         streak,
         accuracy,
-        totalReviews: sessions.length
+        totalReviews: sessions.length,
+        // New: separate stats for regular and cloze
+        regularFlashcards: {
+            total: regularFlashcards.length,
+            mastered: masteredRegular.length,
+            inProgress: regularFlashcards.length - masteredRegular.length
+        },
+        clozeFlashcards: {
+            total: clozeFlashcards.length,
+            mastered: masteredCloze.length,
+            inProgress: clozeFlashcards.length - masteredCloze.length
+        }
     };
 }
 

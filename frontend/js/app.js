@@ -949,29 +949,33 @@ async function loadDashboardCharts() {
         });
     }
     
-    // Accuracy Chart
+    // Accuracy Chart - includes both regular and Cloze flashcards
     const accuracyCtx = document.getElementById('accuracy-chart');
     if (accuracyCtx) {
         const stats = await db.getStudyStatistics();
-        const masteredPercent = stats.totalFlashcards > 0 
-            ? Math.round((stats.masteredCount / stats.totalFlashcards) * 100) 
-            : 0;
         
         if (accuracyChart) accuracyChart.destroy();
         accuracyChart = new Chart(accuracyCtx, {
             type: 'doughnut',
             data: {
-                labels: ['Opanowane', 'W nauce', 'Nowe'],
+                labels: [
+                    'Fiszki opanowane', 
+                    'Fiszki w nauce', 
+                    'Cloze opanowane', 
+                    'Cloze w nauce'
+                ],
                 datasets: [{
                     data: [
-                        stats.masteredCount,
-                        stats.totalFlashcards - stats.masteredCount - stats.dueCount,
-                        stats.dueCount
+                        stats.regularFlashcards.mastered,
+                        stats.regularFlashcards.inProgress,
+                        stats.clozeFlashcards.mastered,
+                        stats.clozeFlashcards.inProgress
                     ],
                     backgroundColor: [
-                        '#10b981',
-                        '#6366f1',
-                        '#f59e0b'
+                        '#10b981',  // Green - regular mastered
+                        '#6366f1',  // Purple - regular in progress
+                        '#14b8a6',  // Teal - cloze mastered
+                        '#8b5cf6'   // Violet - cloze in progress
                     ],
                     borderWidth: 0
                 }]
@@ -982,10 +986,25 @@ async function loadDashboardCharts() {
                 plugins: {
                     legend: {
                         position: 'bottom',
-                        labels: { color: '#94a3b8', padding: 15 }
+                        labels: { 
+                            color: '#94a3b8', 
+                            padding: 10,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
                     }
                 },
-                cutout: '65%'
+                cutout: '60%'
             }
         });
     }
