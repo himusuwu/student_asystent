@@ -5217,8 +5217,7 @@ window.markCard = async function(isCorrect) {
         }
     }
     
-    saveStudySession(); // Save progress
-    nextCard();
+    nextCard(); // Move to next card (will also save session)
 };
 
 window.selectQuizAnswer = function(button, selectedAnswer, correctAnswer) {
@@ -5294,6 +5293,9 @@ window.endStudySession = function() {
 function nextCard() {
     const session = currentStudySession;
     session.currentIndex++;
+    
+    // Save session AFTER incrementing index (so we resume at the correct card)
+    saveStudySession();
     
     if (session.currentIndex >= session.cards.length) {
         // Sprawdź czy są błędne fiszki do powtórki
