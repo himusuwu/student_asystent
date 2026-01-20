@@ -5726,8 +5726,86 @@ const pomodoroState = {
     shortBreakDuration: 5 * 60,
     longBreakDuration: 15 * 60,
     sessionsCompleted: 0,
-    timerInterval: null
+    timerInterval: null,
+    lastSavedAt: null // For calculating elapsed time during page refresh
 };
+
+// Save Pomodoro state to localStorage
+function savePomodoroState() {
+    const stateToSave = {
+        isRunning: pomodoroState.isRunning,
+        isWorkMode: pomodoroState.isWorkMode,
+        timeRemaining: pomodoroState.timeRemaining,
+        sessionsCompleted: pomodoroState.sessionsCompleted,
+        savedAt: Date.now()
+    };
+    localStorage.setItem('pomodoroState', JSON.stringify(stateToSave));
+}
+
+// Load Pomodoro state from localStorage
+function loadPomodoroState() {
+    const saved = localStorage.getItem('pomodoroState');
+    if (!saved) return false;
+    
+    try {
+        const state = JSON.parse(saved);
+        
+        // Check if state is less than 2 hours old
+        const hoursDiff = (Date.now() - state.savedAt) / (1000 * 60 * 60);
+        if (hoursDiff > 2) {
+            localStorage.removeItem('pomodoroState');
+            return false;
+        }
+        
+        pomodoroState.isWorkMode = state.isWorkMode;
+        pomodoroState.sessionsCompleted = state.sessionsCompleted;
+        
+        // If timer was running, calculate elapsed time
+        if (state.isRunning) {
+            const elapsedSeconds = Math.floor((Date.now() - state.savedAt) / 1000);
+            pomodoroState.timeRemaining = Math.max(0, state.timeRemaining - elapsedSeconds);
+            
+            // If time ran out while away, complete the session
+            if (pomodoroState.timeRemaining <= 0) {
+                pomodoroComplete();
+                return true;
+            }
+            
+            // Resume timer
+            pomodoroState.isRunning = false; // Will be set true by startPomodoro
+            updatePomodoroDisplay();
+            
+            // Ask user if they want to resume
+            const minutes = Math.floor(pomodoroState.timeRemaining / 60);
+            const seconds = pomodoroState.timeRemaining % 60;
+            const modeText = pomodoroState.isWorkMode ? 'Praca' : 'Przerwa';
+            
+            if (confirm(
+                `🍅 Masz aktywny timer Pomodoro!\n\n` +
+                `Tryb: ${modeText}\n` +
+                `Pozostało: ${minutes}:${seconds.toString().padStart(2, '0')}\n` +
+                `Ukończone sesje: ${pomodoroState.sessionsCompleted}\n\n` +
+                `Czy chcesz kontynuować?`
+            )) {
+                startPomodoro();
+            }
+        } else {
+            // Timer was paused, just restore state
+            pomodoroState.timeRemaining = state.timeRemaining;
+        }
+        
+        return true;
+    } catch (e) {
+        console.error('Error loading Pomodoro state:', e);
+        localStorage.removeItem('pomodoroState');
+        return false;
+    }
+}
+
+// Clear saved Pomodoro state
+function clearPomodoroState() {
+    localStorage.removeItem('pomodoroState');
+}
 
 function initPomodoro() {
     const startBtn = document.getElementById('pomodoro-start');
@@ -5749,6 +5827,9 @@ function initPomodoro() {
     // Make widget draggable
     makeDraggable(widget, document.getElementById('pomodoro-header'));
     
+    // Load saved state
+    loadPomodoroState();
+    
     updatePomodoroDisplay();
 }
 
@@ -5757,9 +5838,16 @@ function startPomodoro() {
     document.getElementById('pomodoro-start').style.display = 'none';
     document.getElementById('pomodoro-pause').style.display = 'inline-block';
     
+    savePomodoroState(); // Save when starting
+    
     pomodoroState.timerInterval = setInterval(() => {
         pomodoroState.timeRemaining--;
         updatePomodoroDisplay();
+        
+        // Save state every 10 seconds to avoid too many writes
+        if (pomodoroState.timeRemaining % 10 === 0) {
+            savePomodoroState();
+        }
         
         if (pomodoroState.timeRemaining <= 0) {
             pomodoroComplete();
@@ -5772,13 +5860,18 @@ function pausePomodoro() {
     clearInterval(pomodoroState.timerInterval);
     document.getElementById('pomodoro-start').style.display = 'inline-block';
     document.getElementById('pomodoro-pause').style.display = 'none';
+    
+    savePomodoroState(); // Save when pausing
 }
 
 function resetPomodoro() {
     pausePomodoro();
     pomodoroState.isWorkMode = true;
     pomodoroState.timeRemaining = pomodoroState.workDuration;
+    pomodoroState.sessionsCompleted = 0;
     updatePomodoroDisplay();
+    
+    clearPomodoroState(); // Clear saved state on reset
 }
 
 function pomodoroComplete() {
@@ -5817,6 +5910,7 @@ function pomodoroComplete() {
     }
     
     updatePomodoroDisplay();
+    savePomodoroState(); // Save state after completing a phase
 }
 
 function updatePomodoroDisplay() {
