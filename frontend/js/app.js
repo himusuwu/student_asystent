@@ -193,14 +193,61 @@ function renderLatex(element) {
 
 /**
  * Render Markdown and then LaTeX in content
+ * Protects LaTeX formulas from Markdown parsing
  * @param {string} text - Markdown text potentially containing LaTeX
  * @returns {string} Rendered HTML
  */
 function renderMarkdownWithLatex(text) {
     if (!text) return '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">Brak treści</p>';
     try {
-        const rawHtml = marked.parse(text);
-        return DOMPurify.sanitize(rawHtml);
+        // Store LaTeX expressions temporarily to protect them from Markdown
+        const latexStore = [];
+        let processedText = text;
+        
+        // Protect display math $$...$$ and \[...\]
+        processedText = processedText.replace(/\$\$([\s\S]*?)\$\$/g, (match, latex) => {
+            const placeholder = `%%LATEX_DISPLAY_${latexStore.length}%%`;
+            latexStore.push({ type: 'display', content: latex });
+            return placeholder;
+        });
+        processedText = processedText.replace(/\\\[([\s\S]*?)\\\]/g, (match, latex) => {
+            const placeholder = `%%LATEX_DISPLAY_${latexStore.length}%%`;
+            latexStore.push({ type: 'display', content: latex });
+            return placeholder;
+        });
+        
+        // Protect inline math $...$ and \(...\)
+        // Be careful not to match escaped dollars or currency
+        processedText = processedText.replace(/(?<![\\$])\$([^$\n]+?)\$(?!\d)/g, (match, latex) => {
+            const placeholder = `%%LATEX_INLINE_${latexStore.length}%%`;
+            latexStore.push({ type: 'inline', content: latex });
+            return placeholder;
+        });
+        processedText = processedText.replace(/\\\(([\s\S]*?)\\\)/g, (match, latex) => {
+            const placeholder = `%%LATEX_INLINE_${latexStore.length}%%`;
+            latexStore.push({ type: 'inline', content: latex });
+            return placeholder;
+        });
+        
+        // Parse Markdown
+        let rawHtml = marked.parse(processedText);
+        
+        // Restore LaTeX expressions
+        latexStore.forEach((item, index) => {
+            const displayPlaceholder = `%%LATEX_DISPLAY_${index}%%`;
+            const inlinePlaceholder = `%%LATEX_INLINE_${index}%%`;
+            
+            if (item.type === 'display') {
+                rawHtml = rawHtml.replace(displayPlaceholder, `$$${item.content}$$`);
+            } else {
+                rawHtml = rawHtml.replace(inlinePlaceholder, `$${item.content}$`);
+            }
+        });
+        
+        return DOMPurify.sanitize(rawHtml, { 
+            ADD_TAGS: ['span'],
+            ADD_ATTR: ['class', 'style']
+        });
     } catch (e) {
         console.error('Markdown parse error:', e);
         return `<div style="white-space: pre-wrap;">${text}</div>`;
