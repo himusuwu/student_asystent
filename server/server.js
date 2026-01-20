@@ -1231,6 +1231,12 @@ Wygeneruj KOMPLETNE notatki w formacie JSON:
   "questions": "1. Pytanie 1\\n2. Pytanie 2"
 }
 
+FORMATOWANIE WZORÓW MATEMATYCZNYCH:
+- Wszystkie wzory matematyczne zapisuj w formacie LaTeX
+- Wzory inline: $wzór$ (np. $E = mc^2$, $x^2 + y^2 = r^2$)
+- Wzory blokowe: $$wzór$$ (np. $$\\int_0^\\infty e^{-x} dx = 1$$)
+- Potęgi: $2^n$, indeksy: $a_1$, ułamki: $\\frac{a}{b}$
+
 WAŻNE: Odpowiedź TYLKO w JSON, bez dodatkowego tekstu!`;
 
     const startTime = Date.now();
@@ -1310,7 +1316,20 @@ ZASADY:
 - Uwzględnij wszystkie szczegóły, fakty, definicje, przykłady
 - Każdy termin, proces, koncepcja = osobna fiszka
 - Nie pomijaj żadnych ważnych informacji
-- Fiszki powinny pokrywać cały zakres tematu dogłębnie`;
+- Fiszki powinny pokrywać cały zakres tematu dogłębnie
+
+FORMATOWANIE WZORÓW MATEMATYCZNYCH (BARDZO WAŻNE):
+- Wszystkie wzory matematyczne MUSZĄ być w formacie LaTeX
+- Wzory inline: $wzór$ (np. $E = mc^2$, $x^2 + y^2 = r^2$)
+- Wzory blokowe: $$wzór$$ (np. $$\\int_0^\\infty e^{-x} dx = 1$$)
+- Potęgi: $2^n$, $x^{10}$
+- Indeksy dolne: $a_1$, $x_{max}$
+- Ułamki: $\\frac{a}{b}$
+- Pierwiastki: $\\sqrt{x}$
+- Sumy: $\\sum_{i=1}^n i$
+- Całki: $\\int_a^b f(x) dx$
+- Litery greckie: $\\alpha$, $\\beta$, $\\pi$
+- NIGDY nie pisz wzorów jako zwykły tekst! Zawsze używaj $...$ lub $$...$$`;
 
     const response = await callAI(prompt, {
       provider: aiProvider,

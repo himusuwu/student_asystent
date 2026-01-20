@@ -200,9 +200,11 @@ function renderLatex(element) {
 function renderMarkdownWithLatex(text) {
     if (!text) return '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">Brak treści</p>';
     try {
+        // First, try to auto-convert plain-text math to LaTeX format
+        let processedText = autoConvertMathToLatex(text);
+        
         // Store LaTeX expressions temporarily to protect them from Markdown
         const latexStore = [];
-        let processedText = text;
         
         // Protect display math $$...$$ and \[...\]
         processedText = processedText.replace(/\$\$([\s\S]*?)\$\$/g, (match, latex) => {
@@ -252,6 +254,53 @@ function renderMarkdownWithLatex(text) {
         console.error('Markdown parse error:', e);
         return `<div style="white-space: pre-wrap;">${text}</div>`;
     }
+}
+
+/**
+ * Auto-convert simple math patterns to LaTeX format
+ * For flashcards that were generated without proper LaTeX formatting
+ * @param {string} text - Text that may contain plain-text math
+ * @returns {string} Text with LaTeX-formatted math
+ */
+function autoConvertMathToLatex(text) {
+    if (!text) return text;
+    
+    // Skip if already has LaTeX delimiters
+    if (text.includes('$') || text.includes('\\(') || text.includes('\\[')) {
+        return text;
+    }
+    
+    let result = text;
+    
+    // Pattern for standalone formulas like: V = (-1)^s * m * 2^e
+    // Look for patterns with = and math operators, wrap entire formula
+    result = result.replace(
+        /([A-Za-z_]\w*)\s*=\s*([^,.\n]+(?:\^[\w{}]+|[+\-*\/]\s*\w+)+)/g,
+        (match, variable, formula) => {
+            // Clean up and convert to LaTeX
+            let latex = match
+                .replace(/\*/g, ' \\cdot ')  // * to cdot
+                .replace(/\^(\w)/g, '^{$1}')  // single char exponents
+                .replace(/\^{(\w+)}/g, '^{$1}')  // multi char exponents
+                .replace(/(\d+)\^/g, '$1^')  // numbers with exponents
+                .replace(/([a-zA-Z])(\d+)/g, '$1_{$2}')  // subscripts like a1 -> a_1
+                .trim();
+            return `$${latex}$`;
+        }
+    );
+    
+    // Pattern for simple exponents: 2^10, x^2, etc (standalone)
+    result = result.replace(/\b(\d+)\^(\d+)\b/g, '$$$1^{$2}$$');
+    result = result.replace(/\b([a-zA-Z])\^(\d+)\b/g, '$$$1^{$2}$$');
+    result = result.replace(/\b([a-zA-Z])\^([a-zA-Z])\b/g, '$$$1^{$2}$$');
+    
+    // Pattern for fractions written as a/b
+    result = result.replace(/\b(\d+)\/(\d+)\b/g, '$$\\frac{$1}{$2}$$');
+    
+    // Clean up double dollars that shouldn't be there
+    result = result.replace(/\$\$\$/g, '$$');
+    
+    return result;
 }
 
 /**
