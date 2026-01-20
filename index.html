@@ -262,6 +262,26 @@
                                     <div style="font-weight: 600;">Pisanie</div>
                                     <div style="font-size: 13px; color: var(--text-secondary);">Wpisz odpowiedź</div>
                                 </button>
+                                <button class="study-mode-btn difficult-mode" data-mode="difficult">
+                                    <div style="font-size: 24px; margin-bottom: 8px;">🔥</div>
+                                    <div style="font-weight: 600;">Trudne</div>
+                                    <div style="font-size: 13px; color: var(--text-secondary);">Fiszki które sprawiają Ci problem</div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Difficult flashcards info panel -->
+                        <div id="difficult-cards-info" class="difficult-cards-panel" style="display: none;">
+                            <div class="difficult-cards-header">
+                                <span class="difficult-icon">🔥</span>
+                                <span>Tryb trudnych fiszek</span>
+                            </div>
+                            <p class="difficult-cards-description">
+                                Zestaw <strong id="difficult-count">0</strong> fiszek, które sprawiają Ci największy problem.
+                                Algorytm analizuje ile razy musisz powtarzać rundy zanim oznaczysz fiszkę jako "umiem".
+                            </p>
+                            <div class="difficult-stats" id="difficult-stats">
+                                <!-- Stats will be loaded dynamically -->
                             </div>
                         </div>
 
@@ -1425,6 +1445,6 @@
     </div>
 
     <!-- Main App Script -->
-    <script type="module" src="./frontend/js/app.js?v=20260119-015"></script>
+    <script type="module" src="./frontend/js/app.js?v=20260119-018"></script>
 </body>
 </html>

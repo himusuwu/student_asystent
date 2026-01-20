@@ -457,6 +457,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('✅ Resumed saved study session');
     }
     
+    // Check for saved Pomodoro state (after study session to show dialogs sequentially)
+    await loadPomodoroState();
+    
     console.log('🚀 ========================================');
     console.log('✅ Application ready!');
     console.log('🚀 ========================================');
@@ -984,6 +987,7 @@ function loadRandomTip() {
 // Load subject progress bars
 async function loadSubjectProgress(subjects) {
     const flashcards = await db.listFlashcards();
+    const sessions = JSON.parse(localStorage.getItem('studySessions') || '[]');
     const progressList = document.getElementById('subject-progress-list');
     
     if (!progressList || subjects.length === 0) {
@@ -993,11 +997,19 @@ async function loadSubjectProgress(subjects) {
         return;
     }
     
+    // Get mastered flashcard IDs (answered correctly at least once)
+    const masteredIds = new Set(
+        sessions
+            .filter(s => s.isCorrect === true || s.quality >= 3)
+            .map(s => s.flashcardId)
+            .filter(Boolean)
+    );
+    
     const progressHTML = subjects.map(subject => {
         const subjectFlashcards = flashcards.filter(f => f.subjectId === subject.id);
         const total = subjectFlashcards.length;
-        // Use interval >= 21 for mastered (consistent with database.js getMasteredFlashcards)
-        const mastered = subjectFlashcards.filter(f => (f.interval || 0) >= 21).length;
+        // Count mastered cards for this subject
+        const mastered = subjectFlashcards.filter(f => masteredIds.has(f.id)).length;
         const percent = total > 0 ? Math.round((mastered / total) * 100) : 0;
         
         return `
@@ -4194,12 +4206,13 @@ window.rateClozeCard = async function(isCorrect) {
     const currentCard = currentStudySession.cards[currentStudySession.currentIndex];
     const quality = isCorrect ? 3 : 1; // SM2 quality: 3=good, 1=bad
     
-    // Record study session for accuracy tracking
+    // Record study session for accuracy tracking (include round number for difficulty calculation)
     await db.recordStudySession({
         flashcardId: currentCard?.id,
         type: 'cloze',
         quality: quality,
-        isCorrect: isCorrect
+        isCorrect: isCorrect,
+        round: currentStudySession.round || 1
     });
     
     if (isCorrect) {
@@ -5088,9 +5101,19 @@ async function initializeStudySelection() {
     
     // Handle study mode selection
     document.querySelectorAll('.study-mode-btn').forEach(btn => {
-        btn.onclick = () => {
+        btn.onclick = async () => {
             document.querySelectorAll('.study-mode-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
+            
+            // Show/hide difficult cards info panel
+            const difficultPanel = document.getElementById('difficult-cards-info');
+            if (btn.dataset.mode === 'difficult') {
+                await showDifficultCardsInfo();
+                difficultPanel.style.display = 'block';
+            } else {
+                difficultPanel.style.display = 'none';
+            }
+            
             checkStartButton();
         };
     });
@@ -5104,9 +5127,58 @@ async function initializeStudySelection() {
         const hasSubject = subjectSelect.value;
         const hasLecture = lectureSelect.value;
         const hasMode = document.querySelector('.study-mode-btn.selected');
+        const isDifficultMode = hasMode && hasMode.dataset.mode === 'difficult';
         
-        startBtn.disabled = !(hasSubject && hasLecture && hasMode);
+        // For difficult mode, we don't require lecture selection
+        if (isDifficultMode) {
+            startBtn.disabled = !hasSubject;
+        } else {
+            startBtn.disabled = !(hasSubject && hasLecture && hasMode);
+        }
     }
+}
+
+// Show difficult cards information panel
+async function showDifficultCardsInfo() {
+    const subjectId = document.getElementById('study-subject-select').value;
+    const difficultCards = await db.getDifficultFlashcards(20, subjectId || null);
+    
+    document.getElementById('difficult-count').textContent = difficultCards.length;
+    
+    const statsContainer = document.getElementById('difficult-stats');
+    
+    if (difficultCards.length === 0) {
+        statsContainer.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 20px;">
+                <div style="font-size: 48px; margin-bottom: 10px;">🎉</div>
+                <p>Nie masz jeszcze trudnych fiszek!</p>
+                <p style="font-size: 13px;">Ucz się więcej, a algorytm zidentyfikuje fiszki wymagające powtórki.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Calculate stats
+    const hardCount = difficultCards.filter(c => c.difficulty.level === 'hard').length;
+    const mediumCount = difficultCards.filter(c => c.difficulty.level === 'medium').length;
+    const avgAttempts = difficultCards.length > 0
+        ? (difficultCards.reduce((sum, c) => sum + c.difficulty.totalAttempts, 0) / difficultCards.length).toFixed(1)
+        : 0;
+    
+    statsContainer.innerHTML = `
+        <div class="difficult-stat">
+            <div class="difficult-stat-value hard">${hardCount}</div>
+            <div class="difficult-stat-label">Bardzo trudne</div>
+        </div>
+        <div class="difficult-stat">
+            <div class="difficult-stat-value medium">${mediumCount}</div>
+            <div class="difficult-stat-label">Trudne</div>
+        </div>
+        <div class="difficult-stat">
+            <div class="difficult-stat-value">${avgAttempts}</div>
+            <div class="difficult-stat-label">Śr. prób</div>
+        </div>
+    `;
 }
 
 // Start study session
@@ -5114,6 +5186,54 @@ async function startStudySession() {
     const subjectId = document.getElementById('study-subject-select').value;
     const lectureId = document.getElementById('study-lecture-select').value;
     const mode = document.querySelector('.study-mode-btn.selected').dataset.mode;
+    
+    // Handle difficult mode specially
+    if (mode === 'difficult') {
+        const difficultCards = await db.getDifficultFlashcards(20, subjectId || null);
+        
+        if (difficultCards.length === 0) {
+            showToast('🎉 Nie masz trudnych fiszek do powtórki!');
+            return;
+        }
+        
+        // Separate by type
+        const regularDifficult = difficultCards.filter(c => c.type !== 'cloze');
+        const clozeDifficult = difficultCards.filter(c => c.type === 'cloze');
+        
+        // If there are both types, prefer regular flashcards mode
+        let cardsToStudy = regularDifficult.length > 0 ? regularDifficult : clozeDifficult;
+        const isCloze = regularDifficult.length === 0 && clozeDifficult.length > 0;
+        
+        // Shuffle and start
+        cardsToStudy = shuffleArray(cardsToStudy);
+        
+        if (isCloze) {
+            startClozeStudyMode(cardsToStudy);
+        } else {
+            // Initialize study session for difficult cards
+            currentStudySession = {
+                cards: cardsToStudy,
+                currentIndex: 0,
+                mode: 'flashcards', // Use flashcard mode for difficult
+                correct: 0,
+                incorrect: 0,
+                incorrectCards: [],
+                totalCards: cardsToStudy.length,
+                round: 1,
+                subjectId: subjectId,
+                lectureId: 'difficult', // Special marker
+                startTime: Date.now(),
+                isDifficultMode: true // Mark as difficult mode
+            };
+            
+            switchTab('study-mode');
+            showStudyStep('study-session');
+            startFlashcardMode();
+        }
+        
+        showToast(`🔥 Rozpoczęto trening ${cardsToStudy.length} trudnych fiszek!`);
+        return;
+    }
     
     // Get flashcards for selected subject/lecture
     const allFlashcards = await db.listFlashcards();
@@ -5134,7 +5254,7 @@ async function startStudySession() {
     // For cloze mode, use cloze cards; for other modes, use regular cards
     if (mode === 'cloze') {
         if (clozeCards.length === 0) {
-            alert('Brak fiszek Cloze do nauki! Wygeneruj najpierw fiszki Cloze w widoku wykładu.');
+            showToast('❌ Brak fiszek Cloze do nauki! Wygeneruj najpierw fiszki Cloze w widoku wykładu.');
             return;
         }
         // Use the dedicated cloze study mode
@@ -5397,12 +5517,13 @@ window.markCard = async function(isCorrect) {
     
     console.log('markCard called:', isCorrect ? 'correct' : 'incorrect', 'card:', currentCard);
     
-    // Record study session for accuracy tracking
+    // Record study session for accuracy tracking (include round number for difficulty calculation)
     await db.recordStudySession({
         flashcardId: currentCard?.id,
         type: 'flashcard',
         quality: quality,
-        isCorrect: isCorrect
+        isCorrect: isCorrect,
+        round: session.round || 1
     });
     
     if (isCorrect) {
@@ -6046,8 +6167,7 @@ function initPomodoro() {
     // Make widget draggable
     makeDraggable(widget, document.getElementById('pomodoro-header'));
     
-    // Load saved state
-    loadPomodoroState();
+    // Note: loadPomodoroState() is called from main initialization to coordinate with study session dialogs
     
     updatePomodoroDisplay();
 }

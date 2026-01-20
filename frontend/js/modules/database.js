@@ -836,11 +836,23 @@ export async function getDueCount() {
 }
 
 /**
- * Get mastered flashcards (interval > 21 days)
+ * Get mastered flashcards (cards that have been answered correctly at least once)
+ * A card is considered "mastered" when user answered it correctly in a study session
  */
 export async function getMasteredFlashcards() {
     const allFlashcards = await listFlashcards();
-    return allFlashcards.filter(card => (card.interval || 0) >= 21);
+    const sessions = JSON.parse(localStorage.getItem('studySessions') || '[]');
+    
+    // Get unique flashcard IDs that were answered correctly
+    const masteredIds = new Set(
+        sessions
+            .filter(s => s.isCorrect === true || s.quality >= 3)
+            .map(s => s.flashcardId)
+            .filter(Boolean)
+    );
+    
+    // Return flashcards that have been mastered
+    return allFlashcards.filter(card => masteredIds.has(card.id));
 }
 
 // ============================================
@@ -859,16 +871,132 @@ export async function recordStudySession(sessionData) {
         timestamp: new Date().toISOString()
     };
     
+    // Always save to localStorage for statistics (guaranteed to work)
+    const sessions = JSON.parse(localStorage.getItem('studySessions') || '[]');
+    sessions.push(session);
+    localStorage.setItem('studySessions', JSON.stringify(sessions));
+    
+    // Also try to save to IndexedDB
     try {
         await db.put('sessions', session, session.id);
     } catch (e) {
-        // Store might not exist in older DB versions, create it in localStorage instead
-        const sessions = JSON.parse(localStorage.getItem('studySessions') || '[]');
-        sessions.push(session);
-        localStorage.setItem('studySessions', JSON.stringify(sessions));
+        console.warn('Could not save session to IndexedDB, using localStorage only');
     }
     
     return session;
+}
+
+/**
+ * Calculate difficulty score for each flashcard
+ * Based on: incorrect/total ratio and number of rounds needed
+ * Higher score = more difficult
+ */
+export async function getFlashcardDifficulty() {
+    const sessions = JSON.parse(localStorage.getItem('studySessions') || '[]');
+    const allFlashcards = await listFlashcards();
+    
+    // Group sessions by flashcard ID
+    const flashcardStats = {};
+    
+    sessions.forEach(session => {
+        if (!session.flashcardId) return;
+        
+        if (!flashcardStats[session.flashcardId]) {
+            flashcardStats[session.flashcardId] = {
+                totalAttempts: 0,
+                incorrectAttempts: 0,
+                correctAttempts: 0,
+                rounds: [] // Track which round the answer was given
+            };
+        }
+        
+        const stats = flashcardStats[session.flashcardId];
+        stats.totalAttempts++;
+        
+        if (session.isCorrect === true || session.quality >= 3) {
+            stats.correctAttempts++;
+        } else {
+            stats.incorrectAttempts++;
+        }
+        
+        // Track round info if available
+        if (session.round) {
+            stats.rounds.push(session.round);
+        }
+    });
+    
+    // Calculate difficulty score for each flashcard
+    const difficulties = allFlashcards.map(card => {
+        const stats = flashcardStats[card.id] || {
+            totalAttempts: 0,
+            incorrectAttempts: 0,
+            correctAttempts: 0,
+            rounds: []
+        };
+        
+        // Calculate difficulty score (0-100, higher = more difficult)
+        let difficultyScore = 0;
+        
+        if (stats.totalAttempts > 0) {
+            // Base: incorrect ratio (0-50 points)
+            const incorrectRatio = stats.incorrectAttempts / stats.totalAttempts;
+            difficultyScore += incorrectRatio * 50;
+            
+            // Average round number when answered (0-30 points)
+            // Higher round = needed more attempts
+            if (stats.rounds.length > 0) {
+                const avgRound = stats.rounds.reduce((a, b) => a + b, 0) / stats.rounds.length;
+                difficultyScore += Math.min(avgRound - 1, 3) * 10; // Max 30 points for rounds
+            }
+            
+            // Frequency penalty: if seen many times but still incorrect (0-20 points)
+            if (stats.totalAttempts >= 3 && incorrectRatio > 0.3) {
+                difficultyScore += 20;
+            }
+        } else {
+            // Not yet studied - neutral difficulty
+            difficultyScore = 50; // Medium difficulty assumed
+        }
+        
+        return {
+            ...card,
+            difficulty: {
+                score: Math.round(difficultyScore),
+                totalAttempts: stats.totalAttempts,
+                incorrectAttempts: stats.incorrectAttempts,
+                correctAttempts: stats.correctAttempts,
+                avgRound: stats.rounds.length > 0 
+                    ? (stats.rounds.reduce((a, b) => a + b, 0) / stats.rounds.length).toFixed(1)
+                    : 'N/A',
+                level: difficultyScore >= 60 ? 'hard' : difficultyScore >= 30 ? 'medium' : 'easy'
+            }
+        };
+    });
+    
+    return difficulties;
+}
+
+/**
+ * Get the most difficult flashcards for focused practice
+ * @param {number} limit - Maximum number of cards to return
+ * @param {string} subjectId - Optional: filter by subject
+ */
+export async function getDifficultFlashcards(limit = 20, subjectId = null) {
+    const difficulties = await getFlashcardDifficulty();
+    
+    // Filter by subject if specified
+    let filtered = difficulties;
+    if (subjectId) {
+        filtered = difficulties.filter(card => card.subjectId === subjectId);
+    }
+    
+    // Sort by difficulty (highest first) and take top N
+    const sorted = filtered
+        .filter(card => card.difficulty.totalAttempts > 0) // Only cards that have been studied
+        .sort((a, b) => b.difficulty.score - a.difficulty.score)
+        .slice(0, limit);
+    
+    return sorted;
 }
 
 /**
@@ -908,10 +1036,12 @@ export async function getStudyStreak() {
     const sessions = JSON.parse(localStorage.getItem('studySessions') || '[]');
     if (sessions.length === 0) return 0;
     
-    // Get unique dates
-    const dates = [...new Set(sessions.map(s => s.date))].sort().reverse();
+    // Get unique dates sorted from newest to oldest
+    const dates = [...new Set(sessions.map(s => s.date))].filter(Boolean).sort().reverse();
     
-    // Check if studied today
+    if (dates.length === 0) return 0;
+    
+    // Check if studied today or yesterday
     const today = new Date().toISOString().split('T')[0];
     const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
     
@@ -919,18 +1049,20 @@ export async function getStudyStreak() {
         return 0; // Streak broken
     }
     
-    let streak = 0;
-    let currentDate = new Date(dates[0]);
+    let streak = 1; // Start with 1 for the most recent day
+    let lastDate = new Date(dates[0]);
     
-    for (const dateStr of dates) {
-        const date = new Date(dateStr);
-        const expectedDate = new Date(currentDate);
-        expectedDate.setDate(expectedDate.getDate() - streak);
+    for (let i = 1; i < dates.length; i++) {
+        const currentDate = new Date(dates[i]);
+        const expectedDate = new Date(lastDate);
+        expectedDate.setDate(expectedDate.getDate() - 1);
         
-        if (dateStr === expectedDate.toISOString().split('T')[0]) {
+        // Check if this date is exactly one day before the last
+        if (dates[i] === expectedDate.toISOString().split('T')[0]) {
             streak++;
+            lastDate = currentDate;
         } else {
-            break;
+            break; // Gap in streak
         }
     }
     
