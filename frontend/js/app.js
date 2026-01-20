@@ -919,6 +919,7 @@ function setupEventListeners() {
 async function loadDashboard() {
     const subjects = await db.listSubjects();
     const lectures = await db.listLectures();
+    const flashcards = await db.listFlashcards();
     
     // Get study statistics
     const stats = await db.getStudyStatistics();
@@ -950,25 +951,8 @@ async function loadDashboard() {
     // Load charts
     await loadDashboardCharts();
     
-    // Show recent activity
-    const recentLectures = lectures.slice(0, 3);
-    const activityHTML = recentLectures.map(lecture => {
-        const subject = subjects.find(s => s.id === lecture.subjectId);
-        return `
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">${lecture.title}</div>
-                    <span class="badge badge-primary">Wykład</span>
-                </div>
-                <div class="card-meta">${subject?.name || 'Brak przedmiotu'}</div>
-                <div class="card-meta">${new Date(lecture.createdAt).toLocaleString('pl-PL')}</div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: 100%"></div>
-                </div>
-            </div>
-        `;
-    }).join('');
-    
+    // Show recent activity - more informative feed
+    const activityHTML = await generateRecentActivityFeed(subjects, lectures, flashcards);  
     document.getElementById('recent-activity').innerHTML = activityHTML || '<p style="text-align: center; color: var(--text-secondary);">Brak ostatniej aktywności</p>';
 }
 
@@ -982,6 +966,162 @@ function loadRandomTip() {
         tipIcon.textContent = tip.icon;
         tipText.textContent = tip.text;
     }
+}
+
+/**
+ * Generate recent activity feed with useful information
+ */
+async function generateRecentActivityFeed(subjects, lectures, flashcards) {
+    const activities = [];
+    const sessions = JSON.parse(localStorage.getItem('studySessions') || '[]');
+    
+    // Group sessions by date and subject
+    const todaySessions = sessions.filter(s => {
+        const sessionDate = new Date(s.timestamp || s.date);
+        const today = new Date();
+        return sessionDate.toDateString() === today.toDateString();
+    });
+    
+    const yesterdaySessions = sessions.filter(s => {
+        const sessionDate = new Date(s.timestamp || s.date);
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        return sessionDate.toDateString() === yesterday.toDateString();
+    });
+    
+    // Calculate today's study stats per subject
+    const todayStatsBySubject = {};
+    todaySessions.forEach(session => {
+        const flashcard = flashcards.find(f => f.id === session.flashcardId);
+        if (flashcard && flashcard.subjectId) {
+            if (!todayStatsBySubject[flashcard.subjectId]) {
+                todayStatsBySubject[flashcard.subjectId] = {
+                    total: 0,
+                    correct: 0,
+                    type: session.type || 'flashcard'
+                };
+            }
+            todayStatsBySubject[flashcard.subjectId].total++;
+            if (session.isCorrect || session.quality >= 3) {
+                todayStatsBySubject[flashcard.subjectId].correct++;
+            }
+        }
+    });
+    
+    // Add today's study activities
+    for (const [subjectId, stats] of Object.entries(todayStatsBySubject)) {
+        const subject = subjects.find(s => s.id === subjectId);
+        if (subject && stats.total > 0) {
+            const accuracy = Math.round((stats.correct / stats.total) * 100);
+            const isCloze = stats.type === 'cloze';
+            activities.push({
+                icon: isCloze ? '🧩' : '🎯',
+                title: `Nauka: ${subject.name}`,
+                description: `Przećwiczono ${stats.total} ${isCloze ? 'fiszek cloze' : 'fiszek'} (${stats.correct} poprawnie - ${accuracy}%)`,
+                time: 'Dzisiaj',
+                color: subject.color || '#6366f1',
+                priority: 1
+            });
+        }
+    }
+    
+    // Add newly created lectures (today/yesterday)
+    const recentLectures = lectures.filter(l => {
+        const createdDate = new Date(l.createdAt);
+        const twoDaysAgo = new Date();
+        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+        return createdDate > twoDaysAgo;
+    }).slice(0, 3);
+    
+    recentLectures.forEach(lecture => {
+        const subject = subjects.find(s => s.id === lecture.subjectId);
+        const createdDate = new Date(lecture.createdAt);
+        const isToday = createdDate.toDateString() === new Date().toDateString();
+        
+        activities.push({
+            icon: '📚',
+            title: `Dodano: ${lecture.title}`,
+            description: subject?.name || 'Bez przedmiotu',
+            time: isToday ? 'Dzisiaj' : createdDate.toLocaleDateString('pl-PL'),
+            color: subject?.color || '#6366f1',
+            priority: 2
+        });
+    });
+    
+    // Add achievements/milestones
+    const masteredIds = new Set(
+        sessions.filter(s => s.isCorrect === true || s.quality >= 3).map(s => s.flashcardId).filter(Boolean)
+    );
+    const totalMastered = flashcards.filter(f => masteredIds.has(f.id)).length;
+    
+    // Milestones
+    const milestones = [10, 25, 50, 100, 200, 500];
+    const reachedMilestone = milestones.filter(m => totalMastered >= m).pop();
+    if (reachedMilestone && totalMastered <= reachedMilestone + 5) {
+        activities.push({
+            icon: '🏆',
+            title: `Kamień milowy!`,
+            description: `Opanowano już ${reachedMilestone}+ fiszek!`,
+            time: '',
+            color: '#f59e0b',
+            priority: 0
+        });
+    }
+    
+    // Add streak info if active
+    const streak = await db.getStudyStreak();
+    if (streak >= 3) {
+        activities.push({
+            icon: '🔥',
+            title: `Seria ${streak} dni!`,
+            description: 'Kontynuuj naukę każdego dnia',
+            time: '',
+            color: '#ef4444',
+            priority: 0
+        });
+    }
+    
+    // Sort by priority (lower = more important)
+    activities.sort((a, b) => a.priority - b.priority);
+    
+    // Generate HTML
+    if (activities.length === 0) {
+        // Show encouraging message if no activity
+        return `
+            <div class="card activity-card">
+                <div class="activity-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">🚀</div>
+                <div class="activity-content">
+                    <div class="activity-title">Rozpocznij naukę!</div>
+                    <div class="activity-description">Dodaj wykład i wygeneruj fiszki aby zacząć</div>
+                </div>
+            </div>
+        `;
+    }
+    
+    return activities.slice(0, 5).map(activity => `
+        <div class="card activity-card">
+            <div class="activity-icon" style="background: linear-gradient(135deg, ${activity.color}, ${adjustColor(activity.color, -20)});">
+                ${activity.icon}
+            </div>
+            <div class="activity-content">
+                <div class="activity-title">${activity.title}</div>
+                <div class="activity-description">${activity.description}</div>
+            </div>
+            ${activity.time ? `<div class="activity-time">${activity.time}</div>` : ''}
+        </div>
+    `).join('');
+}
+
+/**
+ * Adjust hex color brightness
+ */
+function adjustColor(color, amount) {
+    const hex = color.replace('#', '');
+    const num = parseInt(hex, 16);
+    const r = Math.min(255, Math.max(0, (num >> 16) + amount));
+    const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amount));
+    const b = Math.min(255, Math.max(0, (num & 0x0000FF) + amount));
+    return `#${(1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)}`;
 }
 
 // Load subject progress bars
@@ -1012,18 +1152,23 @@ async function loadSubjectProgress(subjects) {
         const mastered = subjectFlashcards.filter(f => masteredIds.has(f.id)).length;
         const percent = total > 0 ? Math.round((mastered / total) * 100) : 0;
         
+        // Ensure minimum visible width for small percentages
+        const displayWidth = percent > 0 && percent < 3 ? 3 : percent;
+        const subjectColor = subject.color || '#6366f1';
+        
         return `
             <div class="subject-progress-card">
                 <div class="subject-progress-header">
-                    <div class="subject-progress-color" style="background: ${subject.color || '#6366f1'}"></div>
+                    <div class="subject-progress-color" style="background: ${subjectColor}"></div>
                     <div class="subject-progress-name">${subject.name}</div>
                     <div class="subject-progress-percent">${percent}%</div>
                 </div>
-                <div class="progress-container">
-                    <div class="progress-bar" style="width: ${percent}%; background: ${subject.color || 'var(--gradient-primary)'}"></div>
+                <div class="subject-progress-bar-container">
+                    <div class="subject-progress-bar-fill" style="width: ${displayWidth}%; background: linear-gradient(90deg, ${subjectColor}, ${adjustColor(subjectColor, 30)});"></div>
                 </div>
-                <div class="progress-label">
-                    <span>${mastered} / ${total} fiszek opanowanych</span>
+                <div class="subject-progress-stats">
+                    <span>✅ ${mastered} opanowanych</span>
+                    <span>📚 ${total - mastered} do nauki</span>
                 </div>
             </div>
         `;
@@ -2354,10 +2499,10 @@ async function loadFlashcards() {
                         <div class="card flashcard" onclick="this.classList.toggle('flipped')" data-flashcard-id="${card.id}">
                             <div class="flashcard-inner">
                                 <div class="flashcard-front">
-                                    <div>${frontText}</div>
+                                    <div class="flashcard-markdown">${renderMarkdownWithLatex(frontText)}</div>
                                 </div>
                                 <div class="flashcard-back">
-                                    <div>${backText}</div>
+                                    <div class="flashcard-markdown">${renderMarkdownWithLatex(backText)}</div>
                                 </div>
                             </div>
                         </div>
@@ -2414,10 +2559,10 @@ async function loadFlashcards() {
                 <div class="card flashcard" onclick="this.classList.toggle('flipped')" data-flashcard-id="${card.id}">
                     <div class="flashcard-inner">
                         <div class="flashcard-front">
-                            <div>${frontText}</div>
+                            <div class="flashcard-markdown">${renderMarkdownWithLatex(frontText)}</div>
                         </div>
                         <div class="flashcard-back">
-                            <div>${backText}</div>
+                            <div class="flashcard-markdown">${renderMarkdownWithLatex(backText)}</div>
                         </div>
                     </div>
                 </div>
@@ -3938,9 +4083,20 @@ function renderClozeCards(clozeCards) {
         blank.addEventListener('click', () => toggleCloze(blank));
     });
     
-    // Add study mode button handler
-    document.getElementById('btn-study-cloze')?.addEventListener('click', () => {
-        startClozeStudyMode(clozeCards);
+    // Add study mode button handler - fetch cards from DB to get IDs for mastery tracking
+    document.getElementById('btn-study-cloze')?.addEventListener('click', async () => {
+        // Fetch cloze cards from database (they have proper IDs)
+        const allFlashcards = await db.listFlashcards();
+        const clozeCardsFromDb = allFlashcards.filter(card => 
+            card.type === 'cloze' && card.lectureId === window.currentLectureId
+        );
+        
+        if (clozeCardsFromDb.length > 0) {
+            startClozeStudyMode(clozeCardsFromDb);
+        } else {
+            // Fallback to raw cards if no DB entries
+            startClozeStudyMode(clozeCards);
+        }
     });
     
     // Render LaTeX
@@ -3966,6 +4122,9 @@ function renderSingleClozeCard(card, idx) {
         });
     }
     
+    // Apply Markdown to the display text (after cloze processing)
+    displayText = renderMarkdownWithLatex(displayText);
+    
     const difficultyColors = {
         easy: '#10b981',
         medium: '#f59e0b',
@@ -3986,7 +4145,7 @@ function renderSingleClozeCard(card, idx) {
                     ${difficultyLabels[card.difficulty] || card.difficulty}
                 </span>` : ''}
             </div>
-            <div class="cloze-card-content">
+            <div class="cloze-card-content flashcard-markdown">
                 ${displayText}
             </div>
             <div class="cloze-card-actions">
@@ -4133,6 +4292,9 @@ function displayClozeStudyCard() {
         });
     }
     
+    // Apply Markdown to the display text (after cloze processing)
+    displayText = renderMarkdownWithLatex(displayText);
+    
     sessionContainer.innerHTML = `
         <div class="study-progress">
             <div class="study-progress-bar">
@@ -4144,7 +4306,7 @@ function displayClozeStudyCard() {
             </div>
         </div>
         
-        <div class="card study-cloze-card" style="padding: 40px; font-size: 20px; line-height: 1.8; text-align: center; min-height: 200px;">
+        <div class="card study-cloze-card flashcard-markdown" style="padding: 40px; font-size: 20px; line-height: 1.8; text-align: center; min-height: 200px;">
             ${displayText}
         </div>
         
@@ -5360,13 +5522,13 @@ function startFlashcardMode() {
         <div class="study-flashcard" id="study-card" onclick="flipStudyCard()">
             <div class="study-flashcard-inner">
                 <div class="study-flashcard-front">
-                    <div class="study-flashcard-content">
-                        ${currentCard.front || currentCard.question || 'Brak pytania'}
+                    <div class="study-flashcard-content flashcard-markdown">
+                        ${renderMarkdownWithLatex(currentCard.front || currentCard.question || 'Brak pytania')}
                     </div>
                 </div>
                 <div class="study-flashcard-back">
-                    <div class="study-flashcard-content">
-                        ${currentCard.back || currentCard.answer || 'Brak odpowiedzi'}
+                    <div class="study-flashcard-content flashcard-markdown">
+                        ${renderMarkdownWithLatex(currentCard.back || currentCard.answer || 'Brak odpowiedzi')}
                     </div>
                 </div>
             </div>
@@ -5428,11 +5590,11 @@ function startQuizMode() {
         </div>
         
         <div class="study-quiz-question">
-            <h3>${currentCard.front || currentCard.question || 'Brak pytania'}</h3>
+            <h3 class="flashcard-markdown">${renderMarkdownWithLatex(currentCard.front || currentCard.question || 'Brak pytania')}</h3>
             <div class="study-quiz-answers">
                 ${allAnswers.map((answer, index) => `
-                    <button class="study-quiz-answer" onclick="selectQuizAnswer(this, '${answer}', '${correctAnswer}')">
-                        ${answer}
+                    <button class="study-quiz-answer flashcard-markdown" onclick="selectQuizAnswer(this, '${answer.replace(/'/g, "\\'")}', '${correctAnswer.replace(/'/g, "\\'")}')">
+                        ${renderMarkdownWithLatex(answer)}
                     </button>
                 `).join('')}
             </div>
@@ -5474,7 +5636,7 @@ function startMemoryMode() {
         </div>
         
         <div class="study-quiz-question">
-            <h3>${currentCard.front || currentCard.question || 'Brak pytania'}</h3>
+            <h3 class="flashcard-markdown">${renderMarkdownWithLatex(currentCard.front || currentCard.question || 'Brak pytania')}</h3>
             <input type="text" class="study-memory-input" id="memory-input" placeholder="Wpisz swoją odpowiedź...">
         </div>
         
