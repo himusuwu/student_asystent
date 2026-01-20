@@ -301,6 +301,111 @@ window.addEventListener('click', (e) => {
 });
 
 // ============================================
+// CUSTOM DIALOG (styled confirm replacement)
+// ============================================
+
+/**
+ * Show a styled confirmation dialog
+ * @param {Object} options - Dialog options
+ * @param {string} options.title - Dialog title
+ * @param {string} options.message - Dialog message
+ * @param {string} options.icon - Emoji icon (default: 🔔)
+ * @param {string} options.confirmText - Confirm button text (default: Potwierdź)
+ * @param {string} options.cancelText - Cancel button text (default: Anuluj)
+ * @param {string} options.type - Dialog type: 'default', 'danger', 'warning', 'success'
+ * @param {Object} options.details - Additional details to show (key-value pairs)
+ * @returns {Promise<boolean>} - Resolves to true if confirmed, false if cancelled
+ */
+function showConfirmDialog(options = {}) {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('custom-dialog');
+        const titleEl = document.getElementById('dialog-title');
+        const messageEl = document.getElementById('dialog-message');
+        const iconEl = document.getElementById('dialog-icon');
+        const detailsEl = document.getElementById('dialog-details');
+        const confirmBtn = document.getElementById('dialog-confirm');
+        const cancelBtn = document.getElementById('dialog-cancel');
+        
+        // Set content
+        titleEl.textContent = options.title || 'Potwierdzenie';
+        messageEl.textContent = options.message || 'Czy na pewno chcesz kontynuować?';
+        iconEl.textContent = options.icon || '🔔';
+        confirmBtn.textContent = options.confirmText || 'Potwierdź';
+        cancelBtn.textContent = options.cancelText || 'Anuluj';
+        
+        // Set button type
+        confirmBtn.className = 'custom-dialog-btn confirm';
+        if (options.type) {
+            confirmBtn.classList.add(options.type);
+        }
+        
+        // Set details
+        if (options.details && Object.keys(options.details).length > 0) {
+            detailsEl.innerHTML = Object.entries(options.details)
+                .map(([label, value]) => `
+                    <div class="detail-row">
+                        <span class="detail-label">${label}</span>
+                        <span class="detail-value">${value}</span>
+                    </div>
+                `).join('');
+            detailsEl.classList.add('has-content');
+        } else {
+            detailsEl.innerHTML = '';
+            detailsEl.classList.remove('has-content');
+        }
+        
+        // Show dialog
+        overlay.classList.add('active');
+        
+        // Handle responses
+        const handleConfirm = () => {
+            cleanup();
+            resolve(true);
+        };
+        
+        const handleCancel = () => {
+            cleanup();
+            resolve(false);
+        };
+        
+        const handleKeydown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleConfirm();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                handleCancel();
+            }
+        };
+        
+        const handleOverlayClick = (e) => {
+            if (e.target === overlay) {
+                handleCancel();
+            }
+        };
+        
+        const cleanup = () => {
+            overlay.classList.remove('active');
+            confirmBtn.removeEventListener('click', handleConfirm);
+            cancelBtn.removeEventListener('click', handleCancel);
+            document.removeEventListener('keydown', handleKeydown);
+            overlay.removeEventListener('click', handleOverlayClick);
+        };
+        
+        confirmBtn.addEventListener('click', handleConfirm);
+        cancelBtn.addEventListener('click', handleCancel);
+        document.addEventListener('keydown', handleKeydown);
+        overlay.addEventListener('click', handleOverlayClick);
+        
+        // Focus confirm button
+        setTimeout(() => confirmBtn.focus(), 100);
+    });
+}
+
+// Make available globally
+window.showConfirmDialog = showConfirmDialog;
+
+// ============================================
 // INITIALIZATION
 // ============================================
 
@@ -459,7 +564,17 @@ window.cleanupOrphanedFlashcards = async function() {
         orphaned.forEach(card => console.log(`- "${card.front}" (lectureId: ${card.lectureId})`));
         
         // Ask for confirmation
-        const confirmed = confirm(`Znaleziono ${orphaned.length} osieroconych fiszek. Czy chcesz je usunąć?\\n\\nFiszki do usunięcia:\\n${orphaned.slice(0, 5).map(f => '• ' + f.front).join('\\n')}${orphaned.length > 5 ? '\\n...i więcej' : ''}`);
+        const confirmed = await showConfirmDialog({
+            title: 'Czyszczenie fiszek',
+            message: `Znaleziono ${orphaned.length} osieroconych fiszek.\nCzy chcesz je usunąć?`,
+            icon: '🧹',
+            confirmText: 'Usuń',
+            type: 'warning',
+            details: {
+                'Liczba fiszek': orphaned.length,
+                'Przykłady': orphaned.slice(0, 3).map(f => f.front).join(', ') + (orphaned.length > 3 ? '...' : '')
+            }
+        });
         
         if (!confirmed) {
             const message = 'Anulowano czyszczenie.';
@@ -1066,7 +1181,14 @@ async function addSubject() {
 }
 
 window.deleteSubject = async (id) => {
-    if (!confirm('Czy na pewno chcesz usunąć ten przedmiot?')) return;
+    const confirmed = await showConfirmDialog({
+        title: 'Usuń przedmiot',
+        message: 'Czy na pewno chcesz usunąć ten przedmiot?',
+        icon: '🗑️',
+        confirmText: 'Usuń',
+        type: 'danger'
+    });
+    if (!confirmed) return;
     
     await db.deleteSubject(id);
     await loadSubjects();
@@ -1680,7 +1802,14 @@ async function handleStopRecording() {
         currentAudioFile = audioFile;
         
         // Ask if user wants to transcribe
-        if (confirm('Nagranie zakończone! Czy chcesz transkrybować audio?')) {
+        const transcribe = await showConfirmDialog({
+            title: 'Nagranie zakończone!',
+            message: 'Czy chcesz teraz transkrybować audio?',
+            icon: '🎙️',
+            confirmText: 'Transkrybuj',
+            type: 'success'
+        });
+        if (transcribe) {
             await handleTranscription(audioFile);
         }
         
@@ -1696,7 +1825,14 @@ async function handleAudioFileUpload(e) {
     
     currentAudioFile = file;
     
-    if (confirm('Plik załadowany! Czy chcesz transkrybować audio?')) {
+    const transcribe = await showConfirmDialog({
+        title: 'Plik załadowany!',
+        message: 'Czy chcesz teraz transkrybować audio?',
+        icon: '🎵',
+        confirmText: 'Transkrybuj',
+        type: 'success'
+    });
+    if (transcribe) {
         await handleTranscription(file);
     }
 }
@@ -1960,7 +2096,14 @@ async function handleDocumentFileUpload(e) {
     statusDiv.style.display = 'block';
     
     // Ask if user wants to extract content
-    if (confirm('Dokument załadowany! Czy chcesz wyekstrahować treść?')) {
+    const extract = await showConfirmDialog({
+        title: 'Dokument załadowany!',
+        message: 'Czy chcesz wyekstrahować treść z dokumentu?',
+        icon: '📄',
+        confirmText: 'Ekstrahuj',
+        type: 'success'
+    });
+    if (extract) {
         await handleDocumentExtraction(file);
     } else {
         statusDiv.style.display = 'none';
@@ -2824,11 +2967,18 @@ async function handleImportFile(event) {
         }
         
         // Ask user about import options
-        const clearExisting = confirm(
-            '❓ Czy usunąć istniejące dane przed importem?\n\n' +
-            '• TAK - usuń wszystkie obecne dane i zastąp je importowanymi\n' +
-            '• NIE - dodaj importowane dane do istniejących (pominie duplikaty)'
-        );
+        const clearExisting = await showConfirmDialog({
+            title: 'Opcje importu',
+            message: 'Czy usunąć istniejące dane przed importem?',
+            icon: '📥',
+            confirmText: 'Tak, wyczyść',
+            cancelText: 'Nie, dodaj',
+            type: 'warning',
+            details: {
+                'Tak': 'Usuń wszystkie dane i zastąp importowanymi',
+                'Nie': 'Dodaj do istniejących (pominie duplikaty)'
+            }
+        });
         
         // Import data
         const results = await db.importAllData(importData, {
@@ -4480,7 +4630,14 @@ async function addScheduleEvent() {
 }
 
 window.deleteScheduleEvent = async (id) => {
-    if (!confirm('Czy na pewno chcesz usunąć te zajęcia z planu?')) return;
+    const confirmed = await showConfirmDialog({
+        title: 'Usuń zajęcia',
+        message: 'Czy na pewno chcesz usunąć te zajęcia z planu?',
+        icon: '📅',
+        confirmText: 'Usuń',
+        type: 'danger'
+    });
+    if (!confirmed) return;
     await db.deleteScheduleEvent(id);
     await loadSchedule();
     showToast('✅ Zajęcia usunięte z planu');
@@ -4574,13 +4731,23 @@ document.getElementById('form-edit-schedule')?.addEventListener('submit', async 
 // ============================================
 
 async function clearAllLectures() {
-    if (!confirm('⚠️ Czy na pewno chcesz usunąć WSZYSTKIE wykłady?\n\nTa operacja jest nieodwracalna!')) {
-        return;
-    }
+    const confirmed = await showConfirmDialog({
+        title: 'Usuń wszystkie wykłady',
+        message: 'Czy na pewno chcesz usunąć WSZYSTKIE wykłady?\n\nTa operacja jest nieodwracalna!',
+        icon: '⚠️',
+        confirmText: 'Usuń wszystko',
+        type: 'danger'
+    });
+    if (!confirmed) return;
     
-    if (!confirm('⚠️ OSTATNIE OSTRZEŻENIE!\n\nSpowoduje to usunięcie wszystkich wykładów, notatek, transkrypcji i quizów.\n\nKontynuować?')) {
-        return;
-    }
+    const confirmed2 = await showConfirmDialog({
+        title: 'Ostatnie ostrzeżenie',
+        message: 'Spowoduje to usunięcie wszystkich wykładów, notatek, transkrypcji i quizów.\n\nKontynuować?',
+        icon: '🚨',
+        confirmText: 'Tak, usuń',
+        type: 'danger'
+    });
+    if (!confirmed2) return;
     
     try {
         await db.clearAllLectures();
@@ -4594,9 +4761,14 @@ async function clearAllLectures() {
 }
 
 async function clearAllFlashcards() {
-    if (!confirm('⚠️ Czy na pewno chcesz usunąć WSZYSTKIE fiszki?\n\nTa operacja jest nieodwracalna!')) {
-        return;
-    }
+    const confirmed = await showConfirmDialog({
+        title: 'Usuń wszystkie fiszki',
+        message: 'Czy na pewno chcesz usunąć WSZYSTKIE fiszki?\n\nTa operacja jest nieodwracalna!',
+        icon: '⚠️',
+        confirmText: 'Usuń wszystko',
+        type: 'danger'
+    });
+    if (!confirmed) return;
     
     try {
         await db.clearAllFlashcards();
@@ -4610,9 +4782,14 @@ async function clearAllFlashcards() {
 }
 
 async function clearAllSchedule() {
-    if (!confirm('⚠️ Czy na pewno chcesz usunąć CAŁY plan zajęć?\n\nTa operacja jest nieodwracalna!')) {
-        return;
-    }
+    const confirmed = await showConfirmDialog({
+        title: 'Wyczyść plan zajęć',
+        message: 'Czy na pewno chcesz usunąć CAŁY plan zajęć?\n\nTa operacja jest nieodwracalna!',
+        icon: '📅',
+        confirmText: 'Wyczyść',
+        type: 'danger'
+    });
+    if (!confirmed) return;
     
     try {
         await db.clearAllScheduleEvents();
@@ -4625,13 +4802,23 @@ async function clearAllSchedule() {
 }
 
 async function clearAllSubjects() {
-    if (!confirm('⚠️ Czy na pewno chcesz usunąć WSZYSTKIE przedmioty?\n\nUWAGA: Spowoduje to także usunięcie powiązanych wykładów i fiszek!\n\nTa operacja jest nieodwracalna!')) {
-        return;
-    }
+    const confirmed = await showConfirmDialog({
+        title: 'Usuń wszystkie przedmioty',
+        message: 'Czy na pewno chcesz usunąć WSZYSTKIE przedmioty?\n\nUWAGA: Spowoduje to także usunięcie powiązanych wykładów i fiszek!',
+        icon: '⚠️',
+        confirmText: 'Usuń wszystko',
+        type: 'danger'
+    });
+    if (!confirmed) return;
     
-    if (!confirm('⚠️ OSTATNIE OSTRZEŻENIE!\n\nUsunięcie przedmiotów spowoduje:\n- Utratę wszystkich wykładów z tych przedmiotów\n- Utratę wszystkich fiszek z tych przedmiotów\n- Utratę planu zajęć\n\nKontynuować?')) {
-        return;
-    }
+    const confirmed2 = await showConfirmDialog({
+        title: 'Ostatnie ostrzeżenie',
+        message: 'Usunięcie przedmiotów spowoduje utratę wszystkich wykładów, fiszek i planu zajęć.\n\nKontynuować?',
+        icon: '🚨',
+        confirmText: 'Tak, usuń',
+        type: 'danger'
+    });
+    if (!confirmed2) return;
     
     try {
         await db.clearAllSubjects();
@@ -4648,18 +4835,35 @@ async function clearAllSubjects() {
 }
 
 async function clearAllData() {
-    if (!confirm('🚨 UWAGA! 🚨\n\nCzy na pewno chcesz usunąć WSZYSTKIE DANE z aplikacji?\n\nSpowoduje to usunięcie:\n- Wszystkich przedmiotów\n- Wszystkich wykładów\n- Wszystkich fiszek\n- Całego planu zajęć\n- Wszystkich notatek\n\nTa operacja jest CAŁKOWICIE NIEODWRACALNA!')) {
-        return;
-    }
+    const confirmed = await showConfirmDialog({
+        title: '🚨 UWAGA!',
+        message: 'Czy na pewno chcesz usunąć WSZYSTKIE DANE z aplikacji?\n\nTa operacja jest CAŁKOWICIE NIEODWRACALNA!',
+        icon: '🚨',
+        confirmText: 'Tak, usuń wszystko',
+        type: 'danger',
+        details: {
+            'Przedmioty': 'Wszystkie',
+            'Wykłady': 'Wszystkie',
+            'Fiszki': 'Wszystkie',
+            'Plan zajęć': 'Cały',
+            'Notatki': 'Wszystkie'
+        }
+    });
+    if (!confirmed) return;
     
-    if (!confirm('🚨 OSTATECZNE OSTRZEŻENIE! 🚨\n\nTego NIE DA SIĘ cofnąć!\n\nNapisz "USUŃ" w następnym oknie aby potwierdzić.')) {
-        return;
-    }
+    const confirmed2 = await showConfirmDialog({
+        title: '🚨 OSTATECZNE OSTRZEŻENIE!',
+        message: 'Tego NIE DA SIĘ cofnąć!\n\nWpisz "USUŃ" w polu poniżej i kliknij potwierdź.',
+        icon: '⛔',
+        confirmText: 'ROZUMIEM, USUŃ',
+        type: 'danger'
+    });
+    if (!confirmed2) return;
     
     const confirmation = prompt('Wpisz "USUŃ" aby potwierdzić usunięcie wszystkich danych:');
     
     if (confirmation !== 'USUŃ') {
-        alert('❌ Operacja anulowana - nieprawidłowe potwierdzenie');
+        showToast('❌ Operacja anulowana - nieprawidłowe potwierdzenie');
         return;
     }
     
@@ -4679,7 +4883,7 @@ async function clearAllData() {
         switchTab('dashboard');
     } catch (error) {
         console.error('Error clearing all data:', error);
-        alert('❌ Błąd podczas usuwania danych: ' + error.message);
+        showToast('❌ Błąd podczas usuwania danych');
     }
 }
 
@@ -4744,14 +4948,21 @@ async function checkForSavedSession() {
             'cloze': 'Cloze'
         };
         
-        const resume = confirm(
-            `🔄 Masz niezakończoną sesję nauki!\n\n` +
-            `Tryb: ${modeNames[session.mode] || session.mode}\n` +
-            `Runda: ${session.round}\n` +
-            `Pozostało: ${remainingCards} fiszek\n` +
-            `Poprawne: ${session.correct} | Błędne: ${session.incorrect}\n\n` +
-            `Czy chcesz kontynuować?`
-        );
+        const resume = await showConfirmDialog({
+            title: 'Niezakończona sesja nauki',
+            message: 'Masz niezakończoną sesję nauki!\nCzy chcesz kontynuować?',
+            icon: '🔄',
+            confirmText: 'Kontynuuj',
+            cancelText: 'Zacznij od nowa',
+            type: 'success',
+            details: {
+                'Tryb': modeNames[session.mode] || session.mode,
+                'Runda': session.round,
+                'Pozostało': `${remainingCards} fiszek`,
+                'Poprawne': session.correct,
+                'Błędne': session.incorrect
+            }
+        });
         
         if (resume) {
             currentStudySession = session;
@@ -5743,7 +5954,7 @@ function savePomodoroState() {
 }
 
 // Load Pomodoro state from localStorage
-function loadPomodoroState() {
+async function loadPomodoroState() {
     const saved = localStorage.getItem('pomodoroState');
     if (!saved) return false;
     
@@ -5780,13 +5991,21 @@ function loadPomodoroState() {
             const seconds = pomodoroState.timeRemaining % 60;
             const modeText = pomodoroState.isWorkMode ? 'Praca' : 'Przerwa';
             
-            if (confirm(
-                `🍅 Masz aktywny timer Pomodoro!\n\n` +
-                `Tryb: ${modeText}\n` +
-                `Pozostało: ${minutes}:${seconds.toString().padStart(2, '0')}\n` +
-                `Ukończone sesje: ${pomodoroState.sessionsCompleted}\n\n` +
-                `Czy chcesz kontynuować?`
-            )) {
+            const resume = await showConfirmDialog({
+                title: 'Aktywny timer Pomodoro',
+                message: 'Masz aktywny timer Pomodoro!\nCzy chcesz kontynuować?',
+                icon: '🍅',
+                confirmText: 'Kontynuuj',
+                cancelText: 'Resetuj',
+                type: 'success',
+                details: {
+                    'Tryb': modeText,
+                    'Pozostało': `${minutes}:${seconds.toString().padStart(2, '0')}`,
+                    'Ukończone sesje': pomodoroState.sessionsCompleted
+                }
+            });
+            
+            if (resume) {
                 startPomodoro();
             }
         } else {
@@ -6046,9 +6265,15 @@ function initKeyboardShortcuts() {
                 if (keyboardHelp.style.display !== 'none') {
                     keyboardHelp.style.display = 'none';
                 } else if (isInStudyMode) {
-                    if (confirm('Czy na pewno chcesz zakończyć sesję nauki?')) {
-                        endStudySession();
-                    }
+                    showConfirmDialog({
+                        title: 'Zakończ sesję nauki?',
+                        message: 'Twój postęp zostanie zapisany i możesz kontynuować później.',
+                        icon: '📚',
+                        confirmText: 'Zakończ',
+                        type: 'warning'
+                    }).then(confirmed => {
+                        if (confirmed) endStudySession();
+                    });
                 }
                 break;
         }
@@ -6205,12 +6430,7 @@ async function startDueReview() {
 // EXPORT TO WINDOW (for inline event handlers)
 // ============================================
 
-window.deleteSubject = async (id) => {
-    if (!confirm('Czy na pewno chcesz usunąć ten przedmiot?')) return;
-    await db.deleteSubject(id);
-    await loadSubjects();
-    await loadDashboard();
-};
+// deleteSubject is already defined above with stylish dialog
 
 // ============================================
 // EXAM/KOLOKWIUM FUNCTIONS
@@ -6331,13 +6551,20 @@ window.createExam = async function(subjectId) {
 };
 
 window.deleteExamConfirm = async function(examId) {
-    if (confirm('Czy na pewno chcesz usunąć to kolokwium?')) {
+    const confirmed = await showConfirmDialog({
+        title: 'Usuń kolokwium',
+        message: 'Czy na pewno chcesz usunąć to kolokwium?',
+        icon: '📝',
+        confirmText: 'Usuń',
+        type: 'danger'
+    });
+    if (confirmed) {
         try {
             await db.deleteExam(examId);
             await loadLectures();
         } catch (error) {
             console.error('Error deleting exam:', error);
-            alert('Błąd podczas usuwania kolokwium');
+            showToast('❌ Błąd podczas usuwania kolokwium');
         }
     }
 };
