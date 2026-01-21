@@ -4339,7 +4339,7 @@ window.deleteClozeCardWithConfirm = async function(cardId, cardIdx) {
             showToast('✅ Fiszka Cloze została usunięta');
             // Refresh the lecture view to update cloze cards
             if (window.currentLectureId) {
-                openLecture(window.currentLectureId);
+                openLectureView(window.currentLectureId);
             }
         } catch (error) {
             console.error('Error deleting cloze card:', error);
