@@ -4336,6 +4336,10 @@ window.deleteClozeCardWithConfirm = async function(cardId, cardIdx) {
             if (cardId) {
                 await db.deleteFlashcard(cardId);
             }
+            // Remove from in-memory lecture.clozeCards if present
+            if (window.currentLectureId && window.lecture && Array.isArray(window.lecture.clozeCards)) {
+                window.lecture.clozeCards = window.lecture.clozeCards.filter(card => card.id !== cardId);
+            }
             showToast('✅ Fiszka Cloze została usunięta');
             // Refresh the lecture view to update cloze cards
             if (window.currentLectureId) {
