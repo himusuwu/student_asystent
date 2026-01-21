@@ -270,13 +270,22 @@ function autoConvertMathToLatex(text) {
         return text;
     }
     
+    // Skip if contains HTML tags (like cloze spans) - don't process HTML
+    if (text.includes('<span') || text.includes('<div') || text.includes('class=')) {
+        return text;
+    }
+    
     let result = text;
     
     // Pattern for standalone formulas like: V = (-1)^s * m * 2^e
     // Look for patterns with = and math operators, wrap entire formula
     result = result.replace(
-        /([A-Za-z_]\w*)\s*=\s*([^,.\n]+(?:\^[\w{}]+|[+\-*\/]\s*\w+)+)/g,
+        /([A-Za-z_]\w*)\s*=\s*([^,.<>\n]+(?:\^[\w{}]+|[+\-*\/]\s*\w+)+)/g,
         (match, variable, formula) => {
+            // Skip if looks like HTML attribute
+            if (match.includes('class') || match.includes('style') || match.includes('data-')) {
+                return match;
+            }
             // Clean up and convert to LaTeX
             let latex = match
                 .replace(/\*/g, ' \\cdot ')  // * to cdot
@@ -4203,23 +4212,32 @@ function renderClozeCards(clozeCards) {
  * Render a single Cloze card HTML
  */
 function renderSingleClozeCard(card, idx) {
-    // Convert {{c1::answer}} format to clickable blanks
     let displayText = card.text;
     
+    // First, apply Markdown/LaTeX to the raw text (BEFORE adding cloze spans)
+    // But we need to protect cloze markers first
+    const clozeMarkers = [];
     if (card.clozes && Array.isArray(card.clozes)) {
-        card.clozes.forEach(cloze => {
+        card.clozes.forEach((cloze, i) => {
             const pattern = new RegExp(`\\{\\{${cloze.id}::([^}]+)\\}\\}`, 'g');
-            displayText = displayText.replace(pattern, 
-                `<span class="cloze-blank" data-answer="${cloze.answer}" data-hint="${cloze.hint || ''}" data-revealed="false">
-                    <span class="cloze-hidden">[...]</span>
-                    <span class="cloze-answer" style="display: none;">${cloze.answer}</span>
-                </span>`
-            );
+            displayText = displayText.replace(pattern, `%%CLOZE_MARKER_${i}%%`);
+            clozeMarkers.push(cloze);
         });
     }
     
-    // Apply Markdown to the display text (after cloze processing)
+    // Apply Markdown (now safe - no cloze syntax to interfere)
     displayText = renderMarkdownWithLatex(displayText);
+    
+    // Now restore cloze markers with proper HTML spans
+    clozeMarkers.forEach((cloze, i) => {
+        displayText = displayText.replace(
+            `%%CLOZE_MARKER_${i}%%`,
+            `<span class="cloze-blank" data-answer="${escapeHtml(cloze.answer)}" data-hint="${escapeHtml(cloze.hint || '')}" data-revealed="false">
+                <span class="cloze-hidden">[...]</span>
+                <span class="cloze-answer" style="display: none;">${escapeHtml(cloze.answer)}</span>
+            </span>`
+        );
+    });
     
     const difficultyColors = {
         easy: '#10b981',
@@ -4254,6 +4272,19 @@ function renderSingleClozeCard(card, idx) {
             </div>
         </div>
     `;
+}
+
+/**
+ * Escape HTML special characters
+ */
+function escapeHtml(text) {
+    if (!text) return '';
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 /**
@@ -4374,22 +4405,31 @@ function displayClozeStudyCard() {
     
     const currentCard = session.cards[session.currentIndex];
     
-    // Build display text with hidden clozes
+    // Build display text with hidden clozes - protect markers first, then Markdown, then restore
     let displayText = currentCard.text;
+    const clozeMarkers = [];
+    
     if (currentCard.clozes && Array.isArray(currentCard.clozes)) {
-        currentCard.clozes.forEach(cloze => {
+        currentCard.clozes.forEach((cloze, i) => {
             const pattern = new RegExp(`\\{\\{${cloze.id}::([^}]+)\\}\\}`, 'g');
-            displayText = displayText.replace(pattern, 
-                `<span class="cloze-blank study-cloze" data-answer="${cloze.answer}" data-revealed="false">
-                    <span class="cloze-hidden">[...]</span>
-                    <span class="cloze-answer" style="display: none;">${cloze.answer}</span>
-                </span>`
-            );
+            displayText = displayText.replace(pattern, `%%CLOZE_STUDY_${i}%%`);
+            clozeMarkers.push(cloze);
         });
     }
     
-    // Apply Markdown to the display text (after cloze processing)
+    // Apply Markdown (now safe - no cloze syntax to interfere)
     displayText = renderMarkdownWithLatex(displayText);
+    
+    // Now restore cloze markers with proper HTML spans
+    clozeMarkers.forEach((cloze, i) => {
+        displayText = displayText.replace(
+            `%%CLOZE_STUDY_${i}%%`,
+            `<span class="cloze-blank study-cloze" data-answer="${escapeHtml(cloze.answer)}" data-revealed="false">
+                <span class="cloze-hidden">[...]</span>
+                <span class="cloze-answer" style="display: none;">${escapeHtml(cloze.answer)}</span>
+            </span>`
+        );
+    });
     
     sessionContainer.innerHTML = `
         <div class="study-progress">
