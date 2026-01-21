@@ -2601,7 +2601,10 @@ async function loadFlashcards() {
                     const backText = card.back || card.answer || 'Brak odpowiedzi';
                     
                     html += `
-                        <div class="card flashcard" onclick="this.classList.toggle('flipped')" data-flashcard-id="${card.id}">
+                        <div class="card flashcard flashcard-preview" onclick="this.classList.toggle('flipped')" data-flashcard-id="${card.id}">
+                            <button class="flashcard-delete-btn" onclick="event.stopPropagation(); deleteFlashcardWithConfirm('${card.id}')" title="Usuń fiszkę">
+                                🗑️
+                            </button>
                             <div class="flashcard-inner">
                                 <div class="flashcard-front">
                                     <div class="flashcard-markdown">${renderMarkdownWithLatex(frontText)}</div>
@@ -2661,7 +2664,10 @@ async function loadFlashcards() {
             const backText = card.back || card.answer || 'Brak odpowiedzi';
             
             html += `
-                <div class="card flashcard" onclick="this.classList.toggle('flipped')" data-flashcard-id="${card.id}">
+                <div class="card flashcard flashcard-preview" onclick="this.classList.toggle('flipped')" data-flashcard-id="${card.id}">
+                    <button class="flashcard-delete-btn" onclick="event.stopPropagation(); deleteFlashcardWithConfirm('${card.id}')" title="Usuń fiszkę">
+                        🗑️
+                    </button>
                     <div class="flashcard-inner">
                         <div class="flashcard-front">
                             <div class="flashcard-markdown">${renderMarkdownWithLatex(frontText)}</div>
@@ -4251,7 +4257,10 @@ function renderSingleClozeCard(card, idx) {
     };
     
     return `
-        <div class="card cloze-card" data-card-idx="${idx}">
+        <div class="card cloze-card cloze-card-preview" data-card-idx="${idx}" data-card-id="${card.id || ''}">
+            <button class="flashcard-delete-btn" onclick="event.stopPropagation(); deleteClozeCardWithConfirm('${card.id || ''}', ${idx})" title="Usuń fiszkę">
+                🗑️
+            </button>
             <div class="cloze-card-header">
                 <span class="cloze-card-number">#${idx + 1}</span>
                 ${card.category ? `<span class="cloze-card-category">📁 ${card.category}</span>` : ''}
@@ -4286,6 +4295,58 @@ function escapeHtml(text) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 }
+
+/**
+ * Delete flashcard with confirmation
+ */
+window.deleteFlashcardWithConfirm = async function(flashcardId) {
+    const confirmed = await showConfirmDialog(
+        'Usuń fiszkę',
+        'Czy na pewno chcesz usunąć tę fiszkę? Tej operacji nie można cofnąć.',
+        'Usuń',
+        'Anuluj'
+    );
+    
+    if (confirmed) {
+        try {
+            await db.deleteFlashcard(flashcardId);
+            showToast('✅ Fiszka została usunięta');
+            // Refresh flashcards view
+            loadFlashcards();
+        } catch (error) {
+            console.error('Error deleting flashcard:', error);
+            showToast('❌ Błąd podczas usuwania fiszki');
+        }
+    }
+};
+
+/**
+ * Delete cloze card with confirmation
+ */
+window.deleteClozeCardWithConfirm = async function(cardId, cardIdx) {
+    const confirmed = await showConfirmDialog(
+        'Usuń fiszkę Cloze',
+        'Czy na pewno chcesz usunąć tę fiszkę Cloze? Tej operacji nie można cofnąć.',
+        'Usuń',
+        'Anuluj'
+    );
+    
+    if (confirmed) {
+        try {
+            if (cardId) {
+                await db.deleteFlashcard(cardId);
+            }
+            showToast('✅ Fiszka Cloze została usunięta');
+            // Refresh the lecture view to update cloze cards
+            if (window.currentLectureId) {
+                openLecture(window.currentLectureId);
+            }
+        } catch (error) {
+            console.error('Error deleting cloze card:', error);
+            showToast('❌ Błąd podczas usuwania fiszki Cloze');
+        }
+    }
+};
 
 /**
  * Toggle a single cloze blank visibility
