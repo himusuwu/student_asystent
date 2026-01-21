@@ -4213,31 +4213,45 @@ function renderClozeCards(clozeCards) {
  */
 function renderSingleClozeCard(card, idx) {
     let displayText = card.text;
+    const clozeData = [];
     
-    // First, apply Markdown/LaTeX to the raw text (BEFORE adding cloze spans)
-    // But we need to protect cloze markers first
-    const clozeMarkers = [];
     if (card.clozes && Array.isArray(card.clozes)) {
         card.clozes.forEach((cloze, i) => {
             const pattern = new RegExp(`\\{\\{${cloze.id}::([^}]+)\\}\\}`, 'g');
-            displayText = displayText.replace(pattern, `%%CLOZE_MARKER_${i}%%`);
-            clozeMarkers.push(cloze);
+            
+            // Check if this cloze is inside LaTeX (between $ signs)
+            const isInsideLatex = isPatternInsideLatex(displayText, pattern);
+            
+            if (isInsideLatex) {
+                // For LaTeX clozes: replace with boxed placeholder that KaTeX can render
+                displayText = displayText.replace(pattern, `\\boxed{\\text{[${i + 1}]}}`);
+            } else {
+                // For regular text: use placeholder
+                displayText = displayText.replace(pattern, `%%CLOZE_MARKER_${i}%%`);
+            }
+            clozeData.push({ ...cloze, index: i, isLatex: isInsideLatex });
         });
     }
     
-    // Apply Markdown (now safe - no cloze syntax to interfere)
+    // Apply Markdown/LaTeX rendering
     displayText = renderMarkdownWithLatex(displayText);
     
-    // Now restore cloze markers with proper HTML spans
-    clozeMarkers.forEach((cloze, i) => {
+    // Now restore non-LaTeX cloze markers with proper HTML spans
+    clozeData.filter(c => !c.isLatex).forEach((cloze) => {
         displayText = displayText.replace(
-            `%%CLOZE_MARKER_${i}%%`,
-            `<span class="cloze-blank" data-answer="${escapeHtml(cloze.answer)}" data-hint="${escapeHtml(cloze.hint || '')}" data-revealed="false">
+            `%%CLOZE_MARKER_${cloze.index}%%`,
+            `<span class="cloze-blank" data-answer="${escapeHtml(cloze.answer)}" data-hint="${escapeHtml(cloze.hint || '')}" data-revealed="false" data-cloze-idx="${cloze.index}">
                 <span class="cloze-hidden">[...]</span>
                 <span class="cloze-answer" style="display: none;">${escapeHtml(cloze.answer)}</span>
             </span>`
         );
     });
+    
+    // Build answers data for LaTeX clozes (will be shown via JS)
+    const latexClozes = clozeData.filter(c => c.isLatex);
+    const latexAnswersAttr = latexClozes.length > 0 
+        ? `data-latex-clozes='${JSON.stringify(latexClozes.map(c => ({ idx: c.index + 1, answer: c.answer })))}'`
+        : '';
     
     const difficultyColors = {
         easy: '#10b981',
@@ -4251,7 +4265,7 @@ function renderSingleClozeCard(card, idx) {
     };
     
     return `
-        <div class="card cloze-card" data-card-idx="${idx}">
+        <div class="card cloze-card" data-card-idx="${idx}" ${latexAnswersAttr}>
             <div class="cloze-card-header">
                 <span class="cloze-card-number">#${idx + 1}</span>
                 ${card.category ? `<span class="cloze-card-category">📁 ${card.category}</span>` : ''}
@@ -4262,6 +4276,12 @@ function renderSingleClozeCard(card, idx) {
             <div class="cloze-card-content flashcard-markdown">
                 ${displayText}
             </div>
+            ${latexClozes.length > 0 ? `
+            <div class="cloze-latex-answers" style="display: none; margin-top: 15px; padding: 15px; background: var(--bg-hover); border-radius: 8px;">
+                <strong>Odpowiedzi:</strong>
+                ${latexClozes.map(c => `<div>[${c.index + 1}] = <code>${escapeHtml(c.answer)}</code></div>`).join('')}
+            </div>
+            ` : ''}
             <div class="cloze-card-actions">
                 <button class="btn-reveal-all" onclick="revealAllClozes(this.closest('.cloze-card'))">
                     👁 Pokaż wszystkie
@@ -4272,6 +4292,27 @@ function renderSingleClozeCard(card, idx) {
             </div>
         </div>
     `;
+}
+
+/**
+ * Check if a regex pattern match would be inside LaTeX delimiters
+ */
+function isPatternInsideLatex(text, pattern) {
+    const match = text.match(pattern);
+    if (!match) return false;
+    
+    const matchIndex = text.indexOf(match[0]);
+    
+    // Check for $...$ (inline) or $$...$$ (display)
+    const beforeMatch = text.substring(0, matchIndex);
+    const afterMatch = text.substring(matchIndex + match[0].length);
+    
+    // Count $ signs before the match
+    const dollarsBefore = (beforeMatch.match(/\$/g) || []).length;
+    const dollarsAfter = (afterMatch.match(/\$/g) || []).length;
+    
+    // If odd number of $ before AND after, we're inside LaTeX
+    return (dollarsBefore % 2 === 1) && (dollarsAfter % 2 === 1);
 }
 
 /**
@@ -4312,6 +4353,7 @@ function toggleCloze(blankElement) {
  * Reveal all clozes in a card
  */
 window.revealAllClozes = function(cardElement) {
+    // Reveal regular text clozes
     cardElement.querySelectorAll('.cloze-blank').forEach(blank => {
         const hiddenSpan = blank.querySelector('.cloze-hidden');
         const answerSpan = blank.querySelector('.cloze-answer');
@@ -4320,12 +4362,19 @@ window.revealAllClozes = function(cardElement) {
         blank.dataset.revealed = 'true';
         blank.classList.add('revealed');
     });
+    
+    // Reveal LaTeX cloze answers
+    const latexAnswersDiv = cardElement.querySelector('.cloze-latex-answers');
+    if (latexAnswersDiv) {
+        latexAnswersDiv.style.display = 'block';
+    }
 };
 
 /**
  * Hide all clozes in a card
  */
 window.hideAllClozes = function(cardElement) {
+    // Hide regular text clozes
     cardElement.querySelectorAll('.cloze-blank').forEach(blank => {
         const hiddenSpan = blank.querySelector('.cloze-hidden');
         const answerSpan = blank.querySelector('.cloze-answer');
@@ -4334,6 +4383,12 @@ window.hideAllClozes = function(cardElement) {
         blank.dataset.revealed = 'false';
         blank.classList.remove('revealed');
     });
+    
+    // Hide LaTeX cloze answers
+    const latexAnswersDiv = cardElement.querySelector('.cloze-latex-answers');
+    if (latexAnswersDiv) {
+        latexAnswersDiv.style.display = 'none';
+    }
 };
 
 /**
@@ -4405,31 +4460,50 @@ function displayClozeStudyCard() {
     
     const currentCard = session.cards[session.currentIndex];
     
-    // Build display text with hidden clozes - protect markers first, then Markdown, then restore
+    // Build display text with hidden clozes - handle LaTeX clozes specially
     let displayText = currentCard.text;
-    const clozeMarkers = [];
+    const clozeData = [];
     
     if (currentCard.clozes && Array.isArray(currentCard.clozes)) {
         currentCard.clozes.forEach((cloze, i) => {
             const pattern = new RegExp(`\\{\\{${cloze.id}::([^}]+)\\}\\}`, 'g');
-            displayText = displayText.replace(pattern, `%%CLOZE_STUDY_${i}%%`);
-            clozeMarkers.push(cloze);
+            
+            // Check if this cloze is inside LaTeX
+            const isInsideLatex = isPatternInsideLatex(displayText, pattern);
+            
+            if (isInsideLatex) {
+                // For LaTeX clozes: replace with boxed placeholder
+                displayText = displayText.replace(pattern, `\\boxed{\\text{[${i + 1}]}}`);
+            } else {
+                // For regular text: use placeholder
+                displayText = displayText.replace(pattern, `%%CLOZE_STUDY_${i}%%`);
+            }
+            clozeData.push({ ...cloze, index: i, isLatex: isInsideLatex });
         });
     }
     
-    // Apply Markdown (now safe - no cloze syntax to interfere)
+    // Apply Markdown/LaTeX
     displayText = renderMarkdownWithLatex(displayText);
     
-    // Now restore cloze markers with proper HTML spans
-    clozeMarkers.forEach((cloze, i) => {
+    // Restore non-LaTeX cloze markers with proper HTML spans
+    clozeData.filter(c => !c.isLatex).forEach((cloze) => {
         displayText = displayText.replace(
-            `%%CLOZE_STUDY_${i}%%`,
+            `%%CLOZE_STUDY_${cloze.index}%%`,
             `<span class="cloze-blank study-cloze" data-answer="${escapeHtml(cloze.answer)}" data-revealed="false">
                 <span class="cloze-hidden">[...]</span>
                 <span class="cloze-answer" style="display: none;">${escapeHtml(cloze.answer)}</span>
             </span>`
         );
     });
+    
+    // Build LaTeX answers section
+    const latexClozes = clozeData.filter(c => c.isLatex);
+    const latexAnswersHtml = latexClozes.length > 0 ? `
+        <div class="cloze-latex-answers" id="study-latex-answers" style="display: none; margin: 20px 0; padding: 15px; background: var(--bg-hover); border-radius: 8px; text-align: center;">
+            <strong>Odpowiedzi:</strong><br>
+            ${latexClozes.map(c => `<span style="margin: 0 10px;">[${c.index + 1}] = <code style="background: var(--bg-card); padding: 2px 6px; border-radius: 4px;">${escapeHtml(c.answer)}</code></span>`).join('')}
+        </div>
+    ` : '';
     
     sessionContainer.innerHTML = `
         <div class="study-progress">
@@ -4446,11 +4520,13 @@ function displayClozeStudyCard() {
             ${displayText}
         </div>
         
+        ${latexAnswersHtml}
+        
         <p style="text-align: center; color: var(--text-secondary); margin: 20px 0;">
-            Kliknij na lukę [...] aby odsłonić odpowiedź
+            ${latexClozes.length > 0 ? 'Kliknij "Pokaż wszystkie" aby zobaczyć odpowiedzi' : 'Kliknij na lukę [...] aby odsłonić odpowiedź'}
         </p>
         
-        <div class="study-controls" style="display: none;" id="cloze-rating-controls">
+        <div class="study-controls" ${latexClozes.length > 0 ? '' : 'style="display: none;"'} id="cloze-rating-controls">
             <button class="study-btn incorrect" onclick="rateClozeCard(false)">
                 ❌ Nie umiem
             </button>
@@ -4486,6 +4562,7 @@ function displayClozeStudyCard() {
  * Reveal all clozes in study mode
  */
 window.revealAllStudyClozes = function() {
+    // Reveal regular clozes
     document.querySelectorAll('.study-cloze').forEach(blank => {
         const hiddenSpan = blank.querySelector('.cloze-hidden');
         const answerSpan = blank.querySelector('.cloze-answer');
@@ -4494,6 +4571,13 @@ window.revealAllStudyClozes = function() {
         blank.dataset.revealed = 'true';
         blank.classList.add('revealed');
     });
+    
+    // Show LaTeX answers section if exists
+    const latexAnswers = document.getElementById('study-latex-answers');
+    if (latexAnswers) {
+        latexAnswers.style.display = 'block';
+    }
+    
     document.getElementById('cloze-rating-controls').style.display = 'flex';
 };
 
